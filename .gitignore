@@ -1,0 +1,15 @@
+# local git backups
+.git.broken-*/
+
+# python caches
+__pycache__/
+*.pyc
+
+# envs
+venv/
+ENV/
+.env
+
+# cache / models / locks
+model_cache/
+*.lock
