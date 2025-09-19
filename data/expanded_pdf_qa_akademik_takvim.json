@@ -1,0 +1,62 @@
+[
+  {
+    "questions": [
+      "akademik takvim 'e nasıl ulaşırım?",
+      "akademik takvimi nereden görebilirim?",
+      "akademik takvim hangi adreste?",
+      "akademik takvimi internetten bulabilir miyim?",
+      "akademik takvimi online olarak nereden inceleyebilirim?"
+    ],
+    "answer": "akademik takvime linkten ulaşabilirsiniz: https://kapadokya.edu.tr/akademik/akademik-takvim"
+  },
+  {
+    "questions": [
+      "Muafiyet sınavları için son başvuru tarihi nedir?",
+      "Muafiyet sınavına başvurmak için son gün ne zaman?",
+      "Muafiyet sınavı başvuruları hangi tarihe kadar yapılabilir?",
+      "Muafiyet sınavına en geç ne zaman başvurabilirim?",
+      "Muafiyet sınav başvuru süresi ne zaman bitiyor?"
+    ],
+    "answer": "Muafiyet sınavı başvurularının son tarihi 12 Şubat 2025'tir. Sınav takvimi ise 15 Şubat 2025 tarihinde ilan edilecektir."
+  },
+  {
+    "questions": [
+      "Yaz okuluna kayıt yaptırmak için son tarih nedir?",
+      "Yaz okuluna başvuru için son gün ne zaman?",
+      "Yaz okuluna kaydımı en geç ne zaman yapabilirim?",
+      "Yaz okuluna kayıt başvuruları ne zaman bitiyor?",
+      "Yaz okulu başvuruları için son tarih hangi gün?"
+    ],
+    "answer": "Yaz okuluna ön kayıtlar 7-8 Temmuz tarihlerinde yapılacaktır. Ders programı ilan edildikten sonra dersler 14 Temmuz'da başlayacaktır."
+  },
+  {
+    "questions": [
+      "Yaz okulu için ön kayıtlar ne zaman başlıyor?",
+      "Yaz okuluna ön kayıt başvurusu hangi tarihte başlıyor?",
+      "Yaz okuluna ön kayıt yapmak için ne zaman başvurmalıyım?",
+      "Yaz okulu ön kayıt başlangıç tarihi nedir?",
+      "Yaz okuluna ön kayıtların ilk günü ne zaman?"
+    ],
+    "answer": "Yaz okulu için ön kayıtlar 7 Temmuz 2025 tarihinde başlıyor. Kesin kayıtlar ise 14-18 Temmuz 2025 tarihleri arasında yapılacak."
+  },
+  {
+    "questions": [
+      "Demokrasi ve Milli Birlik Günü'nde üniversite kapalı mı?",
+      "15 Temmuz'da üniversite açık mı?",
+      "Demokrasi ve Milli Birlik Günü tatilinde üniversite hizmet veriyor mu?",
+      "Üniversite 15 Temmuz tarihinde açık olacak mı?",
+      "15 Temmuz Demokrasi ve Milli Birlik Günü'nde ders var mı?"
+    ],
+    "answer": "Evet, 15 Temmuz 2025 tarihinde kutlanacak olan Demokrasi ve Milli Birlik Günü tatili nedeniyle üniversite kapalı olacaktır. Bu tarih, yukarıdaki takvimde resmi bir tatil olarak belirtilmiştir."
+  },
+  {
+    "questions": [
+      "Yaz okulunun final sınavları hangi tarihler arasında yapılacak?",
+      "Yaz okulu final sınavları ne zaman?",
+      "Yaz okulunda final sınavları hangi günler arasında olacak?",
+      "Yaz okulu finalleri hangi tarihte başlıyor ve bitiyor?",
+      "Yaz okulunun bitirme sınavları hangi tarihlerde yapılacak?"
+    ],
+    "answer": "Yaz okulunun final sınavları 1-6 Eylül 2025 tarihleri arasında yapılacaktır. Sınav takvimi 15 Ağustos 2025 tarihinde ilan edilecektir."
+  }
+]
