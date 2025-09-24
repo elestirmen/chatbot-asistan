@@ -746,25 +746,80 @@ def admin_item_singular_route(idx: int):
     return jsonify(removed)
 
 
-def _list_sessions() -> List[str]:
+def _list_sessions() -> List[Dict[str, Any]]:
     if not LOGS_DIR.exists():
         return []
-    items = []
+    sessions: List[Dict[str, Any]] = []
     for p in LOGS_DIR.iterdir():
-        if p.is_dir() and re.match(r'^(sess|session)_', p.name):
-            items.append(p.name)
-    return sorted(items, reverse=True)
+        if not (p.is_dir() and re.match(r'^(sess|session)_', p.name)):
+            continue
+        last_ts: Optional[datetime] = None
+        # Try to infer last activity from contained files
+        for f in p.glob('*.json'):
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+                if isinstance(data, list) and data:
+                    ts_str = data[-1].get('timestamp')
+                    if ts_str:
+                        try:
+                            ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+                        except Exception:
+                            ts = None
+                        if ts and (last_ts is None or ts > last_ts):
+                            last_ts = ts
+            except Exception:
+                pass
+        sessions.append({
+            'session_id': p.name,
+            'last_activity': last_ts.isoformat(sep=' ') if last_ts else None,
+            'last_activity_ts': last_ts.timestamp() if last_ts else 0,
+        })
+    sessions.sort(key=lambda x: x.get('last_activity_ts', 0), reverse=True)
+    return sessions
 
 
-def _list_user_logs(session_id: str) -> List[Dict[str, str]]:
+def _list_user_logs(session_id: str) -> List[Dict[str, Any]]:
     sess_dir = LOGS_DIR / session_id
     if not sess_dir.exists() or not sess_dir.is_dir():
         return []
-    out: List[Dict[str, str]] = []
+    out: List[Dict[str, Any]] = []
     for f in sorted(sess_dir.glob('*.json')):
         m = re.match(r'^chat_log_(.+)\.json$', f.name)
         user_id = m.group(1) if m else f.stem
-        out.append({"file": f.name, "user_id": user_id})
+        total = like = dislike = unrated = 0
+        last_ts = None
+        try:
+            data = json.loads(f.read_text(encoding='utf-8'))
+            if isinstance(data, list):
+                total = len(data)
+                for e in data:
+                    fb = e.get('feedback')
+                    if fb == 'like':
+                        like += 1
+                    elif fb == 'dislike':
+                        dislike += 1
+                    else:
+                        unrated += 1
+                if data:
+                    ts_str = data[-1].get('timestamp')
+                    if ts_str:
+                        try:
+                            last_ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+                        except Exception:
+                            last_ts = None
+        except Exception:
+            pass
+        out.append({
+            'file': f.name,
+            'user_id': user_id,
+            'total': total,
+            'like': like,
+            'dislike': dislike,
+            'unrated': unrated,
+            'last_activity': last_ts.isoformat(sep=' ') if last_ts else None,
+            'last_activity_ts': last_ts.timestamp() if last_ts else 0,
+        })
+    out.sort(key=lambda x: x.get('last_activity_ts', 0), reverse=True)
     return out
 
 
@@ -786,6 +841,98 @@ def _filter_feedback(entries: List[Dict[str, Any]], fb: str) -> List[Dict[str, A
     if fb == 'unrated':
         return [e for e in entries if not e.get('feedback')]
     return entries
+
+
+def _parse_dt(s: Optional[str]) -> Optional[datetime]:
+    if not s:
+        return None
+    s = s.strip()
+    for fmt in ('%Y-%m-%d', '%Y-%m-%d %H:%M:%S'):
+        try:
+            dt = datetime.strptime(s, fmt)
+            if fmt == '%Y-%m-%d':
+                return datetime(dt.year, dt.month, dt.day)
+            return dt
+        except Exception:
+            continue
+    return None
+
+
+@admin_bp.route('/api/chat/logs_advanced')
+def admin_api_chat_logs_advanced():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    sess = request.args.get('session', '')
+    user_id = request.args.get('user_id', '')
+    fb = (request.args.get('feedback') or 'any').lower()
+    q = (request.args.get('q') or '').strip().lower()
+    rng = (request.args.get('range') or '').lower()
+    from_s = request.args.get('from')
+    to_s = request.args.get('to')
+
+    entries = _load_logs(sess, user_id)
+
+    now = datetime.utcnow()
+    if rng == 'today':
+        from_dt = datetime(now.year, now.month, now.day)
+        to_dt = datetime(now.year, now.month, now.day, 23, 59, 59)
+    elif rng == '7d':
+        from_dt = now - timedelta(days=7)
+        to_dt = now
+    elif rng == '30d':
+        from_dt = now - timedelta(days=30)
+        to_dt = now
+    else:
+        from_dt = _parse_dt(from_s)
+        to_dt = _parse_dt(to_s)
+        if to_dt and (to_s and len(to_s) == 10):
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+
+    filtered: List[Dict[str, Any]] = []
+    for e in entries:
+        ts_ok = True
+        ts_str = e.get('timestamp')
+        if ts_str and (from_dt or to_dt):
+            try:
+                ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+            except Exception:
+                ts = None
+            if ts is not None:
+                if from_dt and ts < from_dt:
+                    ts_ok = False
+                if to_dt and ts > to_dt:
+                    ts_ok = False
+        if not ts_ok:
+            continue
+        if fb in ('like', 'dislike', 'unrated'):
+            fval = e.get('feedback')
+            if fb == 'unrated' and fval:
+                continue
+            if fb in ('like', 'dislike') and fval != fb:
+                continue
+        if q:
+            um = (e.get('user_message') or '').lower()
+            ar = (e.get('assistant_response') or '').lower()
+            if q not in um and q not in ar:
+                continue
+        filtered.append(e)
+
+    summary = {
+        'total': len(filtered),
+        'like': sum(1 for e in filtered if e.get('feedback') == 'like'),
+        'dislike': sum(1 for e in filtered if e.get('feedback') == 'dislike'),
+        'unrated': sum(1 for e in filtered if not e.get('feedback')),
+    }
+    items = []
+    for i, e in enumerate(filtered):
+        items.append({
+            'idx': i,
+            'timestamp': e.get('timestamp'),
+            'feedback': e.get('feedback'),
+            'user_message': e.get('user_message'),
+            'assistant_response': e.get('assistant_response'),
+        })
+    return jsonify({'items': items, 'summary': summary})
 
 
 @admin_bp.route('/api/chat/sessions')
@@ -835,12 +982,13 @@ def admin_api_chat_search_by_feedback():
         limit = 200
     results: List[Dict[str, Any]] = []
     for sess in _list_sessions():
-        for u in _list_user_logs(sess):
-            entries = _load_logs(sess, u['user_id'])
+        sess_id = sess['session_id'] if isinstance(sess, dict) else sess
+        for u in _list_user_logs(sess_id):
+            entries = _load_logs(sess_id, u['user_id'])
             filtered = _filter_feedback(entries, fb)
             for idx, e in enumerate(filtered):
                 results.append({
-                    'session_id': sess,
+                    'session_id': sess_id,
                     'user_id': u['user_id'],
                     'idx': idx,
                     'timestamp': e.get('timestamp'),

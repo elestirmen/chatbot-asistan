@@ -62,11 +62,7 @@
           <select id="sessionSelect" class="form-select"></select>
         </div>
         <div class="col-auto">
-          <label for="userSelect" class="form-label mb-1">Kullanıcı Logu</label>
-          <select id="userSelect" class="form-select"></select>
-        </div>
-        <div class="col-auto">
-          <label for="feedbackFilter" class="form-label mb-1">Filtre</label>
+          <label for="feedbackFilter" class="form-label mb-1">Feedback</label>
           <select id="feedbackFilter" class="form-select">
             <option value="any">Hepsi</option>
             <option value="like">Sadece Like</option>
@@ -75,7 +71,26 @@
           </select>
         </div>
         <div class="col-auto">
-          <button class="btn btn-outline-primary" id="loadLogsBtn">Yükle</button>
+          <label class="form-label mb-1">Tarih</label>
+          <div class="d-flex gap-2">
+            <input type="date" id="fromDate" class="form-control" placeholder="Başlangıç">
+            <input type="date" id="toDate" class="form-control" placeholder="Bitiş">
+          </div>
+        </div>
+        <div class="col-auto">
+          <label class="form-label mb-1">Hızlı</label>
+          <div class="btn-group d-flex">
+            <button class="btn btn-outline-secondary" id="quickToday">Bugün</button>
+            <button class="btn btn-outline-secondary" id="quick7d">Son 7 Gün</button>
+            <button class="btn btn-outline-secondary" id="quickAll">Tümü</button>
+          </div>
+        </div>
+        <div class="col-auto flex-grow-1">
+          <label class="form-label mb-1" for="searchText">Ara</label>
+          <input type="text" id="searchText" class="form-control" placeholder="Mesaj/yanıt içinde ara…">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary" id="loadLogsBtn">Uygula</button>
         </div>
         <div class="col-auto ms-auto">
           <div class="btn-group" role="group">
@@ -84,6 +99,30 @@
           </div>
         </div>
       </div>
+
+      <!-- Özet kartlar -->
+      <div id="statsCards" class="row g-3 mb-3">
+        <div class="col-sm-4">
+          <div class="card border-success"><div class="card-body"><h6 class="card-title">Like</h6><div id="statLike" class="fs-4">0</div></div></div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-danger"><div class="card-body"><h6 class="card-title">Dislike</h6><div id="statDislike" class="fs-4">0</div></div></div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card border-secondary"><div class="card-body"><h6 class="card-title">Geri Bildirim Yok</h6><div id="statUnrated" class="fs-4">0</div></div></div>
+        </div>
+      </div>
+
+      <!-- Kullanıcılar tablosu -->
+      <div class="mb-3">
+        <table id="usersTable" class="table table-sm table-hover w-100">
+          <thead class="table-light"><tr>
+            <th>Kullanıcı</th><th>Toplam</th><th>Like</th><th>Dislike</th><th>Boş</th><th>Son Aktivite</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
       <table id="logsTable" class="table table-striped table-bordered w-100">
         <thead class="table-dark"><tr>
           <th style="width:60px">#</th>
@@ -151,11 +190,11 @@
     </div>
   </div>
 
-  <script src="/static/vendor/jquery-3.7.1.min.js"></script>
-  <script src="/static/vendor/bootstrap.bundle.min.js"></script>
-  <script src="/static/vendor/jquery.dataTables.min.js"></script>
-  <script src="/static/vendor/dataTables.bootstrap5.min.js"></script>
-  <script src="/static/js/admin.js"></script>
+  <script src="/static/vendor/jquery-3.7.1.min.js?v=2"></script>
+  <script src="/static/vendor/bootstrap.bundle.min.js?v=2"></script>
+  <script src="/static/vendor/jquery.dataTables.min.js?v=2"></script>
+  <script src="/static/vendor/dataTables.bootstrap5.min.js?v=2"></script>
+  <script src="/static/js/admin.js?v=2"></script>
 </div>
 </body>
 </html>

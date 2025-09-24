@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAuthenticated = false;
 
   const $sessionSel = $('#sessionSelect');
+  const $usersTableEl = $('#usersTable');
+  let usersTable;
+  // Eski select yedeği (şablonda artık görünmüyor ama referans kalabilir)
   const $userSel = $('#userSelect');
   const $feedbackSel = $('#feedbackFilter');
   let logsTable;
@@ -74,7 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function initQaTable() {
     qaTable = $('#qaTable').DataTable({
       ajax: {
-        url: () => `/admin/api/items?file=${currentFile}`,
+        url: '/admin/api/items',
+        data: function(){ return { file: currentFile }; },
         dataSrc: '',
         type: 'GET',
         cache: false,
@@ -113,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('#fileSelect').on('change', function () {
     currentFile = this.value;
-    qaTable?.ajax.url(`/admin/api/items?file=${currentFile}`).load();
+    if (qaTable) qaTable.ajax.reload();
   });
 
   function loadSessions() {
@@ -121,50 +125,112 @@ document.addEventListener('DOMContentLoaded', () => {
       $sessionSel.empty();
       if (!items?.length) {
         $sessionSel.append('<option value="">(Oturum bulunamadı)</option>');
-        $userSel.empty();
+        if (usersTable) usersTable.clear().draw();
         return;
       }
-      items.forEach((s) => $sessionSel.append(`<option value="${s}">${s}</option>`));
+      // items: [{session_id,last_activity,last_activity_ts}]
+      items.forEach((it) => {
+        const label = `${it.session_id}${it.last_activity ? ' ('+it.last_activity+')' : ''}`;
+        $sessionSel.append(`<option value="${it.session_id}">${label}</option>`);
+      });
       loadUsersForSession();
     }).fail((xhr) => {
       if (xhr.status === 401) loginModal?.show();
     });
   }
 
-  function loadUsersForSession() {
-    const sessionId = $sessionSel.val();
-    $userSel.empty();
-    if (!sessionId) return;
-    $.getJSON(`/admin/api/chat/users?session=${encodeURIComponent(sessionId)}`, (list) => {
-      if (!list?.length) {
-        $userSel.append('<option value="">(Log dosyası yok)</option>');
-        return;
-      }
-      list.forEach((u) => $userSel.append(`<option value="${u.user_id}">${esc(u.file)}</option>`));
+  function ensureUsersTable() {
+    if (usersTable) return;
+    usersTable = $usersTableEl.DataTable({
+      data: [],
+      columns: [
+        { data: 'user_id' },
+        { data: 'total' },
+        { data: 'like' },
+        { data: 'dislike' },
+        { data: 'unrated' },
+        { data: 'last_activity' },
+      ],
+      order: [[5, 'desc']],
+      pageLength: 5,
+    });
+    $('#usersTable tbody').on('click', 'tr', function () {
+      const row = usersTable.row(this).data();
+      if (!row) return;
+      $userSel.val(row.user_id); // yedek
+      loadLogsAdvanced();
+      $('#usersTable tbody tr').removeClass('table-active');
+      $(this).addClass('table-active');
     });
   }
 
-  function loadLogs() {
+  function loadUsersForSession() {
     const sessionId = $sessionSel.val();
-    const userId = $userSel.val();
+    if (!sessionId) return;
+    ensureUsersTable();
+    $.getJSON(`/admin/api/chat/users?session=${encodeURIComponent(sessionId)}`, (list) => {
+      usersTable.clear();
+      usersTable.rows.add(list || []);
+      usersTable.draw();
+    });
+  }
+
+  function loadLogsAdvanced() {
+    const sessionId = $sessionSel.val();
+    let userId = $userSel.val();
+    // Eğer usersTable'da seçili satır varsa onu esas al
+    const sel = usersTable?.row('.table-active')?.data();
+    if (sel) userId = sel.user_id;
     const fb = $feedbackSel.val();
+    const from = $('#fromDate').val();
+    const to = $('#toDate').val();
+    const q = $('#searchText').val();
     if (!sessionId || !userId) return;
-    $.getJSON(`/admin/api/chat/logs?session=${encodeURIComponent(sessionId)}&user_id=${encodeURIComponent(userId)}&feedback=${encodeURIComponent(fb)}`, (items) => {
+    const url = `/admin/api/chat/logs_advanced?session=${encodeURIComponent(sessionId)}&user_id=${encodeURIComponent(userId)}&feedback=${encodeURIComponent(fb)}&from=${encodeURIComponent(from||'')}&to=${encodeURIComponent(to||'')}&q=${encodeURIComponent(q||'')}`;
+    $.getJSON(url, (res) => {
       ensureLogsTable();
       logsTable.clear();
-      logsTable.rows.add(items || []);
+      logsTable.rows.add(res.items || []);
       logsTable.draw();
+      // stats
+      $('#statLike').text(res.summary?.like ?? 0);
+      $('#statDislike').text(res.summary?.dislike ?? 0);
+      $('#statUnrated').text(res.summary?.unrated ?? 0);
     });
   }
 
   $('#logs-tab').on('shown.bs.tab', () => {
     ensureLogsTable();
+    ensureUsersTable();
     loadSessions();
   });
   $sessionSel.on('change', loadUsersForSession);
-  $('#loadLogsBtn').on('click', loadLogs);
-  $feedbackSel.on('change', loadLogs);
-  $userSel.on('change', loadLogs);
+  $('#loadLogsBtn').on('click', loadLogsAdvanced);
+  $feedbackSel.on('change', loadLogsAdvanced);
+  $userSel.on('change', loadLogsAdvanced);
+  $('#searchText').on('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); loadLogsAdvanced(); }});
+  $('#quickToday').on('click', function(e){ e.preventDefault(); $('#fromDate').val(''); $('#toDate').val(''); loadQuick('today'); });
+  $('#quick7d').on('click', function(e){ e.preventDefault(); $('#fromDate').val(''); $('#toDate').val(''); loadQuick('7d'); });
+  $('#quickAll').on('click', function(e){ e.preventDefault(); $('#fromDate').val(''); $('#toDate').val(''); loadLogsAdvanced(); });
+  function loadQuick(range){
+    const sessionId = $sessionSel.val();
+    let userId = $userSel.val();
+    const sel = usersTable?.row('.table-active')?.data();
+    if (sel) userId = sel.user_id;
+    const fb = $feedbackSel.val();
+    const q = $('#searchText').val();
+    if (!sessionId || !userId) return;
+    const url = `/admin/api/chat/logs_advanced?session=${encodeURIComponent(sessionId)}&user_id=${encodeURIComponent(userId)}&feedback=${encodeURIComponent(fb)}&range=${encodeURIComponent(range)}&q=${encodeURIComponent(q||'')}`;
+    $.getJSON(url, (res) => {
+      ensureLogsTable();
+      logsTable.clear();
+      logsTable.rows.add(res.items || []);
+      logsTable.draw();
+      $('#statLike').text(res.summary?.like ?? 0);
+      $('#statDislike').text(res.summary?.dislike ?? 0);
+      $('#statUnrated').text(res.summary?.unrated ?? 0);
+    });
+  }
   $('#quickLikes').on('click', () => {
     $.getJSON('/admin/api/chat/search_by_feedback?feedback=like&limit=200', (items) => {
       ensureLogsTable();
@@ -226,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentFile = POST_LOGIN_DEFAULT_FILE;
             $fileSel.val(currentFile);
             if (qaTable) {
-              qaTable.ajax.url(`/admin/api/items?file=${currentFile}`).load(() => updateAuthUI());
+              qaTable.ajax.reload(() => updateAuthUI());
             } else {
               initQaTable();
               updateAuthUI();
