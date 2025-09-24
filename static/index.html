@@ -1073,17 +1073,38 @@
         function linkify(text) {
             // URL regex'i - http, https, ftp, www ile başlayanları yakalar
             const urlRegex = /((https?:\/\/|ftp:\/\/|file:\/\/|www\.)[^\s<)]+)/ig;
-            
-            return text.replace(urlRegex, function(url) {
+
+            return text.replace(urlRegex, function(original) {
+                // Trailing noktalama işaretlerini (.,;:!? … vb.) ve fazla kapama parantezlerini ayır
+                let url = original;
+                let suffix = '';
+
+                // Fazla kapama parantezlerini sona eklenmişse ayır (ör. https://site.com/foo(bar)). -> ')' dışarıda kalmalı)
+                const count = (s, re) => (s.match(re) || []).length;
+                let openCount = count(url, /\(/g);
+                let closeCount = count(url, /\)/g);
+                while (url.endsWith(')') && closeCount > openCount) {
+                    suffix = ')' + suffix;
+                    url = url.slice(0, -1);
+                    closeCount--;
+                }
+
+                // Sonda kalan noktalama/tırnak/köşeli parantezleri ayır
+                const trailingPunctRE = /[.,!?;:…'"\]\}›»”’]+$/;
+                while (trailingPunctRE.test(url)) {
+                    suffix = url.slice(-1) + suffix;
+                    url = url.slice(0, -1);
+                }
+
                 // www ile başlayan ama http(s):// içermeyenler için protokol ekle
                 let fullUrl = url;
-                if (url.toLowerCase().startsWith('www.')) {
-                    fullUrl = 'http://' + url;
+                if (fullUrl.toLowerCase().startsWith('www.')) {
+                    fullUrl = 'http://' + fullUrl;
                 }
-                
+
                 // target="_blank" linkin yeni sekmede açılmasını sağlar
                 // rel="noopener noreferrer" güvenlik için önemlidir
-                return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+                return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>${suffix}`;
             });
         }
     </script>

@@ -2289,7 +2289,7 @@
   {
     "questions": [
       "Ürgüp kampüsü hangi bölümlere ait?",
-      "Ürgüp kampüsünde hangi yerleşkeler var?",
+      "Ürgüp'te hangi yerleşkeler var?",
       "Ürgüp'teki bölümler hangileri?"
     ],
     "answer": "Ürgüp yerleşkeleri Sağlık Yerleşkesi ve Fabrika Yerleşkesi olarak ikiye ayrılmaktadır. Diş Hekimliği Fakültesi, Kapadokya Meslek Yüksekokulu sağlık programları ile Ebelik, Hemşirelik, Odyoloji, Dil ve Konuşma Terapisi, Beslenme ve Diyetetik, Fizyoterapi ve Rehabilitasyon ve Çocuk Gelişimi bölümleri bulunmaktadır. Ayrıca Ağız ve Diş Sağlığı Merkezi de bu yerleşkelerde hizmet vermektedir."
@@ -2320,8 +2320,33 @@
   },
   {
     "questions": [
-      "Bursum kesilir mi devamsızlık yaparsam?"
+      "devamsızlık yaparsam Bursum kesilir mi ?"
     ],
     "answer": "Üniversitemizde devamsızlık sebebiyle burs kesintisi yapılmamaktadır. Ancak normal eğitim süresini aşan ve uzatan öğrenci konumunda olan öğrencilerin bursu kesilir."
+  },
+  {
+    "questions": [
+      "Funda Aktan kimdir?"
+    ],
+    "answer": "Kapadokya Üniversitesi Mütevelli Heyet Başkanıdır."
+  },
+  {
+    "questions": [
+      "Yapay zeka buluşması ne zaman yapılacak?"
+    ],
+    "answer": "Yapay zeka buluşması, bu yıl 16-17 Ekim 2025 tarihlerinde Kapadokya Üniversitesi Ürgüp Fabrika Yerleşkesinde yapılacaktır. https://aikapadokya.com.tr/ adresinden detaylı bilgi alabilirsiniz."
+  },
+  {
+    "questions": [
+      "Yapay zeka buluşmasında hangi katılımcılar olacak?",
+      "Yapay zeka buluşmasında paneller hakkında bilgi alabilir miyim?"
+    ],
+    "answer": "https://aikapadokya.com.tr/paneller/ adresinden paneller ve katılımcılar hakkında bilgi alabilirsiniz."
+  },
+  {
+    "questions": [
+      "yapay zeka buluşması nerede yapılacaktır."
+    ],
+    "answer": "Ürgüp fabrika yerleşkesinde 16-17 ekim tarihinde yapılacaktır. İlgili bağlantıdan daha geniş bilgi alabilirsiniz.\n\nhttps://aikapadokya.com.tr/paneller/"
   }
 ]
