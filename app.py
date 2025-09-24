@@ -2,11 +2,15 @@
 """
 Flask tabanlı sohbet uygulaması – Stabil RAG v3.3 (Tam Sürüm)
 ===============================================================
-* Embedding yalnızca soru metni üzerinden üretilir.
-* Ön-işleme: Unicode NFC + lower() + whitespace sıkıştırma.
-* Dinamik eşik alt limiti = 0.80.
-* Her turda yalnızca 1 RAG bloğu eklenir, önceki bloklar silinir.
-* Cache & logging & tüm endpoint'ler eksiksiz şekilde dahil.
+Gerçek Davranış Özeti:
+- Embedding, soru + cevap metni birleştirilerek üretilir.
+- Ön-işleme: Unicode NFC + lower() + whitespace sıkıştırma.
+- Dinamik eşik formülü: max(0.75, 0.90 - 0.1 * log10(kelime_sayısı + 1)) – alt limit 0.75.
+- Her turda yalnızca 1 RAG bloğu eklenir; önceki RAG blokları temizlenir.
+- Sohbet özetleme, geçmiş belirli bir eşiği aştığında tek bir [Özet] sistem mesajına indirger.
+- Cevaplar SSE ile akış (stream) halinde gönderilir.
+- Sunucu tarafı session: Redis (SESSION_TYPE=redis).
+- Kişilik seçim komutları: /huysuz, /notr, /pozitif.
 """
 
 from __future__ import annotations
