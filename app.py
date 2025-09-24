@@ -869,6 +869,19 @@ def admin_api_chat_logs_advanced():
     rng = (request.args.get('range') or '').lower()
     from_s = request.args.get('from')
     to_s = request.args.get('to')
+    
+    # Pagination and sorting parameters
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+        per_page = min(1000, max(10, int(request.args.get('per_page', 25))))
+    except ValueError:
+        page = 1
+        per_page = 25
+    
+    # Sorting parameter
+    sort_order = request.args.get('sort', 'desc').lower()
+    if sort_order not in ['asc', 'desc']:
+        sort_order = 'desc'
 
     entries = _load_logs(sess, user_id)
 
@@ -917,14 +930,24 @@ def admin_api_chat_logs_advanced():
                 continue
         filtered.append(e)
 
+    # Sort filtered results by timestamp
+    filtered.sort(key=lambda x: x.get('timestamp', ''), reverse=(sort_order == 'desc'))
+
+    # Apply pagination to filtered results
+    total_filtered = len(filtered)
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_entries = filtered[start_idx:end_idx]
+    
     summary = {
-        'total': len(filtered),
+        'total': total_filtered,
         'like': sum(1 for e in filtered if e.get('feedback') == 'like'),
         'dislike': sum(1 for e in filtered if e.get('feedback') == 'dislike'),
         'unrated': sum(1 for e in filtered if not e.get('feedback')),
     }
+    
     items = []
-    for i, e in enumerate(filtered):
+    for i, e in enumerate(paginated_entries, start=start_idx):
         items.append({
             'idx': i,
             'timestamp': e.get('timestamp'),
@@ -932,7 +955,21 @@ def admin_api_chat_logs_advanced():
             'user_message': e.get('user_message'),
             'assistant_response': e.get('assistant_response'),
         })
-    return jsonify({'items': items, 'summary': summary})
+    
+    pagination = {
+        'page': page,
+        'per_page': per_page,
+        'total': total_filtered,
+        'pages': math.ceil(total_filtered / per_page) if total_filtered > 0 else 1,
+        'has_prev': page > 1,
+        'has_next': page < math.ceil(total_filtered / per_page) if total_filtered > 0 else False
+    }
+    
+    return jsonify({
+        'items': items, 
+        'summary': summary, 
+        'pagination': pagination
+    })
 
 
 @admin_bp.route('/api/chat/sessions')
