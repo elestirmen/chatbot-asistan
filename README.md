@@ -92,6 +92,22 @@ Not: Üretimde `gunicorn` kullanabilirsiniz (örn. `gunicorn -w 2 -b 0.0.0.0:500
 - `POST /set_personality` → `{personality: "huysuz|notr|pozitif"}`
 - `POST /feedback` → `{messageIndex: number, feedback: "like"|"dislike"}`
 
+---
+
+**Admin Panel (/admin)**
+- Giriş: `GET /admin` (UI), şifre: `ADMIN_PASSWORD` (env) veya `APP_PASSWORD` (env) veya varsayılan `Kun2025`.
+- Veri yönetimi:
+  - `GET /admin/api/files` → `data/*.json` listesini döner
+  - `GET /admin/api/items?file=...`
+  - `POST /admin/api/items?file=...` (auth gerekir)
+  - `PUT /admin/api/items/<idx>?file=...` (auth gerekir)
+  - `DELETE /admin/api/items/<idx>?file=...` (auth gerekir)
+- Log inceleme (auth gerekir):
+  - `GET /admin/api/chat/sessions` → oturum klasörleri
+  - `GET /admin/api/chat/users?session=...` → seçili oturumdaki log dosyaları
+  - `GET /admin/api/chat/logs?session=...&user_id=...&feedback=any|like|dislike|unrated`
+  - `GET /admin/api/chat/search_by_feedback?feedback=like|dislike&limit=200`
+
 Not: `feedback` uç noktası, istemcinin gönderdiği indeks ile log dizinindeki sırayı eşler. Farklı oturumlar/önceki loglar varsa indeks eşleşmesi değişebilir.
 
 ---

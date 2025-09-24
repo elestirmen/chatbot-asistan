@@ -18,6 +18,7 @@ import bz2
 import json
 import math
 import os
+import re
 import secrets
 import unicodedata
 from datetime import datetime, timedelta
@@ -35,7 +36,7 @@ from filelock import FileLock
 from flask import (
     Flask, Response, jsonify, request,
     send_from_directory, session,
-    stream_with_context,
+    stream_with_context, render_template, Blueprint,
 )
 from flask_cors import CORS
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
@@ -126,6 +127,7 @@ EMBEDDING_CACHE = Path("embeddings.pkl.bz2")
 MODEL_NAME = os.getenv("MODEL_NAME", "intfloat/multilingual-e5-base")
 MODEL_PATH = os.getenv("MODEL_PATH")
 MODEL = SentenceTransformer(MODEL_PATH) if MODEL_PATH else SentenceTransformer(MODEL_NAME)
+DEFAULT_QA_FILE = "expanded_data.json"
 
 
 #MODEL_NAME = "Alibaba-NLP/gte-multilingual-base"
@@ -623,6 +625,236 @@ def feedback():
         log_file.write_text(json.dumps(logs, ensure_ascii=False, indent=2), encoding='utf-8')
     return jsonify({"status": "ok"})
 
+# -----------------------------------------------------------------------------
+# Admin Blueprint (/admin)
+# -----------------------------------------------------------------------------
+
+
+admin_bp = Blueprint("admin", __name__)
+
+
+def _list_json_files() -> List[str]:
+    return sorted(f.name for f in DATA_DIR.glob('*.json'))
+
+
+def _canonical(items: List[dict]) -> List[dict]:
+    out = []
+    for it in items:
+        if 'questions' in it and isinstance(it['questions'], (list, tuple)):
+            qs = [str(q).strip() for q in it['questions'] if str(q).strip()]
+            if qs and 'answer' in it:
+                out.append({'questions': qs, 'answer': it['answer']})
+        elif 'question' in it and 'answer' in it:
+            q = str(it['question']).strip()
+            if q:
+                out.append({'questions': [q], 'answer': it['answer']})
+    return out
+
+
+def _load_data(filename: str = DEFAULT_QA_FILE) -> List[dict]:
+    path = DATA_DIR / filename
+    if not path.exists():
+        return []
+    try:
+        raw = json.loads(path.read_text('utf-8'))
+    except Exception:
+        return []
+    data = _canonical(raw)
+    if data != raw:
+        _save_data(data, filename)
+    return data
+
+
+def _save_data(data: List[dict], filename: str = DEFAULT_QA_FILE):
+    path = DATA_DIR / filename
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), 'utf-8')
+
+
+@admin_bp.route('/')
+def admin_home():
+    return render_template('admin.html', PY_DEFAULT_F=DEFAULT_QA_FILE)
+
+
+@admin_bp.route('/api/files')
+def admin_files_route():
+    return jsonify(_list_json_files())
+
+
+@admin_bp.route('/api/auth_status')
+def admin_auth_status():
+    return jsonify({'authenticated': bool(session.get('admin_authenticated', False))})
+
+
+@admin_bp.route('/api/login', methods=['POST'])
+def admin_login_route():
+    payload = request.get_json(silent=True) or {}
+    expected = os.getenv('ADMIN_PASSWORD') or os.getenv('APP_PASSWORD') or 'Kun2025'
+    if payload.get('password') == expected:
+        session['admin_authenticated'] = True
+        session.modified = True
+        return jsonify({'authenticated': True})
+    session.pop('admin_authenticated', None)
+    return jsonify({'authenticated': False, 'message': 'Şifre yanlış.'}), 401
+
+
+@admin_bp.route('/api/logout', methods=['POST'])
+def admin_logout_route():
+    session.pop('admin_authenticated', None)
+    session.modified = True
+    return jsonify({'logged_out': True})
+
+
+@admin_bp.route('/api/items', methods=['GET', 'POST'])
+def admin_items_collection_route():
+    fname = request.args.get('file', DEFAULT_QA_FILE)
+    if request.method == 'GET':
+        return jsonify(_load_data(fname))
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    payload = request.get_json(force=True)
+    if 'questions' not in payload or 'answer' not in payload:
+        return jsonify({'error': 'Bad Request', 'message': 'Eksik "questions" veya "answer" alanı.'}), 400
+    processed = _canonical([{'questions': payload.get('questions'), 'answer': payload.get('answer')}])
+    if not processed:
+        return jsonify({'error': 'Bad Request', 'message': 'Geçersiz soru/cevap formatı.'}), 400
+    data = _load_data(fname)
+    data.append(processed[0])
+    _save_data(data, fname)
+    return jsonify({'ok': True}), 201
+
+
+@admin_bp.route('/api/items/<int:idx>', methods=['PUT', 'DELETE'])
+def admin_item_singular_route(idx: int):
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    fname = request.args.get('file', DEFAULT_QA_FILE)
+    data = _load_data(fname)
+    if not (0 <= idx < len(data)):
+        return jsonify({'error': 'Geçersiz index'}), 404
+    if request.method == 'PUT':
+        payload = request.get_json(force=True)
+        if 'questions' not in payload or 'answer' not in payload:
+            return jsonify({'error': 'Bad Request', 'message': 'Eksik "questions" veya "answer" alanı.'}), 400
+        processed = _canonical([{'questions': payload.get('questions'), 'answer': payload.get('answer')}])
+        if not processed:
+            return jsonify({'error': 'Bad Request', 'message': 'Geçersiz soru/cevap formatı.'}), 400
+        data[idx] = processed[0]
+        _save_data(data, fname)
+        return jsonify({'ok': True})
+    removed = data.pop(idx)
+    _save_data(data, fname)
+    return jsonify(removed)
+
+
+def _list_sessions() -> List[str]:
+    if not LOGS_DIR.exists():
+        return []
+    items = []
+    for p in LOGS_DIR.iterdir():
+        if p.is_dir() and re.match(r'^(sess|session)_', p.name):
+            items.append(p.name)
+    return sorted(items, reverse=True)
+
+
+def _list_user_logs(session_id: str) -> List[Dict[str, str]]:
+    sess_dir = LOGS_DIR / session_id
+    if not sess_dir.exists() or not sess_dir.is_dir():
+        return []
+    out: List[Dict[str, str]] = []
+    for f in sorted(sess_dir.glob('*.json')):
+        m = re.match(r'^chat_log_(.+)\.json$', f.name)
+        user_id = m.group(1) if m else f.stem
+        out.append({"file": f.name, "user_id": user_id})
+    return out
+
+
+def _load_logs(session_id: str, user_id: str) -> List[Dict[str, Any]]:
+    path = LOGS_DIR / session_id / f"chat_log_{user_id}.json"
+    if not path.exists():
+        return []
+    try:
+        return json.loads(path.read_text(encoding='utf-8'))
+    except Exception:
+        return []
+
+
+def _filter_feedback(entries: List[Dict[str, Any]], fb: str) -> List[Dict[str, Any]]:
+    if fb == 'like':
+        return [e for e in entries if e.get('feedback') == 'like']
+    if fb == 'dislike':
+        return [e for e in entries if e.get('feedback') == 'dislike']
+    if fb == 'unrated':
+        return [e for e in entries if not e.get('feedback')]
+    return entries
+
+
+@admin_bp.route('/api/chat/sessions')
+def admin_api_chat_sessions():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    return jsonify(_list_sessions())
+
+
+@admin_bp.route('/api/chat/users')
+def admin_api_chat_users():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    sess = request.args.get('session', '')
+    return jsonify(_list_user_logs(sess))
+
+
+@admin_bp.route('/api/chat/logs')
+def admin_api_chat_logs():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    sess = request.args.get('session', '')
+    user_id = request.args.get('user_id', '')
+    fb = (request.args.get('feedback') or 'any').lower()
+    entries = _load_logs(sess, user_id)
+    entries = _filter_feedback(entries, fb)
+    out = []
+    for i, e in enumerate(entries):
+        out.append({
+            'idx': i,
+            'timestamp': e.get('timestamp'),
+            'feedback': e.get('feedback'),
+            'user_message': e.get('user_message'),
+            'assistant_response': e.get('assistant_response'),
+        })
+    return jsonify(out)
+
+
+@admin_bp.route('/api/chat/search_by_feedback')
+def admin_api_chat_search_by_feedback():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    fb = (request.args.get('feedback') or 'like').lower()
+    try:
+        limit = int(request.args.get('limit', '200'))
+    except ValueError:
+        limit = 200
+    results: List[Dict[str, Any]] = []
+    for sess in _list_sessions():
+        for u in _list_user_logs(sess):
+            entries = _load_logs(sess, u['user_id'])
+            filtered = _filter_feedback(entries, fb)
+            for idx, e in enumerate(filtered):
+                results.append({
+                    'session_id': sess,
+                    'user_id': u['user_id'],
+                    'idx': idx,
+                    'timestamp': e.get('timestamp'),
+                    'feedback': e.get('feedback'),
+                    'user_message': e.get('user_message'),
+                    'assistant_response': e.get('assistant_response'),
+                })
+                if len(results) >= limit:
+                    return jsonify(results)
+    return jsonify(results)
+
+
+# Register blueprint
+app.register_blueprint(admin_bp, url_prefix='/admin')
 # -----------------------------------------------------------------------------
 # Uygulamayı başlatma
 # -----------------------------------------------------------------------------
