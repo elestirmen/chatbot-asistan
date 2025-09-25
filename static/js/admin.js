@@ -12,21 +12,22 @@ document.addEventListener('DOMContentLoaded', () => {
   let allFiles = [];
   const qaModalEl = document.getElementById('qaModal');
   const loginModalEl = document.getElementById('loginModal');
+  const messageDetailModalEl = document.getElementById('messageDetailModal');
   const qaModal = qaModalEl ? new bootstrap.Modal(qaModalEl) : null;
   const loginModal = loginModalEl ? new bootstrap.Modal(loginModalEl) : null;
+  const messageDetailModal = messageDetailModalEl ? new bootstrap.Modal(messageDetailModalEl) : null;
   const $fileSel = $('#fileSelect');
   let qaTable;
   let isAuthenticated = false;
 
-  const $sessionSel = $('#sessionSelect');
-  const $usersTableEl = $('#usersTable');
-  let usersTable;
-  // Eski select yedeği (şablonda artık görünmüyor ama referans kalabilir)
-  const $userSel = $('#userSelect');
-  const $feedbackSel = $('#feedbackFilter');
-  let logsTable;
+  // New chat log management state
+  let chatResultsTable;
+  let currentSearchMode = 'basic'; // basic, session, feedback, advanced
+  let currentResults = [];
   let currentPage = 1;
   let currentPerPage = 25;
+  let currentFilter = {};
+  let availableSeasons = new Set();
 
   const POST_LOGIN_DEFAULT_FILE = 'pdf_qa_ogrenci_kilavuzu_2024_2025.json';
 
@@ -98,53 +99,77 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function ensureLogsTable() {
-    if (logsTable) return;
-    logsTable = $('#logsTable').DataTable({
+  // ===============================
+  // NEW CHAT LOG FUNCTIONALITY
+  // ===============================
+
+  function initChatResultsTable() {
+    if (chatResultsTable) return;
+    
+    chatResultsTable = $('#chatResultsTable').DataTable({
       data: [],
       columns: [
         { 
           data: null, 
           orderable: false,
-          render: () => '<input type="checkbox" class="form-check-input row-checkbox">'
+          render: () => '<input type="checkbox" class="form-check-input result-checkbox">'
         },
-        { data: 'idx' },
-        { data: 'timestamp', render: (d) => {
+        { 
+          data: 'timestamp', 
+          render: (d) => {
             if (!d) return '';
             const date = new Date(d);
-            return `<small class="text-muted">${date.toLocaleDateString('tr-TR')}<br>${date.toLocaleTimeString('tr-TR')}</small>`;
+            return `<small>${date.toLocaleDateString('tr-TR')}<br>${date.toLocaleTimeString('tr-TR')}</small>`;
           }
         },
-        { data: 'feedback', render: (d) => {
-            if (d === 'like') return '<span class="feedback-pill pill-like"><i class="bi bi-hand-thumbs-up"></i> Like</span>';
-            if (d === 'dislike') return '<span class="feedback-pill pill-dislike"><i class="bi bi-hand-thumbs-down"></i> Dislike</span>';
+        { 
+          data: 'season', 
+          render: (d) => d ? `<span class="badge bg-secondary">${esc(d)}</span>` : '<span class="text-muted">-</span>' 
+        },
+        { 
+          data: 'session_id', 
+          render: (d) => d ? `<code class="text-primary small">${esc(d.substring(0, 12))}...</code>` : '' 
+        },
+        { 
+          data: 'user_id', 
+          render: (d) => d ? `<code class="text-info small">${esc(d.substring(0, 12))}...</code>` : '' 
+        },
+        { 
+          data: 'feedback', 
+          render: (d) => {
+            if (d === 'like') return '<span class="badge bg-success"><i class="bi bi-hand-thumbs-up"></i></span>';
+            if (d === 'dislike') return '<span class="badge bg-danger"><i class="bi bi-hand-thumbs-down"></i></span>';
             return '<span class="text-muted">-</span>';
           } 
         },
         { 
           data: 'user_message', 
-          render: (d) => `<div class='message-bubble user truncate' title="${esc(d || '')}">${esc(d || '')}</div>` 
+          render: (d) => {
+            const truncated = (d || '').length > 100 ? (d || '').substring(0, 100) + '...' : (d || '');
+            return `<div class='text-break small' style='max-width: 250px;'>${esc(truncated)}</div>`;
+          }
         },
         { 
           data: 'assistant_response', 
-          render: (d) => `<div class='message-bubble assistant truncate' title="${esc(d || '')}">${esc(d || '')}</div>` 
+          render: (d) => {
+            const truncated = (d || '').length > 100 ? (d || '').substring(0, 100) + '...' : (d || '');
+            return `<div class='text-break small' style='max-width: 250px;'>${esc(truncated)}</div>`;
+          }
         },
         {
           data: null,
           orderable: false,
           render: (d, t, row) => {
-            return `<div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-primary btn-sm view-detail" data-bs-toggle="modal" data-bs-target="#messageModal" title="Detay">
-                <i class="bi bi-eye"></i>
-              </button>
-            </div>`;
+            return `<button class="btn btn-outline-primary btn-sm view-detail" title="Detayları Görüntüle">
+              <i class="bi bi-eye"></i>
+            </button>`;
           }
         }
       ],
       order: [[1, 'desc']],
-      paging: false, // We handle pagination manually
-      searching: false, // We handle search manually
-      info: false, // We show custom info
+      paging: false,
+      searching: false,
+      info: false,
       responsive: true,
       language: {
         url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/tr.json'
@@ -152,120 +177,144 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  $('#fileSelect').on('change', function () {
-    currentFile = this.value;
-    if (qaTable) qaTable.ajax.reload();
-  });
+  function updateOverviewStats() {
+    // Get analytics summary
+    $.getJSON('/admin/api/analytics/summary', (stats) => {
+      $('#totalChats').text(stats.user_messages || 0);
+      $('#totalLikes').text(stats.feedback_like || 0);
+      $('#totalDislikes').text(stats.feedback_dislike || 0);
+      
+      // Calculate current season
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const currentSeason = month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+      $('#currentSeason').text(currentSeason);
+      
+      // Update season filters
+      updateSeasonFilters(stats.by_season || {});
+    }).fail(() => {
+      $('#totalChats, #totalLikes, #totalDislikes').text('0');
+      $('#currentSeason').text('-');
+    });
+  }
+
+  function updateSeasonFilters(seasonData) {
+    const seasons = Object.keys(seasonData).sort().reverse();
+    
+    $('#seasonFilterGlobal, #feedbackSeasonFilter').each(function() {
+      const $select = $(this);
+      const currentVal = $select.val();
+      $select.empty().append('<option value="">Tüm sezonlar</option>');
+      seasons.forEach(season => {
+        $select.append(`<option value="${esc(season)}">${esc(season)}</option>`);
+      });
+      if (currentVal) $select.val(currentVal);
+    });
+  }
 
   function loadSessions() {
-    $.getJSON('/admin/api/chat/sessions', (items) => {
-      $sessionSel.empty();
-      if (!items?.length) {
-        $sessionSel.append('<option value="">(Oturum bulunamadı)</option>');
-        if (usersTable) usersTable.clear().draw();
+    $.getJSON('/admin/api/chat/sessions', (sessions) => {
+      const $sessionSelect = $('#sessionSelect');
+      $sessionSelect.empty().append('<option value="">Oturum seçin...</option>');
+      
+      if (!sessions?.length) {
+        $sessionSelect.append('<option value="" disabled>(Oturum bulunamadı)</option>');
         return;
       }
-      // items: [{session_id,last_activity,last_activity_ts}]
-      items.forEach((it) => {
-        const label = `${it.session_id}${it.last_activity ? ' ('+it.last_activity+')' : ''}`;
-        $sessionSel.append(`<option value="${it.session_id}">${label}</option>`);
+      
+      sessions.forEach(session => {
+        const label = `${session.session_id}${session.last_activity ? ' (' + session.last_activity + ')' : ''}`;
+        $sessionSelect.append(`<option value="${session.session_id}">${esc(label)}</option>`);
       });
-      loadUsersForSession();
     }).fail((xhr) => {
       if (xhr.status === 401) loginModal?.show();
     });
   }
 
-  function ensureUsersTable() {
-    if (usersTable) return;
-    usersTable = $usersTableEl.DataTable({
-      data: [],
-      columns: [
-        { data: 'user_id', render: (d) => `<code class="text-primary">${esc(d)}</code>` },
-        { data: 'total', render: (d) => `<span class="badge bg-primary">${d}</span>` },
-        { data: 'like', render: (d) => `<span class="badge bg-success">${d}</span>` },
-        { data: 'dislike', render: (d) => `<span class="badge bg-danger">${d}</span>` },
-        { data: 'unrated', render: (d) => `<span class="badge bg-secondary">${d}</span>` },
-        { data: 'last_activity', render: (d) => {
-            if (!d) return '<span class="text-muted">-</span>';
-            const date = new Date(d);
-            return `<small>${date.toLocaleDateString('tr-TR')} ${date.toLocaleTimeString('tr-TR')}</small>`;
-          }
-        },
-        { 
-          data: null, 
-          render: (d, t, row) => {
-            const total = row.total || 0;
-            const like = row.like || 0;
-            const rate = total > 0 ? Math.round((like / total) * 100) : 0;
-            let className = 'low';
-            if (rate >= 70) className = 'high';
-            else if (rate >= 40) className = 'medium';
-            return `<span class="success-rate ${className}">${rate}%</span>`;
-          }
-        }
-      ],
-      order: [[5, 'desc']],
-      pageLength: 10,
-      responsive: true
-    });
-    $('#usersTable tbody').on('click', 'tr', function () {
-      const row = usersTable.row(this).data();
-      if (!row) return;
-      $userSel.val(row.user_id); // yedek
-      loadLogsAdvanced();
-      $('#usersTable tbody tr').removeClass('table-active');
-      $(this).addClass('table-active');
+  function loadUsersForSession(sessionId) {
+    if (!sessionId) {
+      $('#userSelect').prop('disabled', true).empty().append('<option value="">Kullanıcı seçin...</option>');
+      return;
+    }
+    
+    $.getJSON(`/admin/api/chat/users?session=${encodeURIComponent(sessionId)}`, (users) => {
+      const $userSelect = $('#userSelect');
+      $userSelect.prop('disabled', false).empty().append('<option value="">Kullanıcı seçin...</option>');
+      
+      if (!users?.length) {
+        $userSelect.append('<option value="" disabled>(Kullanıcı bulunamadı)</option>');
+        return;
+      }
+      
+      users.forEach(user => {
+        const label = `${user.user_id} (${user.total} mesaj, ${user.like} like)`;
+        $userSelect.append(`<option value="${user.user_id}">${esc(label)}</option>`);
+      });
     });
   }
 
-  function loadUsersForSession() {
-    const sessionId = $sessionSel.val();
-    if (!sessionId) return;
-    ensureUsersTable();
-    $.getJSON(`/admin/api/chat/users?session=${encodeURIComponent(sessionId)}`, (list) => {
-      usersTable.clear();
-      usersTable.rows.add(list || []);
-      usersTable.draw();
+  function performSearch(searchParams) {
+    const url = buildSearchUrl(searchParams);
+    
+    showLoading();
+    
+    $.getJSON(url, (response) => {
+      currentResults = response.items || [];
+      updateResultsDisplay(response);
+      hideLoading();
+    }).fail((xhr) => {
+      hideLoading();
+      if (xhr.status === 401) {
+        loginModal?.show();
+      } else {
+        alert('Arama sırasında bir hata oluştu.');
+      }
     });
   }
 
-  function loadLogsAdvanced(page = currentPage) {
-    const sessionId = $sessionSel.val();
-    let userId = $userSel.val();
-    // Eğer usersTable'da seçili satır varsa onu esas al
-    const sel = usersTable?.row('.table-active')?.data();
-    if (sel) userId = sel.user_id;
-    const fb = $feedbackSel.val();
-    const from = $('#fromDate').val();
-    const to = $('#toDate').val();
-    const q = $('#searchText').val();
-    const perPage = $('#perPageSelect').val() || currentPerPage;
-    const sortOrder = $('#sortOrder').val() || 'desc';
+  function buildSearchUrl(params) {
+    let baseUrl;
+    const queryParams = new URLSearchParams();
     
-    if (!sessionId || !userId) return;
+    if (params.mode === 'session') {
+      baseUrl = '/admin/api/chat/logs_advanced';
+    } else if (params.mode === 'global') {
+      baseUrl = '/admin/api/chat/global_search';
+    } else {
+      baseUrl = '/admin/api/chat/search_by_feedback';
+    }
     
-    const url = `/admin/api/chat/logs_advanced?session=${encodeURIComponent(sessionId)}&user_id=${encodeURIComponent(userId)}&feedback=${encodeURIComponent(fb)}&from=${encodeURIComponent(from||'')}&to=${encodeURIComponent(to||'')}&q=${encodeURIComponent(q||'')}&page=${page}&per_page=${perPage}&sort=${encodeURIComponent(sortOrder)}`;
+    Object.keys(params).forEach(key => {
+      if (key !== 'mode' && params[key] !== null && params[key] !== undefined && params[key] !== '') {
+        queryParams.append(key, params[key]);
+      }
+    });
     
-    showLoading('#logsTable');
+    return `${baseUrl}?${queryParams.toString()}`;
+  }
+
+  function updateResultsDisplay(response) {
+    initChatResultsTable();
     
-    $.getJSON(url, (res) => {
-      ensureLogsTable();
-      logsTable.clear();
-      logsTable.rows.add(res.items || []);
-      logsTable.draw();
-      
-      // Update pagination
-      currentPage = page;
-      currentPerPage = parseInt(perPage);
-      updatePagination(res.pagination);
-      
-      // Enhanced stats
-      updateStats(res.summary);
-      
-      hideLoading('#logsTable');
-    }).fail(() => {
-      hideLoading('#logsTable');
+    chatResultsTable.clear();
+    chatResultsTable.rows.add(currentResults);
+    chatResultsTable.draw();
+    
+    // Update result count
+    $('#resultCount').text(currentResults.length);
+    
+    // Update pagination if available
+    if (response.pagination) {
+      updatePagination(response.pagination);
+    }
+    
+    // Update info
+    $('#resultsInfo').html(`<small><i class="bi bi-info-circle"></i> ${currentResults.length} sonuç bulundu</small>`);
+    
+    // Update seasons from results
+    currentResults.forEach(item => {
+      if (item.season) availableSeasons.add(item.season);
     });
   }
 
@@ -274,14 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const { page, per_page, total, pages, has_prev, has_next } = pagination;
     
-    // Update pagination info
+    // Update info
     const start = (page - 1) * per_page + 1;
     const end = Math.min(page * per_page, total);
     $('#paginationInfo').text(`${start}-${end} / ${total} sonuç`);
-    $('#resultsInfo').html(`<small>Toplam <strong>${total}</strong> sonuç bulundu</small>`);
     
     // Build pagination controls
-    const $pagination = $('#paginationControls');
+    const $pagination = $('#resultsPagination');
     $pagination.empty();
     
     if (pages <= 1) return;
@@ -299,26 +347,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const startPage = Math.max(1, page - 2);
     const endPage = Math.min(pages, page + 2);
     
-    if (startPage > 1) {
-      $pagination.append(`<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`);
-      if (startPage > 2) {
-        $pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
-      }
-    }
-    
     for (let i = startPage; i <= endPage; i++) {
       $pagination.append(`
         <li class="page-item ${i === page ? 'active' : ''}">
           <a class="page-link" href="#" data-page="${i}">${i}</a>
         </li>
       `);
-    }
-    
-    if (endPage < pages) {
-      if (endPage < pages - 1) {
-        $pagination.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
-      }
-      $pagination.append(`<li class="page-item"><a class="page-link" href="#" data-page="${pages}">${pages}</a></li>`);
     }
     
     // Next button
@@ -331,214 +365,389 @@ document.addEventListener('DOMContentLoaded', () => {
     `);
   }
 
-  $('#logs-tab').on('shown.bs.tab', () => {
-    ensureLogsTable();
-    ensureUsersTable();
-    loadSessions();
-  });
-  $sessionSel.on('change', loadUsersForSession);
-  $('#loadLogsBtn').on('click', loadLogsAdvanced);
-  $feedbackSel.on('change', loadLogsAdvanced);
-  $userSel.on('change', loadLogsAdvanced);
-  $('#searchText').on('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); loadLogsAdvanced(); }});
-  $('#quickToday').on('click', function(e){ e.preventDefault(); $('#fromDate').val(''); $('#toDate').val(''); loadQuick('today'); });
-  $('#quick7d').on('click', function(e){ e.preventDefault(); $('#fromDate').val(''); $('#toDate').val(''); loadQuick('7d'); });
-  $('#quickAll').on('click', function(e){ e.preventDefault(); $('#fromDate').val(''); $('#toDate').val(''); loadLogsAdvanced(); });
-  function loadQuick(range){
-    const sessionId = $sessionSel.val();
-    let userId = $userSel.val();
-    const sel = usersTable?.row('.table-active')?.data();
-    if (sel) userId = sel.user_id;
-    const fb = $feedbackSel.val();
-    const q = $('#searchText').val();
-    const perPage = $('#perPageSelect').val() || currentPerPage;
-    const sortOrder = $('#sortOrder').val() || 'desc';
+  function showMessageDetail(rowData) {
+    if (!messageDetailModal) return;
     
-    if (!sessionId || !userId) return;
+    // Populate modal with data
+    $('#modalSessionId').text(rowData.session_id || '');
+    $('#modalUserId').text(rowData.user_id || '');
+    $('#modalTimestamp').text(rowData.timestamp || '');
+    $('#modalSeason').text(rowData.season || 'Bilinmiyor');
+    $('#modalSessionBadge').text(`#${(rowData.idx || 0) + 1}`);
     
-    currentPage = 1; // Reset to first page
-    const url = `/admin/api/chat/logs_advanced?session=${encodeURIComponent(sessionId)}&user_id=${encodeURIComponent(userId)}&feedback=${encodeURIComponent(fb)}&range=${encodeURIComponent(range)}&q=${encodeURIComponent(q||'')}&page=1&per_page=${perPage}&sort=${encodeURIComponent(sortOrder)}`;
+    $('#modalUserMessage').text(rowData.user_message || '');
+    $('#modalAssistantResponse').text(rowData.assistant_response || '');
     
-    showLoading('#logsTable');
+    $('#modalUserMessageLength').text((rowData.user_message || '').length);
+    $('#modalAssistantResponseLength').text((rowData.assistant_response || '').length);
     
-    $.getJSON(url, (res) => {
-      ensureLogsTable();
-      logsTable.clear();
-      logsTable.rows.add(res.items || []);
-      logsTable.draw();
-      
-      // Update pagination
-      updatePagination(res.pagination);
-      
-      // Enhanced stats
-      updateStats(res.summary);
-      
-      hideLoading('#logsTable');
-    }).fail(() => {
-      hideLoading('#logsTable');
-    });
+    // Handle personality
+    if (rowData.assistant_personality) {
+      $('#modalPersonalityBadge').text(rowData.assistant_personality).show();
+    } else {
+      $('#modalPersonalityBadge').hide();
+    }
+    
+    // Handle feedback
+    let feedbackHtml = '<span class="text-muted">Değerlendirmesiz</span>';
+    if (rowData.feedback === 'like') {
+      feedbackHtml = '<span class="badge bg-success"><i class="bi bi-hand-thumbs-up"></i> Like</span>';
+    } else if (rowData.feedback === 'dislike') {
+      feedbackHtml = '<span class="badge bg-danger"><i class="bi bi-hand-thumbs-down"></i> Dislike</span>';
+    }
+    $('#modalFeedback').html(feedbackHtml);
+    
+    // Handle RAG information
+    if (rowData.retrieval_hits && rowData.retrieval_hits.length > 0) {
+      let ragHtml = '';
+      rowData.retrieval_hits.forEach((hit, index) => {
+        ragHtml += `
+          <div class="card mb-2">
+            <div class="card-body">
+              <h6 class="card-title">Hit #${index + 1} <span class="badge bg-info">${(hit.similarity * 100).toFixed(1)}%</span></h6>
+              <p class="card-text"><strong>Soru:</strong> ${esc(hit.question)}</p>
+              <p class="card-text"><strong>Cevap:</strong> ${esc(hit.answer)}</p>
+            </div>
+          </div>
+        `;
+      });
+      $('#modalRagContent').html(ragHtml);
+      $('#modalRagSection').show();
+    } else {
+      $('#modalRagSection').hide();
+    }
+    
+    // Store current row data for feedback updates
+    messageDetailModal._currentRowData = rowData;
+    
+    messageDetailModal.show();
   }
-  $('#quickLikes').on('click', () => {
-    $.getJSON('/admin/api/chat/search_by_feedback?feedback=like&limit=200', (items) => {
-      ensureLogsTable();
-      logsTable.clear();
-      logsTable.rows.add(items || []);
-      logsTable.draw();
-    });
-  });
-  $('#quickDislikes').on('click', () => {
-    $.getJSON('/admin/api/chat/search_by_feedback?feedback=dislike&limit=200', (items) => {
-      ensureLogsTable();
-      logsTable.clear();
-      logsTable.rows.add(items || []);
-      logsTable.draw();
-    });
-  });
 
-  // New enhanced functionality
-  
-  // Real-time search
-  let searchTimeout;
-  $('#searchText').on('input', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      loadLogsAdvanced();
-    }, 500);
-  });
+  function showLoading() {
+    $('#resultsInfo').html('<small><i class="bi bi-hourglass-split"></i> Yükleniyor...</small>');
+  }
 
-  // Clear search button
-  $('#clearSearch').on('click', function() {
-    $('#searchText').val('');
-    loadLogsAdvanced();
-  });
+  function hideLoading() {
+    // Loading state will be updated by updateResultsDisplay
+  }
 
-  // Reset filters
-  $('#resetFilters').on('click', function() {
-    $('#sessionSelect').val('');
-    $('#feedbackFilter').val('any');
-    $('#fromDate').val('');
-    $('#toDate').val('');
-    $('#searchText').val('');
-    $('#perPageSelect').val('25');
-    $('#sortOrder').val('desc');
-    currentPage = 1;
-    currentPerPage = 25;
-    
-    if (usersTable) {
-      usersTable.clear().draw();
-    }
-    if (logsTable) {
-      logsTable.clear().draw();
+  function exportResults(format) {
+    if (!currentResults.length) {
+      alert('Dışa aktarılacak veri bulunamadı.');
+      return;
     }
     
-    // Reset pagination controls
-    $('#paginationControls').empty();
-    $('#paginationInfo').text('');
-    $('#resultsInfo').html('<small>Sonuç gösteriliyor</small>');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
     
-    // Reset stats
-    $('#statTotal, #statLike, #statDislike, #statUnrated, #statActiveUsers').text('0');
-    $('#statSatisfaction').text('0%');
-  });
+    if (format === 'json') {
+      const jsonData = JSON.stringify(currentResults, null, 2);
+      downloadFile(`chat_logs_${timestamp}.json`, jsonData, 'application/json');
+    } else if (format === 'csv') {
+      const csvContent = convertToCSV(currentResults);
+      downloadFile(`chat_logs_${timestamp}.csv`, csvContent, 'text/csv');
+    } else if (format === 'txt') {
+      const txtContent = convertToTXT(currentResults);
+      downloadFile(`chat_logs_${timestamp}.txt`, txtContent, 'text/plain');
+    }
+  }
 
-  // Select all checkbox functionality
-  $('#selectAll').on('change', function() {
-    const isChecked = $(this).prop('checked');
-    $('.row-checkbox').prop('checked', isChecked);
-  });
-
-  // Individual checkbox handling
-  $(document).on('change', '.row-checkbox', function() {
-    const totalCheckboxes = $('.row-checkbox').length;
-    const checkedCheckboxes = $('.row-checkbox:checked').length;
-    $('#selectAll').prop('checked', totalCheckboxes === checkedCheckboxes);
-  });
-
-  // Export functionality
-  function exportToCSV(data, filename) {
-    const csvContent = [];
-    csvContent.push(['Index', 'Timestamp', 'Feedback', 'User Message', 'Assistant Response'].join(','));
+  function convertToCSV(data) {
+    const headers = ['Timestamp', 'Season', 'Session', 'User', 'Feedback', 'User Message', 'Assistant Response'];
+    const csvContent = [headers.join(',')];
     
     data.forEach(row => {
       const csvRow = [
-        row.idx || '',
-        row.timestamp || '',
-        row.feedback || '',
+        `"${row.timestamp || ''}"`,
+        `"${row.season || ''}"`,
+        `"${row.session_id || ''}"`,
+        `"${row.user_id || ''}"`,
+        `"${row.feedback || ''}"`,
         `"${(row.user_message || '').replace(/"/g, '""')}"`,
         `"${(row.assistant_response || '').replace(/"/g, '""')}"`
       ];
       csvContent.push(csvRow.join(','));
     });
+    
+    return csvContent.join('\n');
+  }
 
-    const blob = new Blob([csvContent.join('\\n')], { type: 'text/csv;charset=utf-8;' });
+  function convertToTXT(data) {
+    let txtContent = `Chat Logs Export - ${new Date().toLocaleString('tr-TR')}\n`;
+    txtContent += '='.repeat(60) + '\n\n';
+    
+    data.forEach((row, index) => {
+      txtContent += `Chat #${index + 1}\n`;
+      txtContent += `-`.repeat(20) + '\n';
+      txtContent += `Zaman: ${row.timestamp || 'Bilinmiyor'}\n`;
+      txtContent += `Sezon: ${row.season || 'Bilinmiyor'}\n`;
+      txtContent += `Oturum: ${row.session_id || 'Bilinmiyor'}\n`;
+      txtContent += `Kullanıcı: ${row.user_id || 'Bilinmiyor'}\n`;
+      txtContent += `Geri Bildirim: ${row.feedback || 'Değerlendirmesiz'}\n\n`;
+      txtContent += `Kullanıcı Mesajı:\n${row.user_message || 'Boş'}\n\n`;
+      txtContent += `Asistan Yanıtı:\n${row.assistant_response || 'Boş'}\n\n`;
+      txtContent += '='.repeat(60) + '\n\n';
+    });
+    
+    return txtContent;
+  }
+
+  function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
     link.click();
   }
 
-  function exportToJSON(data, filename) {
-    const jsonData = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-  }
+  // ===============================
+  // EVENT HANDLERS
+  // ===============================
 
-  $('#exportJson').on('click', function(e) {
-    e.preventDefault();
-    if (!logsTable || logsTable.data().length === 0) {
-      alert('Dışa aktarılacak veri bulunamadı.');
+  // File selection change (QA table)
+  $('#fileSelect').on('change', function () {
+    currentFile = this.value;
+    if (qaTable) qaTable.ajax.reload();
+  });
+
+  // Tab change handler - initialize chat log interface
+  $('#logs-tab').on('shown.bs.tab', () => {
+    initChatResultsTable();
+    updateOverviewStats();
+    loadSessions();
+  });
+
+  // Session selection change
+  $('#sessionSelect').on('change', function() {
+    const sessionId = $(this).val();
+    loadUsersForSession(sessionId);
+  });
+
+  // Search handlers
+  $('#searchGlobal').on('click', function() {
+    const searchParams = {
+      mode: 'global',
+      q: $('#globalSearch').val(),
+      season: $('#seasonFilterGlobal').val(),
+      sort: $('#globalSortOrder').val(),
+      from: $('#globalFromDate').val(),
+      to: $('#globalToDate').val(),
+      page: 1,
+      per_page: 50
+    };
+    performSearch(searchParams);
+  });
+
+  $('#loadSessionData').on('click', function() {
+    const sessionId = $('#sessionSelect').val();
+    const userId = $('#userSelect').val();
+    
+    if (!sessionId || !userId) {
+      alert('Lütfen önce oturum ve kullanıcı seçin.');
       return;
     }
-    const data = logsTable.data().toArray();
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    exportToJSON(data, `chat_logs_${timestamp}.json`);
+    
+    const searchParams = {
+      mode: 'session',
+      session: sessionId,
+      user_id: userId,
+      feedback: $('#sessionFeedbackFilter').val(),
+      q: $('#sessionSearch').val(),
+      page: 1,
+      per_page: $('#advancedPerPage').val() || 25,
+      sort: 'desc',
+      order_by: $('#advancedOrderBy').val() || 'timestamp'
+    };
+    performSearch(searchParams);
   });
 
-  $('#exportCsv').on('click', function(e) {
+  $('#loadAllLikes').on('click', function() {
+    const searchParams = {
+      feedback: 'like',
+      season: $('#feedbackSeasonFilter').val(),
+      limit: $('#feedbackLimit').val() || 200
+    };
+    performSearch(searchParams);
+  });
+
+  $('#loadAllDislikes').on('click', function() {
+    const searchParams = {
+      feedback: 'dislike',
+      season: $('#feedbackSeasonFilter').val(),
+      limit: $('#feedbackLimit').val() || 200
+    };
+    performSearch(searchParams);
+  });
+
+  // Quick date filters
+  $('#quickToday, #quick7d, #quick30d').on('click', function(e) {
     e.preventDefault();
-    if (!logsTable || logsTable.data().length === 0) {
-      alert('Dışa aktarılacak veri bulunamadı.');
+    const range = $(this).attr('id').replace('quick', '').toLowerCase();
+    
+    const searchParams = {
+      mode: 'global',
+      range: range === 'today' ? 'today' : (range === '7d' ? '7d' : '30d'),
+      q: $('#globalSearch').val(),
+      season: $('#seasonFilterGlobal').val(),
+      sort: $('#globalSortOrder').val(),
+      page: 1,
+      per_page: 50
+    };
+    performSearch(searchParams);
+  });
+
+  // View mode toggle
+  $('input[name="viewMode"]').on('change', function() {
+    if ($(this).attr('id') === 'tableView') {
+      $('#tableViewContainer').show();
+      $('#cardViewContainer').hide();
+    } else {
+      $('#tableViewContainer').hide();
+      $('#cardViewContainer').show();
+      renderCardView(currentResults);
+    }
+  });
+
+  function renderCardView(results) {
+    const $container = $('#chatResultsCards');
+    $container.empty();
+    
+    if (!results || !results.length) {
+      $container.html('<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><br>Gösterilecek sonuç bulunamadı</div>');
       return;
     }
-    const data = logsTable.data().toArray();
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    exportToCSV(data, `chat_logs_${timestamp}.csv`);
-  });
-
-  // Refresh logs
-  $('#refreshLogs').on('click', function() {
-    loadLogsAdvanced();
-  });
-
-  // Add 30-day quick filter
-  $('#quick30d').on('click', function(e) {
-    e.preventDefault();
-    $('#fromDate').val('');
-    $('#toDate').val('');
-    loadQuick('30d');
-  });
-
-  function updateStats(summary) {
-    const total = summary?.total || 0;
-    const like = summary?.like || 0;
-    const dislike = summary?.dislike || 0;
-    const unrated = summary?.unrated || 0;
     
-    $('#statTotal').text(total);
-    $('#statLike').text(like);
-    $('#statDislike').text(dislike);
-    $('#statUnrated').text(unrated);
-    
-    const ratedTotal = like + dislike;
-    const satisfaction = ratedTotal > 0 ? Math.round((like / ratedTotal) * 100) : 0;
-    $('#statSatisfaction').text(satisfaction + '%');
-    
-    const activeUsers = usersTable ? usersTable.data().length : 0;
-    $('#statActiveUsers').text(activeUsers);
+    results.forEach((item, index) => {
+      const feedbackBadge = item.feedback === 'like' ? 
+        '<span class="badge bg-success"><i class="bi bi-hand-thumbs-up"></i> Like</span>' :
+        item.feedback === 'dislike' ?
+        '<span class="badge bg-danger"><i class="bi bi-hand-thumbs-down"></i> Dislike</span>' :
+        '<span class="badge bg-secondary">Değerlendirmesiz</span>';
+      
+      const date = item.timestamp ? new Date(item.timestamp) : null;
+      const dateStr = date ? date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR') : 'Bilinmiyor';
+      
+      const cardHtml = `
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 chat-card" data-index="${index}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <small class="text-muted">${dateStr}</small>
+              ${feedbackBadge}
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <h6 class="card-title text-primary mb-2">
+                  <i class="bi bi-person-fill"></i> Kullanıcı
+                  ${item.season ? `<span class="badge bg-info ms-2">${esc(item.season)}</span>` : ''}
+                </h6>
+                <p class="card-text small text-truncate" style="max-height: 3.6em; overflow: hidden;">
+                  ${esc(item.user_message || 'Mesaj bulunamadı')}
+                </p>
+              </div>
+              
+              <div class="mb-3">
+                <h6 class="card-title text-success mb-2">
+                  <i class="bi bi-robot"></i> Asistan
+                  ${item.assistant_personality ? `<span class="badge bg-warning">${esc(item.assistant_personality)}</span>` : ''}
+                </h6>
+                <p class="card-text small text-truncate" style="max-height: 3.6em; overflow: hidden;">
+                  ${esc(item.assistant_response || 'Yanıt bulunamadı')}
+                </p>
+              </div>
+              
+              <div class="text-muted small">
+                <div><strong>Oturum:</strong> <code class="small">${esc((item.session_id || '').substring(0, 12))}...</code></div>
+                <div><strong>Kullanıcı:</strong> <code class="small">${esc((item.user_id || '').substring(0, 12))}...</code></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-outline-primary btn-sm w-100 view-card-detail">
+                <i class="bi bi-eye"></i> Detayları Görüntüle
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      $container.append(cardHtml);
+    });
   }
+  
+  // Card view detail click handler
+  $(document).on('click', '.view-card-detail', function() {
+    const index = parseInt($(this).closest('.chat-card').data('index'));
+    const item = currentResults[index];
+    if (item) {
+      showMessageDetail(item);
+    }
+  });
+
+  // Export handlers
+  $('#exportResultsJson').on('click', (e) => { e.preventDefault(); exportResults('json'); });
+  $('#exportResultsCsv').on('click', (e) => { e.preventDefault(); exportResults('csv'); });
+  $('#exportResultsTxt').on('click', (e) => { e.preventDefault(); exportResults('txt'); });
+
+  // Result table row click handler
+  $(document).on('click', '.view-detail', function() {
+    const row = chatResultsTable.row($(this).closest('tr')).data();
+    if (row) {
+      showMessageDetail(row);
+    }
+  });
+
+  // Pagination click handler
+  $(document).on('click', '#resultsPagination .page-link', function(e) {
+    e.preventDefault();
+    const page = parseInt($(this).data('page'));
+    if (page && page !== currentPage) {
+      // Rebuild current search with new page
+      currentFilter.page = page;
+      performSearch(currentFilter);
+    }
+  });
+
+  // Reset filters
+  $('#resetAllFilters').on('click', function() {
+    // Reset all form fields
+    $('#globalSearch, #globalFromDate, #globalToDate, #sessionSearch').val('');
+    $('#seasonFilterGlobal, #feedbackSeasonFilter, #sessionSelect, #userSelect').val('');
+    $('#globalSortOrder').val('desc');
+    $('#sessionFeedbackFilter').val('any');
+    $('#advancedPerPage').val('25');
+    $('#advancedOrderBy').val('timestamp');
+    
+    // Clear results
+    if (chatResultsTable) {
+      chatResultsTable.clear().draw();
+    }
+    currentResults = [];
+    $('#resultCount').text('0');
+    $('#resultsInfo').html('<small><i class="bi bi-info-circle"></i> Sonuçlar yükleniyor...</small>');
+    
+    // Clear pagination
+    $('#resultsPagination').empty();
+    $('#paginationInfo').text('');
+  });
+
+  // Clear search buttons
+  $('#clearGlobalSearch').on('click', function() {
+    $('#globalSearch').val('');
+  });
+
+  // Real-time search for global search
+  let searchTimeout;
+  $('#globalSearch').on('input', function() {
+    clearTimeout(searchTimeout);
+    const query = $(this).val();
+    if (query.length >= 3) {
+      searchTimeout = setTimeout(() => {
+        $('#searchGlobal').click();
+      }, 500);
+    }
+  });
+
+  // ===============================
+  // EXISTING QA FUNCTIONALITY
+  // ===============================
 
   function resetQaForm() {
     const form = document.getElementById('qaForm');
@@ -690,69 +899,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('#qaModal').on('shown.bs.modal', () => $('#questionsInput').trigger('focus'));
 
-  // Message detail modal
-  $(document).on('click', '.view-detail', function() {
-    const row = logsTable.row($(this).closest('tr')).data();
-    if (!row) return;
-    
-    $('#modalUserMessage').text(row.user_message || '');
-    $('#modalAssistantResponse').text(row.assistant_response || '');
-    $('#modalTimestamp').text(row.timestamp || '');
-    
-    let feedbackHtml = '<span class="text-muted">-</span>';
-    if (row.feedback === 'like') {
-      feedbackHtml = '<span class="feedback-pill pill-like"><i class="bi bi-hand-thumbs-up"></i> Like</span>';
-    } else if (row.feedback === 'dislike') {
-      feedbackHtml = '<span class="feedback-pill pill-dislike"><i class="bi bi-hand-thumbs-down"></i> Dislike</span>';
-    }
-    $('#modalFeedback').html(feedbackHtml);
-  });
-
-  // Bulk operations
-  $('#bulkMarkLike').on('click', function(e) {
-    e.preventDefault();
-    const selectedRows = $('.row-checkbox:checked');
-    if (selectedRows.length === 0) {
-      alert('Lütfen en az bir satır seçin.');
-      return;
-    }
-    if (confirm(`${selectedRows.length} mesajı Like olarak işaretlemek istediğinize emin misiniz?`)) {
-      // Implementation would require backend support for bulk operations
-      alert('Bu özellik henüz backend tarafında desteklenmiyor. Yakında eklenecek.');
-    }
-  });
-
-  $('#bulkMarkDislike').on('click', function(e) {
-    e.preventDefault();
-    const selectedRows = $('.row-checkbox:checked');
-    if (selectedRows.length === 0) {
-      alert('Lütfen en az bir satır seçin.');
-      return;
-    }
-    if (confirm(`${selectedRows.length} mesajı Dislike olarak işaretlemek istediğinize emin misiniz?`)) {
-      // Implementation would require backend support for bulk operations
-      alert('Bu özellik henüz backend tarafında desteklenmiyor. Yakında eklenecek.');
-    }
-  });
-
-  // Enhanced loading states
-  function showLoading(element) {
-    $(element).addClass('loading-overlay loading');
-  }
-
-  function hideLoading(element) {
-    $(element).removeClass('loading-overlay loading');
-  }
-
-  // Update loadLogsAdvanced to show loading
-  const originalLoadLogsAdvanced = loadLogsAdvanced;
-  loadLogsAdvanced = function() {
-    showLoading('#logsTable');
-    const result = originalLoadLogsAdvanced();
-    setTimeout(() => hideLoading('#logsTable'), 500);
-    return result;
-  };
-
   // Keyboard shortcuts
   $(document).on('keydown', (e) => {
     // Ctrl+Enter for form submission
@@ -765,85 +911,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Ctrl+R for refresh logs
-    if (e.ctrlKey && e.key === 'r' && $('#logs-tab').hasClass('active')) {
-      e.preventDefault();
-      loadLogsAdvanced();
-      return;
-    }
-
-    // Ctrl+E for export
-    if (e.ctrlKey && e.key === 'e' && $('#logs-tab').hasClass('active')) {
-      e.preventDefault();
-      $('#exportJson').click();
-      return;
-    }
-
-    // Escape to clear search
-    if (e.key === 'Escape' && $('#searchText').is(':focus')) {
-      $('#clearSearch').click();
-      return;
-    }
-  });
-
-  // Auto-refresh functionality (optional)
-  let autoRefreshInterval;
-  function startAutoRefresh(intervalMinutes = 5) {
-    stopAutoRefresh();
-    autoRefreshInterval = setInterval(() => {
-      if ($('#logs-tab').hasClass('active') && $sessionSel.val()) {
-        loadLogsAdvanced();
+    // Escape to close modals
+    if (e.key === 'Escape') {
+      if ($('#messageDetailModal').hasClass('show')) {
+        messageDetailModal?.hide();
       }
-    }, intervalMinutes * 60 * 1000);
-  }
-
-  function stopAutoRefresh() {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      autoRefreshInterval = null;
+      return;
     }
-  }
-
-  // Pagination event handlers
-  $(document).on('click', '#paginationControls .page-link', function(e) {
-    e.preventDefault();
-    const page = parseInt($(this).data('page'));
-    if (page && page !== currentPage) {
-      loadLogsAdvanced(page);
-    }
-  });
-
-  $('#perPageSelect').on('change', function() {
-    currentPage = 1; // Reset to first page when changing per-page
-    loadLogsAdvanced(1);
-  });
-
-  // Sort order change handler
-  $('#sortOrder').on('change', function() {
-    currentPage = 1; // Reset to first page when changing sort order
-    updateSortIcon();
-    loadLogsAdvanced(1);
-  });
-
-  function updateSortIcon() {
-    const sortOrder = $('#sortOrder').val();
-    const $label = $('label[for="sortOrder"] i');
-    if (sortOrder === 'asc') {
-      $label.removeClass('bi-sort-down').addClass('bi-sort-up');
-    } else {
-      $label.removeClass('bi-sort-up').addClass('bi-sort-down');
-    }
-  }
-
-  // Initialize sort icon
-  updateSortIcon();
-
-  // Initialize auto-refresh on logs tab
-  $('#logs-tab').on('shown.bs.tab', () => {
-    startAutoRefresh(5); // 5 minutes
-  });
-
-  $('#logs-tab').on('hidden.bs.tab', () => {
-    stopAutoRefresh();
   });
 });

@@ -15,6 +15,8 @@ Gerçek Davranış Özeti:
 
 from __future__ import annotations
 import bz2
+import time
+import uuid
 import json
 import math
 import os
@@ -121,6 +123,7 @@ def sync_personality_message():
 # -----------------------------------------------------------------------------
 DEFAULT_PERSONALITY = "huysuz"
 LOGS_DIR = Path("chat_logs"); LOGS_DIR.mkdir(exist_ok=True)
+ANALYTICS_DIR = Path("analytics"); ANALYTICS_DIR.mkdir(exist_ok=True)
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 EMBEDDING_CACHE = Path("embeddings.pkl.bz2")
@@ -128,6 +131,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "intfloat/multilingual-e5-base")
 MODEL_PATH = os.getenv("MODEL_PATH")
 MODEL = SentenceTransformer(MODEL_PATH) if MODEL_PATH else SentenceTransformer(MODEL_NAME)
 DEFAULT_QA_FILE = "expanded_data.json"
+APP_VERSION = "stabil-rag-3.3"
 
 
 #MODEL_NAME = "Alibaba-NLP/gte-multilingual-base"
@@ -332,6 +336,35 @@ embedding_manager = EmbeddingManager(DATA_DIR, EMBEDDING_CACHE, MODEL)
 embedding_manager.load_or_create()
 
 # -----------------------------------------------------------------------------
+# Analytics Event Logger (NDJSON – one event per line)
+# -----------------------------------------------------------------------------
+
+def _iso_utc(dt: Optional[datetime] = None) -> str:
+    dt = dt or datetime.utcnow()
+    # Use Zulu-style for clarity; store seconds precision
+    return dt.replace(microsecond=0).isoformat() + "Z"
+
+
+def _events_file_for(dt: Optional[datetime] = None) -> Path:
+    dt = dt or datetime.utcnow()
+    return ANALYTICS_DIR / f"events_{dt.strftime('%Y%m%d')}.ndjson"
+
+
+class EventLogger:
+    def __init__(self, root: Path):
+        self.root = root
+
+    def append(self, event: Dict[str, Any]) -> None:
+        fpath = _events_file_for()
+        lock = FileLock(str(fpath) + ".lock")
+        with lock:
+            with fpath.open("a", encoding="utf-8") as fp:
+                fp.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+
+event_logger = EventLogger(ANALYTICS_DIR)
+
+# -----------------------------------------------------------------------------
 # Retrieval Fonksiyonu
 # -----------------------------------------------------------------------------
 def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
@@ -411,6 +444,20 @@ def index():
     session.setdefault("current_personality", DEFAULT_PERSONALITY)
     if not session.get("messages"):
         session["messages"] = build_system_messages(session["current_personality"])
+    # Analytics: log session start once per browser session
+    if not session.get("_analytics_session_started"):
+        try:
+            event_logger.append(_make_event(
+                "session_start",
+                session_id=session.get("session_id"),
+                user_id=session.get("user_id"),
+                personality=session.get("current_personality", DEFAULT_PERSONALITY),
+                ip=request.headers.get('X-Forwarded-For', request.remote_addr),
+            ))
+            session["_analytics_session_started"] = True
+            session.modified = True
+        except Exception:
+            app.logger.exception("analytics session_start could not be logged")
     return send_from_directory("static", "index.html")
 
 @app.route("/chat", methods=["POST"])
@@ -425,6 +472,10 @@ def chat():
             user_id = session["user_id"]
         except KeyError:
             return jsonify({"error": "Oturum bilgileri bulunamadı. Lütfen sayfayı yenileyin."}), 400
+
+        # Turn timing and indexing
+        _turn_started_at = time.perf_counter()
+        turn_index = int(session.get("turn_index", 0))
 
         if message.startswith("/"):
             cmd = message[1:]
@@ -457,6 +508,7 @@ def chat():
 
         top_sims = find_most_similar(message, k=3)
         rag_hits: List[Dict[str, Any]] = []
+        rag_applied = False
         if top_sims and top_sims[0]["similarity"] >= dynamic_threshold(len(message.split())):
             rag_hits = [
                 {
@@ -466,6 +518,7 @@ def chat():
                 }
                 for sim_item in top_sims
             ]
+            rag_applied = True
             rag_parts = []
             for i, sim_item in enumerate(top_sims):
                 rag_parts.append(
@@ -482,6 +535,25 @@ def chat():
         if len(session["messages"]) > MAX_CONTEXT_MESSAGES:
             session["messages"] = trim_history(session["messages"])
         session.modified = True
+
+        # Analytics: log user_message event
+        try:
+            rag_sims = [float(x.get("similarity", 0.0)) for x in rag_hits]
+            event_logger.append(_make_event(
+                "user_message",
+                session_id=session_id,
+                user_id=user_id,
+                turn_index=turn_index,
+                personality=session.get("current_personality", DEFAULT_PERSONALITY),
+                prompt_chars=len(message or ""),
+                history_len=max(0, len(session.get("messages", [])) - SYSTEM_PREFIX_LENGTH),
+                rag_applied=rag_applied,
+                rag_hits_count=len(rag_hits),
+                rag_similarities=rag_sims,
+                rag_top_similarity=(max(rag_sims) if rag_sims else None),
+            ))
+        except Exception:
+            app.logger.exception("analytics user_message could not be logged")
         
         def generate(current_session_id: str, current_user_id: str):
             collected: list[str] = []
@@ -506,6 +578,16 @@ def chat():
                     "event": "error",
                     "message": "Üzgünüm, yanıt üretme süresi doldu. Lütfen tekrar dener misin?",
                 }
+                try:
+                    event_logger.append(_make_event(
+                        "assistant_error",
+                        session_id=current_session_id,
+                        user_id=current_user_id,
+                        turn_index=turn_index,
+                        error_type="timeout",
+                    ))
+                except Exception:
+                    app.logger.exception("analytics assistant_error timeout could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
                 return
             except RateLimitError:
@@ -516,6 +598,16 @@ def chat():
                     "event": "error",
                     "message": "Şu an çok fazla istek var. Biraz sonra tekrar dene.",
                 }
+                try:
+                    event_logger.append(_make_event(
+                        "assistant_error",
+                        session_id=current_session_id,
+                        user_id=current_user_id,
+                        turn_index=turn_index,
+                        error_type="rate_limit",
+                    ))
+                except Exception:
+                    app.logger.exception("analytics assistant_error rate_limit could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
                 return
             except APIError as err:
@@ -524,6 +616,16 @@ def chat():
                     "event": "error",
                     "message": "Yanıt oluştururken bir sorun çıktı. Lütfen tekrar dener misin?",
                 }
+                try:
+                    event_logger.append(_make_event(
+                        "assistant_error",
+                        session_id=current_session_id,
+                        user_id=current_user_id,
+                        turn_index=turn_index,
+                        error_type="api_error",
+                    ))
+                except Exception:
+                    app.logger.exception("analytics assistant_error api_error could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
                 return
             except Exception:
@@ -532,6 +634,16 @@ def chat():
                     "event": "error",
                     "message": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
                 }
+                try:
+                    event_logger.append(_make_event(
+                        "assistant_error",
+                        session_id=current_session_id,
+                        user_id=current_user_id,
+                        turn_index=turn_index,
+                        error_type="unknown",
+                    ))
+                except Exception:
+                    app.logger.exception("analytics assistant_error unknown could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
                 return
 
@@ -547,6 +659,23 @@ def chat():
                 session.get("current_personality", DEFAULT_PERSONALITY),
                 retrieval_hits=rag_hits or None,
             )
+            # Analytics: assistant_response event & increment turn
+            try:
+                latency_ms = int((time.perf_counter() - _turn_started_at) * 1000)
+                event_logger.append(_make_event(
+                    "assistant_response",
+                    session_id=current_session_id,
+                    user_id=current_user_id,
+                    turn_index=turn_index,
+                    response_chars=len(full_resp or ""),
+                    latency_ms=latency_ms,
+                    rag_applied=rag_applied,
+                    rag_hits_count=len(rag_hits),
+                ))
+                session["turn_index"] = turn_index + 1
+                session.modified = True
+            except Exception:
+                app.logger.exception("analytics assistant_response could not be logged")
             yield f"data: {json.dumps({'event': 'end'})}\n\n"
         
         return Response(stream_with_context(generate(session_id, user_id)), mimetype="text/event-stream")
@@ -585,6 +714,15 @@ def new_chat():
     session["session_id"] = generate_session_id()
     session["messages"] = build_system_messages(pers)
     session.modified = True
+    try:
+        event_logger.append(_make_event(
+            "session_reset",
+            session_id=session.get("session_id"),
+            user_id=session.get("user_id"),
+            personality=pers,
+        ))
+    except Exception:
+        app.logger.exception("analytics session_reset could not be logged")
     return jsonify({"message": "Yeni sohbet başlatıldı"})
 
 @app.route("/set_personality", methods=["POST"])
@@ -595,6 +733,15 @@ def set_personality():
     session["current_personality"] = pers
     session["messages"] = build_system_messages(pers)
     session.modified = True
+    try:
+        event_logger.append(_make_event(
+            "personality_change",
+            session_id=session.get("session_id"),
+            user_id=session.get("user_id"),
+            personality=pers,
+        ))
+    except Exception:
+        app.logger.exception("analytics personality_change could not be logged")
     return jsonify({"message": f"Asistan kişiliği '{pers}' olarak değiştirildi"})
 
 @app.route('/feedback', methods=['POST'])
@@ -623,6 +770,17 @@ def feedback():
 
         logs[idx]['feedback'] = fb
         log_file.write_text(json.dumps(logs, ensure_ascii=False, indent=2), encoding='utf-8')
+    # Analytics: log feedback update
+    try:
+        event_logger.append(_make_event(
+            "feedback_update",
+            session_id=session_id,
+            user_id=user_id,
+            message_index=idx,
+            feedback=fb,
+        ))
+    except Exception:
+        app.logger.exception("analytics feedback_update could not be logged")
     return jsonify({"status": "ok"})
 
 # -----------------------------------------------------------------------------
@@ -858,6 +1016,58 @@ def _parse_dt(s: Optional[str]) -> Optional[datetime]:
     return None
 
 
+def _season_from_ts(ts_str: Optional[str]) -> Optional[str]:
+    """Akademik sezonu (YYYY-YYYY+1) zaman damgasından türet.
+    Eylül (9) ve sonrası yeni sezon başlangıcı kabul edilir.
+    """
+    if not ts_str:
+        return None
+    try:
+        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+    except Exception:
+        return None
+    year = ts.year
+    if ts.month >= 9:
+        return f"{year}-{year+1}"
+    else:
+        return f"{year-1}-{year}"
+
+
+def _season_from_dt(dt: Optional[datetime]) -> Optional[str]:
+    if not dt:
+        return None
+    year = dt.year
+    if dt.month >= 9:
+        return f"{year}-{year+1}"
+    else:
+        return f"{year-1}-{year}"
+
+
+def _make_event(event_type: str, session_id: Optional[str], user_id: Optional[str], **fields: Any) -> Dict[str, Any]:
+    now = datetime.utcnow()
+    base = {
+        "event_id": uuid.uuid4().hex,
+        "event_type": event_type,
+        "ts": _iso_utc(now),
+        "session_id": session_id,
+        "user_id": user_id,
+        "season": _season_from_dt(now),
+        "app_version": APP_VERSION,
+        "model": os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+    }
+    base.update(fields)
+    return base
+    try:
+        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+    except Exception:
+        return None
+    year = ts.year
+    if ts.month >= 9:
+        return f"{year}-{year+1}"
+    else:
+        return f"{year-1}-{year}"
+
+
 @admin_bp.route('/api/chat/logs_advanced')
 def admin_api_chat_logs_advanced():
     if not session.get('admin_authenticated'):
@@ -869,6 +1079,7 @@ def admin_api_chat_logs_advanced():
     rng = (request.args.get('range') or '').lower()
     from_s = request.args.get('from')
     to_s = request.args.get('to')
+    season_filter = (request.args.get('season') or '').strip()
     
     # Pagination and sorting parameters
     try:
@@ -882,6 +1093,9 @@ def admin_api_chat_logs_advanced():
     sort_order = request.args.get('sort', 'desc').lower()
     if sort_order not in ['asc', 'desc']:
         sort_order = 'desc'
+    order_by = (request.args.get('order_by') or 'timestamp').lower()
+    if order_by not in ['timestamp', 'natural']:
+        order_by = 'timestamp'
 
     entries = _load_logs(sess, user_id)
 
@@ -917,6 +1131,10 @@ def admin_api_chat_logs_advanced():
                     ts_ok = False
         if not ts_ok:
             continue
+        if season_filter:
+            sez = _season_from_ts(ts_str)
+            if sez != season_filter:
+                continue
         if fb in ('like', 'dislike', 'unrated'):
             fval = e.get('feedback')
             if fb == 'unrated' and fval:
@@ -930,8 +1148,13 @@ def admin_api_chat_logs_advanced():
                 continue
         filtered.append(e)
 
-    # Sort filtered results by timestamp
-    filtered.sort(key=lambda x: x.get('timestamp', ''), reverse=(sort_order == 'desc'))
+    # Sorting
+    if order_by == 'timestamp':
+        filtered.sort(key=lambda x: x.get('timestamp', ''), reverse=(sort_order == 'desc'))
+    else:
+        # natural (original file order). If desc, reverse after filtering
+        if sort_order == 'desc':
+            filtered.reverse()
 
     # Apply pagination to filtered results
     total_filtered = len(filtered)
@@ -954,6 +1177,9 @@ def admin_api_chat_logs_advanced():
             'feedback': e.get('feedback'),
             'user_message': e.get('user_message'),
             'assistant_response': e.get('assistant_response'),
+            'session_id': sess,
+            'user_id': user_id,
+            'season': _season_from_ts(e.get('timestamp')),
         })
     
     pagination = {
@@ -966,10 +1192,141 @@ def admin_api_chat_logs_advanced():
     }
     
     return jsonify({
-        'items': items, 
-        'summary': summary, 
+        'items': items,
+        'summary': summary,
         'pagination': pagination
     })
+
+
+# -----------------------------------------------------------------------------
+# Analytics Summary (NDJSON-based)
+# -----------------------------------------------------------------------------
+
+def _iter_event_files():
+    if not ANALYTICS_DIR.exists():
+        return []
+    return sorted(ANALYTICS_DIR.glob('events_*.ndjson'))
+
+
+def _parse_iso_z(s: Optional[str]) -> Optional[datetime]:
+    if not s:
+        return None
+    try:
+        if s.endswith('Z'):
+            s = s[:-1]
+        return datetime.strptime(s, '%Y-%m-%dT%H:%M:%S')
+    except Exception:
+        return None
+
+
+@admin_bp.route('/api/analytics/summary')
+def admin_api_analytics_summary():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    from_s = request.args.get('from')
+    to_s = request.args.get('to')
+    season_filter = (request.args.get('season') or '').strip()
+    from_dt = _parse_dt(from_s)
+    to_dt = _parse_dt(to_s)
+    if to_dt and (to_s and len(to_s) == 10):
+        to_dt = to_dt.replace(hour=23, minute=59, second=59)
+
+    stats = {
+        'total_events': 0,
+        'unique_sessions': 0,
+        'user_messages': 0,
+        'assistant_responses': 0,
+        'errors': 0,
+        'errors_by_type': {},
+        'feedback_like': 0,
+        'feedback_dislike': 0,
+        'avg_latency_ms': 0,
+        'by_season': {},
+        'range': {'from': None, 'to': None},
+    }
+    sessions_seen = set()
+    latency_sum = 0
+    latency_count = 0
+    first_ts = None
+    last_ts = None
+
+    for f in _iter_event_files():
+        try:
+            with f.open('r', encoding='utf-8') as fp:
+                for line in fp:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        e = json.loads(line)
+                    except Exception:
+                        continue
+                    ts = _parse_iso_z(e.get('ts'))
+                    if ts:
+                        if (from_dt and ts < from_dt) or (to_dt and ts > to_dt):
+                            continue
+                    season = e.get('season')
+                    if season_filter and season != season_filter:
+                        continue
+
+                    stats['total_events'] += 1
+                    sess_id = e.get('session_id')
+                    if sess_id:
+                        sessions_seen.add(sess_id)
+                    et = e.get('event_type')
+                    if et == 'user_message':
+                        stats['user_messages'] += 1
+                    elif et == 'assistant_response':
+                        stats['assistant_responses'] += 1
+                        lat = e.get('latency_ms')
+                        if isinstance(lat, (int, float)) and lat >= 0:
+                            latency_sum += float(lat)
+                            latency_count += 1
+                    elif et == 'assistant_error':
+                        stats['errors'] += 1
+                        key = e.get('error_type') or 'unknown'
+                        stats['errors_by_type'][key] = stats['errors_by_type'].get(key, 0) + 1
+                    elif et == 'feedback_update':
+                        fb = (e.get('feedback') or '').lower()
+                        if fb == 'like':
+                            stats['feedback_like'] += 1
+                        elif fb == 'dislike':
+                            stats['feedback_dislike'] += 1
+
+                    if season:
+                        s = stats['by_season'].setdefault(season, {
+                            'events': 0,
+                            'user_messages': 0,
+                            'assistant_responses': 0,
+                            'feedback_like': 0,
+                            'feedback_dislike': 0,
+                        })
+                        s['events'] += 1
+                        if et == 'user_message':
+                            s['user_messages'] += 1
+                        elif et == 'assistant_response':
+                            s['assistant_responses'] += 1
+                        elif et == 'feedback_update':
+                            fb = (e.get('feedback') or '').lower()
+                            if fb == 'like':
+                                s['feedback_like'] += 1
+                            elif fb == 'dislike':
+                                s['feedback_dislike'] += 1
+
+                    if ts:
+                        if first_ts is None or ts < first_ts:
+                            first_ts = ts
+                        if last_ts is None or ts > last_ts:
+                            last_ts = ts
+        except Exception:
+            continue
+
+    stats['unique_sessions'] = len(sessions_seen)
+    stats['avg_latency_ms'] = int(latency_sum / latency_count) if latency_count > 0 else 0
+    stats['range']['from'] = first_ts.isoformat(sep=' ') if first_ts else None
+    stats['range']['to'] = last_ts.isoformat(sep=' ') if last_ts else None
+    return jsonify(stats)
 
 
 @admin_bp.route('/api/chat/sessions')
@@ -1004,6 +1361,9 @@ def admin_api_chat_logs():
             'feedback': e.get('feedback'),
             'user_message': e.get('user_message'),
             'assistant_response': e.get('assistant_response'),
+            'session_id': sess,
+            'user_id': user_id,
+            'season': _season_from_ts(e.get('timestamp')),
         })
     return jsonify(out)
 
@@ -1013,6 +1373,7 @@ def admin_api_chat_search_by_feedback():
     if not session.get('admin_authenticated'):
         return jsonify({'error': 'Unauthorized'}), 401
     fb = (request.args.get('feedback') or 'like').lower()
+    season_filter = (request.args.get('season') or '').strip()
     try:
         limit = int(request.args.get('limit', '200'))
     except ValueError:
@@ -1024,6 +1385,10 @@ def admin_api_chat_search_by_feedback():
             entries = _load_logs(sess_id, u['user_id'])
             filtered = _filter_feedback(entries, fb)
             for idx, e in enumerate(filtered):
+                if season_filter:
+                    sez = _season_from_ts(e.get('timestamp'))
+                    if sez != season_filter:
+                        continue
                 results.append({
                     'session_id': sess_id,
                     'user_id': u['user_id'],
@@ -1032,10 +1397,145 @@ def admin_api_chat_search_by_feedback():
                     'feedback': e.get('feedback'),
                     'user_message': e.get('user_message'),
                     'assistant_response': e.get('assistant_response'),
+                    'assistant_personality': e.get('assistant_personality'),
+                    'retrieval_hits': e.get('retrieval_hits'),
+                    'season': _season_from_ts(e.get('timestamp')),
                 })
                 if len(results) >= limit:
                     return jsonify(results)
     return jsonify(results)
+
+
+@admin_bp.route('/api/chat/global_search')
+def admin_api_chat_global_search():
+    """Global search across all chat logs with enhanced filtering"""
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    q = (request.args.get('q') or '').strip().lower()
+    season_filter = (request.args.get('season') or '').strip()
+    from_s = request.args.get('from')
+    to_s = request.args.get('to')
+    rng = (request.args.get('range') or '').lower()
+    sort_order = request.args.get('sort', 'desc').lower()
+    
+    try:
+        limit = int(request.args.get('limit', '100'))
+        page = max(1, int(request.args.get('page', 1)))
+        per_page = min(100, max(10, int(request.args.get('per_page', 25))))
+    except ValueError:
+        limit = 100
+        page = 1
+        per_page = 25
+    
+    # Parse date range
+    now = datetime.utcnow()
+    if rng == 'today':
+        from_dt = datetime(now.year, now.month, now.day)
+        to_dt = datetime(now.year, now.month, now.day, 23, 59, 59)
+    elif rng == '7d':
+        from_dt = now - timedelta(days=7)
+        to_dt = now
+    elif rng == '30d':
+        from_dt = now - timedelta(days=30)
+        to_dt = now
+    else:
+        from_dt = _parse_dt(from_s)
+        to_dt = _parse_dt(to_s)
+        if to_dt and (to_s and len(to_s) == 10):
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+    
+    results: List[Dict[str, Any]] = []
+    
+    for sess in _list_sessions():
+        sess_id = sess['session_id'] if isinstance(sess, dict) else sess
+        for u in _list_user_logs(sess_id):
+            entries = _load_logs(sess_id, u['user_id'])
+            
+            for idx, e in enumerate(entries):
+                # Date filter
+                ts_ok = True
+                ts_str = e.get('timestamp')
+                if ts_str and (from_dt or to_dt):
+                    try:
+                        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+                    except Exception:
+                        ts = None
+                    if ts is not None:
+                        if from_dt and ts < from_dt:
+                            ts_ok = False
+                        if to_dt and ts > to_dt:
+                            ts_ok = False
+                if not ts_ok:
+                    continue
+                
+                # Season filter
+                if season_filter:
+                    sez = _season_from_ts(ts_str)
+                    if sez != season_filter:
+                        continue
+                
+                # Text search filter
+                if q:
+                    um = (e.get('user_message') or '').lower()
+                    ar = (e.get('assistant_response') or '').lower()
+                    if q not in um and q not in ar:
+                        continue
+                
+                results.append({
+                    'session_id': sess_id,
+                    'user_id': u['user_id'],
+                    'idx': idx,
+                    'timestamp': e.get('timestamp'),
+                    'feedback': e.get('feedback'),
+                    'user_message': e.get('user_message'),
+                    'assistant_response': e.get('assistant_response'),
+                    'assistant_personality': e.get('assistant_personality'),
+                    'retrieval_hits': e.get('retrieval_hits'),
+                    'season': _season_from_ts(e.get('timestamp')),
+                })
+                
+                if len(results) >= limit:
+                    break
+            
+            if len(results) >= limit:
+                break
+        
+        if len(results) >= limit:
+            break
+    
+    # Sort results
+    if sort_order == 'desc':
+        results.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    else:
+        results.sort(key=lambda x: x.get('timestamp', ''))
+    
+    # Apply pagination
+    total = len(results)
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_results = results[start_idx:end_idx]
+    
+    # Build pagination info
+    pagination = {
+        'page': page,
+        'per_page': per_page,
+        'total': total,
+        'pages': math.ceil(total / per_page) if total > 0 else 1,
+        'has_prev': page > 1,
+        'has_next': page < math.ceil(total / per_page) if total > 0 else False
+    }
+    
+    return jsonify({
+        'items': paginated_results,
+        'pagination': pagination,
+        'summary': {
+            'total': total,
+            'like': sum(1 for e in results if e.get('feedback') == 'like'),
+            'dislike': sum(1 for e in results if e.get('feedback') == 'dislike'),
+            'unrated': sum(1 for e in results if not e.get('feedback')),
+        }
+    })
 
 
 # Register blueprint

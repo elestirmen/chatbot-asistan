@@ -176,6 +176,155 @@
       border-color: #0dcaf0;
       color: #000;
     }
+    
+    /* New enhanced styles for redesigned interface */
+    .card {
+      transition: all 0.2s ease;
+    }
+    
+    .nav-pills .nav-link {
+      border-radius: 50px;
+      padding: 0.5rem 1rem;
+      margin: 0 0.25rem;
+      transition: all 0.2s ease;
+    }
+    
+    .nav-pills .nav-link.active {
+      background: linear-gradient(135deg, #0d6efd 0%, #0056d3 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    }
+    
+    .message-content {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    
+    .btn-group-sm .btn {
+      font-size: 0.875rem;
+    }
+    
+    /* Enhanced modal styles */
+    .modal-xl {
+      max-width: 1200px;
+    }
+    
+    .modal-header {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-bottom: 2px solid #dee2e6;
+    }
+    
+    /* Filter tabs enhancement */
+    .tab-content {
+      border: 1px solid #dee2e6;
+      border-top: none;
+      border-radius: 0 0 0.375rem 0.375rem;
+      padding: 1.5rem;
+      background: #fafafa;
+    }
+    
+    /* Results enhancement */
+    .table thead th {
+      background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+      color: white;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.4em 0.8em;
+    }
+    
+    /* Loading state */
+    .loading-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Archive overview cards hover effect */
+    .card:hover .rounded-circle {
+      transform: scale(1.05);
+      transition: transform 0.2s ease;
+    }
+    
+    /* Enhanced feedback display */
+    .feedback-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    /* Improved form controls */
+    .form-select:focus,
+    .form-control:focus {
+      border-color: #80bdff;
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Tab content animation */
+    .tab-pane {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Card view specific styles */
+    .chat-card {
+      transition: all 0.2s ease;
+      border: 1px solid #e3e6f0;
+    }
+    
+    .chat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border-color: #5a67d8;
+    }
+    
+    .chat-card .card-header {
+      background: linear-gradient(135deg, #f8f9fc 0%, #f1f3f8 100%);
+      border-bottom: 1px solid #e3e6f0;
+      padding: 0.75rem 1rem;
+    }
+    
+    .chat-card .card-body {
+      padding: 1rem;
+    }
+    
+    .chat-card .card-footer {
+      background: #ffffff;
+      border-top: 1px solid #e3e6f0;
+      padding: 0.75rem 1rem;
+    }
+    
+    .text-truncate {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
   </style>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="data:,">
@@ -215,258 +364,428 @@
     </div>
 
     <div class="tab-pane fade" id="logs-pane" role="tabpanel" aria-labelledby="logs-tab" tabindex="0">
-      <!-- Enhanced Filter Panel -->
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtreler ve Arama</h6>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary" id="resetFilters" title="Filtreleri Temizle">
-              <i class="bi bi-arrow-clockwise"></i> Sıfırla
-            </button>
-            <button class="btn btn-outline-primary" id="exportLogs" title="Dışa Aktar">
-              <i class="bi bi-download"></i> Dışa Aktar
-            </button>
+      <!-- New Modern Chat Archive Interface -->
+      
+      <!-- Main Navigation & Overview -->
+      <div class="row g-4 mb-4">
+        <!-- Archive Overview Cards -->
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="rounded-circle bg-primary bg-opacity-10 p-3 d-inline-flex mb-3">
+                <i class="bi bi-archive fs-2 text-primary"></i>
+              </div>
+              <h5 class="card-title mb-1">Chat Arşivi</h5>
+              <p class="text-muted small mb-0">Tüm sohbet kayıtları</p>
+              <div class="mt-3">
+                <div class="fs-4 fw-bold text-primary" id="totalChats">-</div>
+                <small class="text-muted">Toplam Sohbet</small>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="card-body">
-          <div class="row g-3">
-            <!-- Session Selection -->
-            <div class="col-md-3">
-              <label for="sessionSelect" class="form-label">
-                <i class="bi bi-collection"></i> Oturum
-              </label>
-              <select id="sessionSelect" class="form-select">
-                <option value="">Oturum seçin...</option>
-              </select>
-            </div>
-            
-            <!-- Feedback Filter -->
-            <div class="col-md-2">
-              <label for="feedbackFilter" class="form-label">
-                <i class="bi bi-hand-thumbs-up"></i> Geri Bildirim
-              </label>
-              <select id="feedbackFilter" class="form-select">
-                <option value="any">Hepsi</option>
-                <option value="like">👍 Like</option>
-                <option value="dislike">👎 Dislike</option>
-                <option value="unrated">⚪ Değerlendirmesiz</option>
-              </select>
-            </div>
-            
-            <!-- Date Range -->
-            <div class="col-md-4">
-              <label class="form-label">
-                <i class="bi bi-calendar-range"></i> Tarih Aralığı
-              </label>
-              <div class="input-group">
-                <input type="date" id="fromDate" class="form-control" title="Başlangıç tarihi">
-                <span class="input-group-text">-</span>
-                <input type="date" id="toDate" class="form-control" title="Bitiş tarihi">
+        
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="rounded-circle bg-success bg-opacity-10 p-3 d-inline-flex mb-3">
+                <i class="bi bi-hand-thumbs-up fs-2 text-success"></i>
               </div>
-            </div>
-            
-            <!-- Search -->
-            <div class="col-md-2">
-              <label class="form-label" for="searchText">
-                <i class="bi bi-search"></i> Arama
-              </label>
-              <div class="input-group">
-                <input type="text" id="searchText" class="form-control" placeholder="Mesaj içinde ara..." autocomplete="off">
-                <button class="btn btn-outline-secondary" id="clearSearch" type="button" title="Aramayı temizle">
-                  <i class="bi bi-x"></i>
-                </button>
+              <h5 class="card-title mb-1">Başarılı</h5>
+              <p class="text-muted small mb-0">Like alan cevaplar</p>
+              <div class="mt-3">
+                <div class="fs-4 fw-bold text-success" id="totalLikes">-</div>
+                <small class="text-muted">Beğenilen</small>
               </div>
-            </div>
-            
-            <!-- Sort Order -->
-            <div class="col-md-1">
-              <label class="form-label">
-                <i class="bi bi-sort-down"></i> Sıralama
-              </label>
-              <select id="sortOrder" class="form-select">
-                <option value="desc">Yeni → Eski</option>
-                <option value="asc">Eski → Yeni</option>
-              </select>
             </div>
           </div>
-          
-          <!-- Quick Action Buttons -->
-          <div class="row mt-3">
-            <div class="col-md-6">
-              <div class="btn-group btn-group-sm" role="group" aria-label="Hızlı tarih filtreleri">
-                <button class="btn btn-outline-info" id="quickToday">Bugün</button>
-                <button class="btn btn-outline-info" id="quick7d">Son 7 Gün</button>
-                <button class="btn btn-outline-info" id="quick30d">Son 30 Gün</button>
-                <button class="btn btn-outline-secondary" id="quickAll">Tümü</button>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="rounded-circle bg-danger bg-opacity-10 p-3 d-inline-flex mb-3">
+                <i class="bi bi-hand-thumbs-down fs-2 text-danger"></i>
+              </div>
+              <h5 class="card-title mb-1">Sorunlu</h5>
+              <p class="text-muted small mb-0">Dislike alan cevaplar</p>
+              <div class="mt-3">
+                <div class="fs-4 fw-bold text-danger" id="totalDislikes">-</div>
+                <small class="text-muted">Beğenilmeyen</small>
               </div>
             </div>
-            <div class="col-md-6 text-end">
-              <div class="btn-group btn-group-sm" role="group" aria-label="Hızlı geri bildirim filtreleri">
-                <button class="btn btn-success" id="quickLikes">
-                  <i class="bi bi-hand-thumbs-up"></i> Like'lar
-                </button>
-                <button class="btn btn-danger" id="quickDislikes">
-                  <i class="bi bi-hand-thumbs-down"></i> Dislike'lar
-                </button>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="rounded-circle bg-warning bg-opacity-10 p-3 d-inline-flex mb-3">
+                <i class="bi bi-calendar-week fs-2 text-warning"></i>
+              </div>
+              <h5 class="card-title mb-1">Akademik Sezon</h5>
+              <p class="text-muted small mb-0">Aktif dönem</p>
+              <div class="mt-3">
+                <div class="fs-6 fw-bold text-warning" id="currentSeason">-</div>
+                <small class="text-muted">Güncel Sezon</small>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Enhanced Stats Dashboard -->
-      <div class="row g-3 mb-4" id="statsCards">
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <div class="card border-primary h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-chat-dots fs-2 text-primary mb-2"></i>
-              <h6 class="card-title">Toplam</h6>
-              <div id="statTotal" class="fs-4 fw-bold text-primary">0</div>
+      <!-- Advanced Search & Filter Panel -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-funnel-fill text-primary me-2"></i>
+              <h6 class="mb-0 fw-semibold">Gelişmiş Arama ve Filtreleme</h6>
             </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <div class="card border-success h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-hand-thumbs-up fs-2 text-success mb-2"></i>
-              <h6 class="card-title">Like</h6>
-              <div id="statLike" class="fs-4 fw-bold text-success">0</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <div class="card border-danger h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-hand-thumbs-down fs-2 text-danger mb-2"></i>
-              <h6 class="card-title">Dislike</h6>
-              <div id="statDislike" class="fs-4 fw-bold text-danger">0</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <div class="card border-secondary h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-circle fs-2 text-secondary mb-2"></i>
-              <h6 class="card-title">Değerlendirmesiz</h6>
-              <div id="statUnrated" class="fs-4 fw-bold text-secondary">0</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <div class="card border-info h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-percent fs-2 text-info mb-2"></i>
-              <h6 class="card-title">Memnuniyet</h6>
-              <div id="statSatisfaction" class="fs-4 fw-bold text-info">0%</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6">
-          <div class="card border-warning h-100">
-            <div class="card-body text-center">
-              <i class="bi bi-person fs-2 text-warning mb-2"></i>
-              <h6 class="card-title">Aktif Kullanıcı</h6>
-              <div id="statActiveUsers" class="fs-4 fw-bold text-warning">0</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Enhanced Users Table -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h6 class="mb-0"><i class="bi bi-people"></i> Kullanıcı Özeti</h6>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table id="usersTable" class="table table-hover align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th><i class="bi bi-person"></i> Kullanıcı ID</th>
-                  <th><i class="bi bi-chat-dots"></i> Toplam</th>
-                  <th><i class="bi bi-hand-thumbs-up text-success"></i> Like</th>
-                  <th><i class="bi bi-hand-thumbs-down text-danger"></i> Dislike</th>
-                  <th><i class="bi bi-circle text-secondary"></i> Boş</th>
-                  <th><i class="bi bi-clock"></i> Son Aktivite</th>
-                  <th><i class="bi bi-graph-up"></i> Başarı</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Enhanced Logs Table -->
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h6 class="mb-0"><i class="bi bi-chat-square-text"></i> Sohbet Logları</h6>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary" id="refreshLogs" title="Yenile">
-              <i class="bi bi-arrow-clockwise"></i>
-            </button>
-            <div class="dropdown">
-              <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="bi bi-three-dots-vertical"></i>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-secondary" id="resetAllFilters">
+                <i class="bi bi-arrow-clockwise"></i> Sıfırla
               </button>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#" id="exportJson"><i class="bi bi-filetype-json"></i> JSON olarak dışa aktar</a></li>
-                <li><a class="dropdown-item" href="#" id="exportCsv"><i class="bi bi-filetype-csv"></i> CSV olarak dışa aktar</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#" id="bulkMarkLike"><i class="bi bi-hand-thumbs-up text-success"></i> Seçilileri Like olarak işaretle</a></li>
-                <li><a class="dropdown-item" href="#" id="bulkMarkDislike"><i class="bi bi-hand-thumbs-down text-danger"></i> Seçilileri Dislike olarak işaretle</a></li>
-              </ul>
+              <button class="btn btn-primary" id="saveFilterPreset">
+                <i class="bi bi-bookmark"></i> Kaydet
+              </button>
             </div>
           </div>
         </div>
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <!-- Filter Tabs -->
+          <ul class="nav nav-pills nav-fill mb-4" id="filterTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="basic-filter-tab" data-bs-toggle="pill" data-bs-target="#basic-filter" type="button" role="tab">
+                <i class="bi bi-search"></i> Temel Arama
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="session-filter-tab" data-bs-toggle="pill" data-bs-target="#session-filter" type="button" role="tab">
+                <i class="bi bi-collection"></i> Oturum Bazlı
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="feedback-filter-tab" data-bs-toggle="pill" data-bs-target="#feedback-filter" type="button" role="tab">
+                <i class="bi bi-emoji-smile"></i> Geri Bildirim
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="advanced-filter-tab" data-bs-toggle="pill" data-bs-target="#advanced-filter" type="button" role="tab">
+                <i class="bi bi-gear"></i> Gelişmiş
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="filterTabsContent">
+            <!-- Basic Search Tab -->
+            <div class="tab-pane fade show active" id="basic-filter" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-search"></i> Arama Terimi
+                  </label>
+                  <div class="input-group">
+                    <input type="text" id="globalSearch" class="form-control" placeholder="Mesaj içeriğinde ara...">
+                    <button class="btn btn-outline-secondary" id="clearGlobalSearch">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted">Hem kullanıcı mesajlarında hem de asistan yanıtlarında arar</small>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-calendar2-week"></i> Akademik Sezon
+                  </label>
+                  <select id="seasonFilterGlobal" class="form-select">
+                    <option value="">Tüm sezonlar</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-sort-down"></i> Sıralama
+                  </label>
+                  <select id="globalSortOrder" class="form-select">
+                    <option value="desc">Yeni → Eski</option>
+                    <option value="asc">Eski → Yeni</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-calendar-range"></i> Tarih Aralığı
+                  </label>
+                  <div class="input-group">
+                    <input type="date" id="globalFromDate" class="form-control">
+                    <span class="input-group-text">→</span>
+                    <input type="date" id="globalToDate" class="form-control">
+                  </div>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <div class="btn-group w-100" role="group">
+                    <button class="btn btn-outline-primary" id="searchGlobal">
+                      <i class="bi bi-search"></i> Ara
+                    </button>
+                    <button class="btn btn-outline-info" id="quickToday">Bugün</button>
+                    <button class="btn btn-outline-info" id="quick7d">7 Gün</button>
+                    <button class="btn btn-outline-info" id="quick30d">30 Gün</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session-based Tab -->
+            <div class="tab-pane fade" id="session-filter" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label for="sessionSelect" class="form-label fw-semibold">
+                    <i class="bi bi-collection"></i> Oturum Seçin
+                  </label>
+                  <select id="sessionSelect" class="form-select">
+                    <option value="">Oturum seçin...</option>
+                  </select>
+                  <small class="text-muted">Önce bir oturum seçin</small>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-person"></i> Kullanıcı
+                  </label>
+                  <select id="userSelect" class="form-select" disabled>
+                    <option value="">Kullanıcı seçin...</option>
+                  </select>
+                  <small class="text-muted">Oturum seçildikten sonra aktif olur</small>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-emoji-smile"></i> Geri Bildirim
+                  </label>
+                  <select id="sessionFeedbackFilter" class="form-select">
+                    <option value="any">Hepsi</option>
+                    <option value="like">👍 Like</option>
+                    <option value="dislike">👎 Dislike</option>
+                    <option value="unrated">⚪ Değerlendirmesiz</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-3 mt-2">
+                <div class="col-md-8">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-search"></i> Bu oturumda ara
+                  </label>
+                  <input type="text" id="sessionSearch" class="form-control" placeholder="Bu oturumdaki mesajlarda ara...">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <button class="btn btn-primary w-100" id="loadSessionData">
+                    <i class="bi bi-play-circle"></i> Oturum Verilerini Yükle
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback-based Tab -->
+            <div class="tab-pane fade" id="feedback-filter" role="tabpanel">
+              <div class="text-center mb-4">
+                <h6 class="fw-semibold">Geri Bildirim Bazlı Hızlı Filtreleme</h6>
+                <p class="text-muted">Tüm oturumlarda belirli geri bildirim türlerine göre arama yapın</p>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <div class="text-success mb-3">
+                        <i class="bi bi-hand-thumbs-up fs-1"></i>
+                      </div>
+                      <h6 class="card-title">Başarılı Cevaplar</h6>
+                      <p class="text-muted small">Like alan tüm asistan yanıtları</p>
+                      <button class="btn btn-success" id="loadAllLikes">
+                        <i class="bi bi-search"></i> Like'ları Listele
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <div class="text-danger mb-3">
+                        <i class="bi bi-hand-thumbs-down fs-1"></i>
+                      </div>
+                      <h6 class="card-title">İyileştirme Gereken</h6>
+                      <p class="text-muted small">Dislike alan tüm asistan yanıtları</p>
+                      <button class="btn btn-danger" id="loadAllDislikes">
+                        <i class="bi bi-search"></i> Dislike'ları Listele
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-calendar2-week"></i> Hangi sezonda?
+                  </label>
+                  <select id="feedbackSeasonFilter" class="form-select">
+                    <option value="">Tüm sezonlar</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-list-ol"></i> Kaç sonuç?
+                  </label>
+                  <select class="form-select" id="feedbackLimit">
+                    <option value="50">En son 50</option>
+                    <option value="100">En son 100</option>
+                    <option value="200" selected>En son 200</option>
+                    <option value="500">En son 500</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Advanced Tab -->
+            <div class="tab-pane fade" id="advanced-filter" role="tabpanel">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-list-ol"></i> Sayfa Başına
+                  </label>
+                  <select id="advancedPerPage" class="form-select">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-sort-down"></i> Sıralama Türü
+                  </label>
+                  <select id="advancedOrderBy" class="form-select">
+                    <option value="timestamp">Zaman Damgası</option>
+                    <option value="natural">Dosya Sırası</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-toggles"></i> Gösterim Seçenekleri
+                  </label>
+                  <div class="d-flex gap-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="showRetrieval" checked>
+                      <label class="form-check-label" for="showRetrieval">
+                        RAG bilgilerini göster
+                      </label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="showPersonality" checked>
+                      <label class="form-check-label" for="showPersonality">
+                        Kişilik bilgisini göster
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-chat-square-text text-primary me-2"></i>
+              <h6 class="mb-0 fw-semibold">Sohbet Sonuçları</h6>
+              <span class="badge bg-primary ms-2" id="resultCount">0</span>
+            </div>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-secondary" id="refreshResults">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  <i class="bi bi-download"></i> Dışa Aktar
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="#" id="exportResultsJson">
+                    <i class="bi bi-filetype-json"></i> JSON Format
+                  </a></li>
+                  <li><a class="dropdown-item" href="#" id="exportResultsCsv">
+                    <i class="bi bi-filetype-csv"></i> Excel CSV
+                  </a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="#" id="exportResultsTxt">
+                    <i class="bi bi-file-text"></i> Metin Format
+                  </a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Results Info Bar -->
+          <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
             <div class="text-muted" id="resultsInfo">
-              <small>Sonuç gösteriliyor</small>
+              <small><i class="bi bi-info-circle"></i> Sonuçlar yükleniyor...</small>
             </div>
             <div class="d-flex align-items-center gap-2">
-              <label for="perPageSelect" class="form-label mb-0 small">Sayfa başına:</label>
-              <select id="perPageSelect" class="form-select form-select-sm" style="width:80px;">
-                <option value="10">10</option>
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
+              <small class="text-muted">Gösterim:</small>
+              <div class="btn-group btn-group-sm" role="group">
+                <input type="radio" class="btn-check" name="viewMode" id="tableView" checked>
+                <label class="btn btn-outline-secondary" for="tableView">
+                  <i class="bi bi-table"></i>
+                </label>
+                <input type="radio" class="btn-check" name="viewMode" id="cardView">
+                <label class="btn btn-outline-secondary" for="cardView">
+                  <i class="bi bi-grid"></i>
+                </label>
+              </div>
             </div>
           </div>
-          
-          <div class="table-responsive">
-            <table id="logsTable" class="table table-striped table-hover align-middle">
-              <thead class="table-dark">
-                <tr>
-                  <th style="width:40px">
-                    <input type="checkbox" id="selectAll" class="form-check-input" title="Tümünü seç">
-                  </th>
-                  <th style="width:60px">#</th>
-                  <th style="width:140px"><i class="bi bi-clock"></i> Zaman</th>
-                  <th style="width:100px"><i class="bi bi-emoji-smile"></i> Geri Bildirim</th>
-                  <th style="min-width:300px"><i class="bi bi-person-fill"></i> Kullanıcı Mesajı</th>
-                  <th style="min-width:300px"><i class="bi bi-robot"></i> Asistan Yanıtı</th>
-                  <th style="width:80px">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+
+          <!-- Table View -->
+          <div id="tableViewContainer">
+            <div class="table-responsive">
+              <table id="chatResultsTable" class="table table-hover align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th style="width:40px">
+                      <input type="checkbox" id="selectAllResults" class="form-check-input">
+                    </th>
+                    <th style="width:120px">Zaman</th>
+                    <th style="width:100px">Sezon</th>
+                    <th style="width:120px">Oturum</th>
+                    <th style="width:100px">Kullanıcı</th>
+                    <th style="width:80px">Geri Bildirim</th>
+                    <th style="min-width:250px">Kullanıcı Mesajı</th>
+                    <th style="min-width:250px">Asistan Yanıtı</th>
+                    <th style="width:80px">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
-          
-          <!-- Pagination Controls -->
-          <nav aria-label="Chat logs pagination" class="mt-3">
+
+          <!-- Card View -->
+          <div id="cardViewContainer" style="display: none;">
+            <div class="row g-3" id="chatResultsCards">
+              <!-- Cards will be populated here -->
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <nav aria-label="Chat results pagination" class="mt-4">
             <div class="row align-items-center">
               <div class="col-md-6">
-                <nav>
-                  <ul class="pagination pagination-sm mb-0" id="paginationControls">
-                    <!-- Pagination will be populated by JavaScript -->
-                  </ul>
-                </nav>
+                <ul class="pagination pagination-sm mb-0" id="resultsPagination">
+                  <!-- Pagination controls will be populated here -->
+                </ul>
               </div>
               <div class="col-md-6 text-end">
                 <small class="text-muted" id="paginationInfo">
-                  <!-- Pagination info will be populated by JavaScript -->
+                  <!-- Pagination info will be populated here -->
                 </small>
               </div>
             </div>
@@ -531,53 +850,132 @@
     </div>
   </div>
 
-  <!-- Message Detail Modal -->
-  <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+  <!-- Enhanced Message Detail Modal -->
+  <div class="modal fade" id="messageDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-chat-square-text"></i> Mesaj Detayı</h5>
+          <h5 class="modal-title">
+            <i class="bi bi-chat-square-text text-primary"></i> 
+            Sohbet Detayı
+            <span class="badge bg-secondary ms-2" id="modalSessionBadge"></span>
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
         </div>
         <div class="modal-body">
-          <div class="row">
-            <div class="col-md-6">
-              <h6 class="text-primary"><i class="bi bi-person-fill"></i> Kullanıcı Mesajı</h6>
-              <div class="card">
-                <div class="card-body">
-                  <p id="modalUserMessage" class="mb-0"></p>
+          <!-- Meta Information -->
+          <div class="row mb-4">
+            <div class="col-md-12">
+              <div class="bg-light p-3 rounded">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <small class="text-muted d-block">Oturum ID</small>
+                    <code id="modalSessionId" class="small"></code>
+                  </div>
+                  <div class="col-md-3">
+                    <small class="text-muted d-block">Kullanıcı ID</small>
+                    <code id="modalUserId" class="small"></code>
+                  </div>
+                  <div class="col-md-3">
+                    <small class="text-muted d-block">Zaman</small>
+                    <span id="modalTimestamp" class="small"></span>
+                  </div>
+                  <div class="col-md-3">
+                    <small class="text-muted d-block">Akademik Sezon</small>
+                    <span id="modalSeason" class="badge bg-info"></span>
+                  </div>
                 </div>
               </div>
-              <small class="text-muted mt-2 d-block">
-                <i class="bi bi-clock"></i> <span id="modalTimestamp"></span>
-              </small>
             </div>
+          </div>
+
+          <!-- Chat Content -->
+          <div class="row g-4">
             <div class="col-md-6">
-              <h6 class="text-success"><i class="bi bi-robot"></i> Asistan Yanıtı</h6>
-              <div class="card">
+              <div class="card h-100">
+                <div class="card-header bg-primary bg-opacity-10">
+                  <h6 class="mb-0 text-primary">
+                    <i class="bi bi-person-fill"></i> Kullanıcı Mesajı
+                  </h6>
+                </div>
                 <div class="card-body">
-                  <p id="modalAssistantResponse" class="mb-0"></p>
+                  <div id="modalUserMessage" class="message-content"></div>
+                </div>
+                <div class="card-footer bg-light">
+                  <small class="text-muted">
+                    <i class="bi bi-type"></i> 
+                    <span id="modalUserMessageLength"></span> karakter
+                  </small>
                 </div>
               </div>
-              <div class="mt-2">
-                <span class="text-muted">Geri Bildirim:</span>
-                <span id="modalFeedback" class="ms-2"></span>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="card h-100">
+                <div class="card-header bg-success bg-opacity-10">
+                  <h6 class="mb-0 text-success">
+                    <i class="bi bi-robot"></i> Asistan Yanıtı
+                    <span id="modalPersonalityBadge" class="badge bg-warning ms-2"></span>
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <div id="modalAssistantResponse" class="message-content"></div>
+                </div>
+                <div class="card-footer bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="bi bi-type"></i> 
+                      <span id="modalAssistantResponseLength"></span> karakter
+                    </small>
+                    <div>
+                      <span class="text-muted me-2">Geri Bildirim:</span>
+                      <span id="modalFeedback"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RAG Information (if available) -->
+          <div class="row mt-4" id="modalRagSection" style="display: none;">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0">
+                    <i class="bi bi-database"></i> RAG Retrieval Bilgileri
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <div id="modalRagContent"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
+          <div class="btn-group me-auto">
+            <button type="button" class="btn btn-outline-success" id="modalMarkLike">
+              <i class="bi bi-hand-thumbs-up"></i> Like
+            </button>
+            <button type="button" class="btn btn-outline-danger" id="modalMarkDislike">
+              <i class="bi bi-hand-thumbs-down"></i> Dislike
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="modalClearFeedback">
+              <i class="bi bi-x-circle"></i> Temizle
+            </button>
+          </div>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="/static/vendor/jquery-3.7.1.min.js?v=2"></script>
-  <script src="/static/vendor/bootstrap.bundle.min.js?v=2"></script>
-  <script src="/static/vendor/jquery.dataTables.min.js?v=2"></script>
-  <script src="/static/vendor/dataTables.bootstrap5.min.js?v=2"></script>
-  <script src="/static/js/admin.js?v=2"></script>
+  <script src="/static/vendor/jquery-3.7.1.min.js?v=3"></script>
+  <script src="/static/vendor/bootstrap.bundle.min.js?v=3"></script>
+  <script src="/static/vendor/jquery.dataTables.min.js?v=3"></script>
+  <script src="/static/vendor/dataTables.bootstrap5.min.js?v=3"></script>
+  <script src="/static/js/admin.js?v=3"></script>
 </div>
 </body>
 </html>
