@@ -321,15 +321,16 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoading();
     
     $.getJSON(url, (response) => {
-      currentResults = response.items || [];
+      console.log('Search response received:', response);
       updateResultsDisplay(response);
       hideLoading();
     }).fail((xhr) => {
       hideLoading();
+      console.error('Search failed:', xhr);
       if (xhr.status === 401) {
         loginModal?.show();
       } else {
-        alert('Arama sırasında bir hata oluştu.');
+        alert('Arama sırasında bir hata oluştu: ' + (xhr.responseJSON?.error || xhr.statusText));
       }
     });
   }
@@ -342,7 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
       baseUrl = '/admin/api/chat/logs_advanced';
     } else if (params.mode === 'global') {
       baseUrl = '/admin/api/chat/global_search';
+    } else if (params.mode === 'feedback') {
+      baseUrl = '/admin/api/chat/search_by_feedback';
     } else {
+      // Default fallback
       baseUrl = '/admin/api/chat/search_by_feedback';
     }
     
@@ -352,11 +356,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     
+    console.log('Built URL:', `${baseUrl}?${queryParams.toString()}`);
     return `${baseUrl}?${queryParams.toString()}`;
   }
 
   function updateResultsDisplay(response) {
     initChatResultsTable();
+    
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      // Direct array response (from search_by_feedback)
+      currentResults = response;
+    } else {
+      // Object response with items (from global_search or logs_advanced)
+      currentResults = response.items || [];
+    }
     
     chatResultsTable.clear();
     chatResultsTable.rows.add(currentResults);
@@ -393,8 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (total === 0) {
       $('#resultsInfo').html(`<small><i class="bi bi-exclamation-circle text-warning"></i> Bu kriterlere uygun sonuç bulunamadı</small>`);
+      $('#likeLoadStatus, #dislikeLoadStatus').text('Sonuç bulunamadı');
     } else {
       $('#resultsInfo').html(`<small><i class="bi bi-info-circle"></i> ${total} sonuç bulundu${dateInfo}</small>`);
+      $('#likeLoadStatus, #dislikeLoadStatus').text(`${total} sonuç yüklendi`);
     }
     
     // Update seasons from results
@@ -715,20 +731,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('#loadAllLikes').on('click', function() {
+    if (!isAuthenticated) {
+      loginModal?.show();
+      return;
+    }
+    
+    $('#likeLoadStatus').text('Yükleniyor...');
+    
     const searchParams = {
+      mode: 'feedback', // Use feedback-based search
       feedback: 'like',
       season: $('#feedbackSeasonFilter').val(),
-      limit: $('#feedbackLimit').val() || 200
+      limit: $('#feedbackLimit').val() || 200,
+      sort: $('#feedbackSortOrder').val() || 'desc' // User-selected sort order
     };
+    console.log('Loading all likes with params:', searchParams);
     performSearch(searchParams);
   });
 
   $('#loadAllDislikes').on('click', function() {
+    if (!isAuthenticated) {
+      loginModal?.show();
+      return;
+    }
+    
+    $('#dislikeLoadStatus').text('Yükleniyor...');
+    
     const searchParams = {
+      mode: 'feedback', // Use feedback-based search  
       feedback: 'dislike',
       season: $('#feedbackSeasonFilter').val(),
-      limit: $('#feedbackLimit').val() || 200
+      limit: $('#feedbackLimit').val() || 200,
+      sort: $('#feedbackSortOrder').val() || 'desc' // User-selected sort order
     };
+    console.log('Loading all dislikes with params:', searchParams);
     performSearch(searchParams);
   });
 
@@ -900,6 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#seasonFilterGlobal, #feedbackSeasonFilter, #advancedSeasonFilter, #sessionSelect, #userSelect, #advancedFeedbackFilter, #advancedPersonalityFilter').val('');
     $('#globalSortOrder').val('desc');
     $('#sessionFeedbackFilter').val('any');
+    $('#feedbackSortOrder').val('desc');
     $('#advancedPerPage').val('25');
     $('#advancedOrderBy').val('timestamp');
     

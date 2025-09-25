@@ -1435,6 +1435,7 @@ def admin_api_chat_search_by_feedback():
         return jsonify({'error': 'Unauthorized'}), 401
     fb = (request.args.get('feedback') or 'like').lower()
     season_filter = (request.args.get('season') or '').strip()
+    sort_order = request.args.get('sort', 'desc').lower()
     try:
         limit = int(request.args.get('limit', '200'))
     except ValueError:
@@ -1463,7 +1464,18 @@ def admin_api_chat_search_by_feedback():
                     'season': _season_from_ts(e.get('timestamp')),
                 })
                 if len(results) >= limit:
-                    return jsonify(results)
+                    break
+            if len(results) >= limit:
+                break
+        if len(results) >= limit:
+            break
+    
+    # Sort results by timestamp
+    if sort_order == 'desc':
+        results.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    else:
+        results.sort(key=lambda x: x.get('timestamp', ''))
+    
     return jsonify(results)
 
 

@@ -630,6 +630,9 @@
                       <button class="btn btn-success" id="loadAllLikes">
                         <i class="bi bi-search"></i> Like'ları Listele
                       </button>
+                      <div class="mt-2">
+                        <small id="likeLoadStatus" class="text-muted"></small>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -644,12 +647,15 @@
                       <button class="btn btn-danger" id="loadAllDislikes">
                         <i class="bi bi-search"></i> Dislike'ları Listele
                       </button>
+                      <div class="mt-2">
+                        <small id="dislikeLoadStatus" class="text-muted"></small>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               <div class="row g-3 mt-2">
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="form-label fw-semibold">
                     <i class="bi bi-calendar2-week"></i> Hangi sezonda?
                   </label>
@@ -657,7 +663,7 @@
                     <option value="">Tüm sezonlar</option>
                   </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="form-label fw-semibold">
                     <i class="bi bi-list-ol"></i> Kaç sonuç?
                   </label>
@@ -666,6 +672,15 @@
                     <option value="100">En son 100</option>
                     <option value="200" selected>En son 200</option>
                     <option value="500">En son 500</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-sort-down"></i> Sıralama
+                  </label>
+                  <select class="form-select" id="feedbackSortOrder">
+                    <option value="desc">En yeni önce</option>
+                    <option value="asc">En eski önce</option>
                   </select>
                 </div>
               </div>
