@@ -537,48 +537,77 @@
 
             <!-- Session-based Tab -->
             <div class="tab-pane fade" id="session-filter" role="tabpanel">
+              <div class="alert alert-info d-flex align-items-center mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <div>
+                  <strong>Oturum Bazlı Arama:</strong> Belirli bir chat oturumunun tüm mesajlarını detaylı olarak inceleyin. 
+                  Normal durumda her oturum tek bir kullanıcıya aittir.
+                </div>
+              </div>
+              
               <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <label for="sessionSelect" class="form-label fw-semibold">
-                    <i class="bi bi-collection"></i> Oturum Seçin
+                    <i class="bi bi-collection"></i> Chat Oturumu Seçin
                   </label>
                   <select id="sessionSelect" class="form-select">
                     <option value="">Oturum seçin...</option>
                   </select>
-                  <small class="text-muted">Önce bir oturum seçin</small>
+                  <small class="text-muted">Son aktivite zamanına göre sıralanmış</small>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <label class="form-label fw-semibold">
-                    <i class="bi bi-person"></i> Kullanıcı
-                  </label>
-                  <select id="userSelect" class="form-select" disabled>
-                    <option value="">Kullanıcı seçin...</option>
-                  </select>
-                  <small class="text-muted">Oturum seçildikten sonra aktif olur</small>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">
-                    <i class="bi bi-emoji-smile"></i> Geri Bildirim
+                    <i class="bi bi-emoji-smile"></i> Geri Bildirim Filtresi
                   </label>
                   <select id="sessionFeedbackFilter" class="form-select">
-                    <option value="any">Hepsi</option>
-                    <option value="like">👍 Like</option>
-                    <option value="dislike">👎 Dislike</option>
-                    <option value="unrated">⚪ Değerlendirmesiz</option>
+                    <option value="any">Tüm mesajlar</option>
+                    <option value="like">👍 Sadece Like alanlar</option>
+                    <option value="dislike">👎 Sadece Dislike alanlar</option>
+                    <option value="unrated">⚪ Değerlendirmesizler</option>
                   </select>
                 </div>
               </div>
-              <div class="row g-3 mt-2">
+              
+              <div class="row g-3 mt-3">
                 <div class="col-md-8">
                   <label class="form-label fw-semibold">
-                    <i class="bi bi-search"></i> Bu oturumda ara
+                    <i class="bi bi-search"></i> Bu oturumda metin arama
                   </label>
-                  <input type="text" id="sessionSearch" class="form-control" placeholder="Bu oturumdaki mesajlarda ara...">
+                  <input type="text" id="sessionSearch" class="form-control" placeholder="Kullanıcı veya asistan mesajlarında ara...">
+                  <small class="text-muted">Boş bırakırsanız tüm mesajlar gösterilir</small>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
-                  <button class="btn btn-primary w-100" id="loadSessionData">
-                    <i class="bi bi-play-circle"></i> Oturum Verilerini Yükle
+                  <button class="btn btn-primary w-100" id="loadSessionData" disabled>
+                    <i class="bi bi-search"></i> Oturum Mesajlarını Getir
                   </button>
+                </div>
+              </div>
+              
+              <!-- Session Users Info (only shown when session selected) -->
+              <div id="sessionUsersInfo" style="display: none;" class="mt-4">
+                <div class="card bg-light">
+                  <div class="card-header">
+                    <h6 class="mb-0">
+                      <i class="bi bi-people"></i> Bu Oturumdaki Kullanıcılar
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table id="sessionUsersTable" class="table table-sm table-hover">
+                        <thead>
+                          <tr>
+                            <th>Kullanıcı ID</th>
+                            <th>Mesaj Sayısı</th>
+                            <th>Like</th>
+                            <th>Dislike</th>
+                            <th>Son Aktivite</th>
+                            <th>İşlem</th>
+                          </tr>
+                        </thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -645,6 +674,66 @@
             <!-- Advanced Tab -->
             <div class="tab-pane fade" id="advanced-filter" role="tabpanel">
               <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-search"></i> Gelişmiş Arama
+                  </label>
+                  <div class="input-group">
+                    <input type="text" id="advancedSearchText" class="form-control" placeholder="Tüm mesajlarda ara...">
+                    <button class="btn btn-outline-secondary" id="clearAdvancedSearch">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted">Boş bırakırsanız tüm mesajlar getirilir</small>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-calendar2-week"></i> Sezon Filtresi
+                  </label>
+                  <select id="advancedSeasonFilter" class="form-select">
+                    <option value="">Tüm sezonlar</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-emoji-smile"></i> Geri Bildirim
+                  </label>
+                  <select id="advancedFeedbackFilter" class="form-select">
+                    <option value="">Hepsi</option>
+                    <option value="like">👍 Like</option>
+                    <option value="dislike">👎 Dislike</option>
+                    <option value="unrated">⚪ Değerlendirmesiz</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row g-3 mt-2">
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-person-gear"></i> Asistan Kişiliği
+                  </label>
+                  <select id="advancedPersonalityFilter" class="form-select">
+                    <option value="">Tüm kişilikler</option>
+                    <option value="huysuz">😠 Huysuz</option>
+                    <option value="notr">😐 Nötr</option>
+                    <option value="pozitif">😊 Pozitif</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row g-3 mt-2">
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-calendar-range"></i> Başlangıç Tarihi
+                  </label>
+                  <input type="date" id="advancedFromDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-calendar-range"></i> Bitiş Tarihi
+                  </label>
+                  <input type="date" id="advancedToDate" class="form-control">
+                </div>
                 <div class="col-md-3">
                   <label class="form-label fw-semibold">
                     <i class="bi bi-list-ol"></i> Sayfa Başına
@@ -665,6 +754,9 @@
                     <option value="natural">Dosya Sırası</option>
                   </select>
                 </div>
+              </div>
+              
+              <div class="row g-3 mt-2">
                 <div class="col-md-6">
                   <label class="form-label fw-semibold">
                     <i class="bi bi-toggles"></i> Gösterim Seçenekleri
@@ -683,6 +775,11 @@
                       </label>
                     </div>
                   </div>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <button class="btn btn-primary w-100" id="loadAdvancedSearch">
+                    <i class="bi bi-search"></i> Mesajları Getir
+                  </button>
                 </div>
               </div>
             </div>
@@ -757,9 +854,10 @@
                     <th style="width:100px">Sezon</th>
                     <th style="width:120px">Oturum</th>
                     <th style="width:100px">Kullanıcı</th>
+                    <th style="width:80px"><i class="bi bi-person-gear"></i> Kişilik</th>
                     <th style="width:80px">Geri Bildirim</th>
-                    <th style="min-width:250px">Kullanıcı Mesajı</th>
-                    <th style="min-width:250px">Asistan Yanıtı</th>
+                    <th style="min-width:220px">Kullanıcı Mesajı</th>
+                    <th style="min-width:220px">Asistan Yanıtı</th>
                     <th style="width:80px">İşlemler</th>
                   </tr>
                 </thead>

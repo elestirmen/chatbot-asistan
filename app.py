@@ -1099,9 +1099,9 @@ def admin_api_chat_logs_advanced():
 
     entries = _load_logs(sess, user_id)
 
-    now = datetime.utcnow()
+    now = datetime.now()  # Use local time
     if rng == 'today':
-        from_dt = datetime(now.year, now.month, now.day)
+        from_dt = datetime(now.year, now.month, now.day, 0, 0, 0)
         to_dt = datetime(now.year, now.month, now.day, 23, 59, 59)
     elif rng == '7d':
         from_dt = now - timedelta(days=7)
@@ -1251,6 +1251,8 @@ def admin_api_analytics_summary():
     first_ts = None
     last_ts = None
 
+    # Try NDJSON analytics first
+    found_analytics = False
     for f in _iter_event_files():
         try:
             with f.open('r', encoding='utf-8') as fp:
@@ -1262,6 +1264,7 @@ def admin_api_analytics_summary():
                         e = json.loads(line)
                     except Exception:
                         continue
+                    found_analytics = True
                     ts = _parse_iso_z(e.get('ts'))
                     if ts:
                         if (from_dt and ts < from_dt) or (to_dt and ts > to_dt):
@@ -1321,6 +1324,64 @@ def admin_api_analytics_summary():
                             last_ts = ts
         except Exception:
             continue
+
+    # If no analytics found, fall back to chat logs
+    if not found_analytics:
+        for sess in _list_sessions():
+            sess_id = sess['session_id'] if isinstance(sess, dict) else sess
+            sessions_seen.add(sess_id)
+            for u in _list_user_logs(sess_id):
+                entries = _load_logs(sess_id, u['user_id'])
+                for e in entries:
+                    # Date filter
+                    ts_str = e.get('timestamp')
+                    ts = None
+                    if ts_str:
+                        try:
+                            ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+                        except Exception:
+                            pass
+                    
+                    if ts and ((from_dt and ts < from_dt) or (to_dt and ts > to_dt)):
+                        continue
+                    
+                    # Season filter
+                    season = _season_from_ts(ts_str)
+                    if season_filter and season != season_filter:
+                        continue
+                    
+                    stats['user_messages'] += 1
+                    stats['assistant_responses'] += 1
+                    
+                    # Feedback stats
+                    fb = e.get('feedback')
+                    if fb == 'like':
+                        stats['feedback_like'] += 1
+                    elif fb == 'dislike':
+                        stats['feedback_dislike'] += 1
+                    
+                    # Season stats
+                    if season:
+                        s = stats['by_season'].setdefault(season, {
+                            'events': 0,
+                            'user_messages': 0,
+                            'assistant_responses': 0,
+                            'feedback_like': 0,
+                            'feedback_dislike': 0,
+                        })
+                        s['user_messages'] += 1
+                        s['assistant_responses'] += 1
+                        if fb == 'like':
+                            s['feedback_like'] += 1
+                        elif fb == 'dislike':
+                            s['feedback_dislike'] += 1
+                    
+                    # Track time range
+                    if ts:
+                        if first_ts is None or ts < first_ts:
+                            first_ts = ts
+                        if last_ts is None or ts > last_ts:
+                            last_ts = ts
 
     stats['unique_sessions'] = len(sessions_seen)
     stats['avg_latency_ms'] = int(latency_sum / latency_count) if latency_count > 0 else 0
@@ -1414,6 +1475,8 @@ def admin_api_chat_global_search():
     
     q = (request.args.get('q') or '').strip().lower()
     season_filter = (request.args.get('season') or '').strip()
+    feedback_filter = (request.args.get('feedback') or '').strip().lower()
+    personality_filter = (request.args.get('personality') or '').strip().lower()
     from_s = request.args.get('from')
     to_s = request.args.get('to')
     rng = (request.args.get('range') or '').lower()
@@ -1428,15 +1491,18 @@ def admin_api_chat_global_search():
         page = 1
         per_page = 25
     
-    # Parse date range
-    now = datetime.utcnow()
+    # Parse date range - use local time instead of UTC
+    now = datetime.now()  # Local time
     if rng == 'today':
-        from_dt = datetime(now.year, now.month, now.day)
+        # Today: from 00:00:00 to 23:59:59
+        from_dt = datetime(now.year, now.month, now.day, 0, 0, 0)
         to_dt = datetime(now.year, now.month, now.day, 23, 59, 59)
     elif rng == '7d':
+        # Last 7 days
         from_dt = now - timedelta(days=7)
         to_dt = now
     elif rng == '30d':
+        # Last 30 days  
         from_dt = now - timedelta(days=30)
         to_dt = now
     else:
@@ -1482,6 +1548,20 @@ def admin_api_chat_global_search():
                     if q not in um and q not in ar:
                         continue
                 
+                # Feedback filter
+                if feedback_filter:
+                    fb = e.get('feedback')
+                    if feedback_filter == 'unrated' and fb:
+                        continue
+                    if feedback_filter in ('like', 'dislike') and fb != feedback_filter:
+                        continue
+                
+                # Personality filter
+                if personality_filter:
+                    pers = (e.get('assistant_personality') or '').lower()
+                    if pers != personality_filter:
+                        continue
+                
                 results.append({
                     'session_id': sess_id,
                     'user_id': u['user_id'],
@@ -1495,6 +1575,7 @@ def admin_api_chat_global_search():
                     'season': _season_from_ts(e.get('timestamp')),
                 })
                 
+                # Early break for efficiency
                 if len(results) >= limit:
                     break
             
@@ -1509,6 +1590,9 @@ def admin_api_chat_global_search():
         results.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
     else:
         results.sort(key=lambda x: x.get('timestamp', ''))
+    
+    # Log result count for debugging if needed
+    # print(f"Global search found {len(results)} results for range: {rng}")
     
     # Apply pagination
     total = len(results)

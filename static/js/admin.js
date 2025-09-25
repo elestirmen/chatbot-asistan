@@ -4,6 +4,17 @@ function esc(text) {
   return div.innerHTML;
 }
 
+function getPersonalityBadge(personality) {
+  const personalities = {
+    'huysuz': { color: 'danger', icon: 'emoji-frown', label: 'Huysuz' },
+    'notr': { color: 'secondary', icon: 'emoji-neutral', label: 'Nötr' },
+    'pozitif': { color: 'success', icon: 'emoji-smile', label: 'Pozitif' }
+  };
+  
+  const p = personalities[personality] || { color: 'warning', icon: 'question-circle', label: 'Bilinmiyor' };
+  return `<span class="badge bg-${p.color} mb-1"><i class="bi bi-${p.icon}"></i> ${p.label}</span>`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('admin-root');
   const defaultFile = root?.dataset?.defaultFile || 'expanded_data.json';
@@ -40,11 +51,19 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#loginPasswordInput').val('');
       $('#loginError').hide();
       $('#loginForm').removeClass('was-validated');
+      
+      // Update overview stats after login
+      updateOverviewStats();
     } else {
       $('#loginBtn').show();
       $('#logoutBtn').hide();
       $('#addBtn').prop('disabled', true);
       if (qaTable) qaTable.draw();
+      
+      // Show placeholders when not authenticated
+      $('#totalChats, #totalLikes, #totalDislikes').text('-');
+      $('#currentSeason').text('-');
+      
       loginModal?.show();
     }
   }
@@ -135,6 +154,10 @@ document.addEventListener('DOMContentLoaded', () => {
           render: (d) => d ? `<code class="text-info small">${esc(d.substring(0, 12))}...</code>` : '' 
         },
         { 
+          data: 'assistant_personality', 
+          render: (d) => d ? getPersonalityBadge(d) : '<span class="text-muted">-</span>'
+        },
+        { 
           data: 'feedback', 
           render: (d) => {
             if (d === 'like') return '<span class="badge bg-success"><i class="bi bi-hand-thumbs-up"></i></span>';
@@ -151,9 +174,15 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         { 
           data: 'assistant_response', 
-          render: (d) => {
+          render: (d, t, row) => {
             const truncated = (d || '').length > 100 ? (d || '').substring(0, 100) + '...' : (d || '');
-            return `<div class='text-break small' style='max-width: 250px;'>${esc(truncated)}</div>`;
+            const personality = row.assistant_personality || 'bilinmiyor';
+            const personalityBadge = getPersonalityBadge(personality);
+            return `
+              <div class='text-break small' style='max-width: 250px;'>
+                ${personalityBadge}
+                <div class="mt-1">${esc(truncated)}</div>
+              </div>`;
           }
         },
         {
@@ -161,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
           orderable: false,
           render: (d, t, row) => {
             return `<button class="btn btn-outline-primary btn-sm view-detail" title="Detayları Görüntüle">
-              <i class="bi bi-eye"></i>
+                <i class="bi bi-eye"></i>
             </button>`;
           }
         }
@@ -178,8 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateOverviewStats() {
+    // Only load stats if authenticated
+    if (!isAuthenticated) {
+      $('#totalChats, #totalLikes, #totalDislikes').text('-');
+      $('#currentSeason').text('-');
+      return;
+    }
+    
     // Get analytics summary
     $.getJSON('/admin/api/analytics/summary', (stats) => {
+      console.log('Analytics stats received:', stats);
+      
       $('#totalChats').text(stats.user_messages || 0);
       $('#totalLikes').text(stats.feedback_like || 0);
       $('#totalDislikes').text(stats.feedback_dislike || 0);
@@ -193,16 +231,21 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Update season filters
       updateSeasonFilters(stats.by_season || {});
-    }).fail(() => {
+    }).fail((xhr, status, error) => {
+      console.error('Analytics API failed:', xhr, status, error);
       $('#totalChats, #totalLikes, #totalDislikes').text('0');
       $('#currentSeason').text('-');
+      
+      if (xhr.status === 401) {
+        loginModal?.show();
+      }
     });
   }
 
   function updateSeasonFilters(seasonData) {
     const seasons = Object.keys(seasonData).sort().reverse();
     
-    $('#seasonFilterGlobal, #feedbackSeasonFilter').each(function() {
+    $('#seasonFilterGlobal, #feedbackSeasonFilter, #advancedSeasonFilter').each(function() {
       const $select = $(this);
       const currentVal = $select.val();
       $select.empty().append('<option value="">Tüm sezonlar</option>');
@@ -234,23 +277,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadUsersForSession(sessionId) {
     if (!sessionId) {
-      $('#userSelect').prop('disabled', true).empty().append('<option value="">Kullanıcı seçin...</option>');
+      $('#sessionUsersInfo').hide();
       return;
     }
     
     $.getJSON(`/admin/api/chat/users?session=${encodeURIComponent(sessionId)}`, (users) => {
-      const $userSelect = $('#userSelect');
-      $userSelect.prop('disabled', false).empty().append('<option value="">Kullanıcı seçin...</option>');
+      const $tableBody = $('#sessionUsersTable tbody');
+      $tableBody.empty();
       
       if (!users?.length) {
-        $userSelect.append('<option value="" disabled>(Kullanıcı bulunamadı)</option>');
+        $tableBody.append('<tr><td colspan="6" class="text-center text-muted">Bu oturumda kullanıcı bulunamadı</td></tr>');
         return;
       }
       
       users.forEach(user => {
-        const label = `${user.user_id} (${user.total} mesaj, ${user.like} like)`;
-        $userSelect.append(`<option value="${user.user_id}">${esc(label)}</option>`);
+        const successRate = user.total > 0 ? Math.round((user.like / user.total) * 100) : 0;
+        const lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleString('tr-TR') : 'Bilinmiyor';
+        
+        const row = `
+          <tr>
+            <td><code class="small">${esc(user.user_id.substring(0, 16))}...</code></td>
+            <td><span class="badge bg-primary">${user.total}</span></td>
+            <td><span class="badge bg-success">${user.like}</span></td>
+            <td><span class="badge bg-danger">${user.dislike}</span></td>
+            <td><small>${lastActivity}</small></td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary select-user" data-user-id="${esc(user.user_id)}">
+                <i class="bi bi-arrow-right"></i> Seç
+              </button>
+            </td>
+          </tr>
+        `;
+        $tableBody.append(row);
       });
+      
+      $('#sessionUsersInfo').show();
     });
   }
 
@@ -307,10 +368,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update pagination if available
     if (response.pagination) {
       updatePagination(response.pagination);
+    } else {
+      $('#resultsPagination').empty();
+      $('#paginationInfo').text('');
     }
     
-    // Update info
-    $('#resultsInfo').html(`<small><i class="bi bi-info-circle"></i> ${currentResults.length} sonuç bulundu</small>`);
+    // Update info with more details
+    const total = response.pagination ? response.pagination.total : currentResults.length;
+    
+    // Add date range info if applicable
+    let dateInfo = '';
+    if (currentResults.length > 0) {
+      const dates = currentResults.map(r => r.timestamp).filter(t => t).sort();
+      if (dates.length > 0) {
+        const firstDate = new Date(dates[0]).toLocaleDateString('tr-TR');
+        const lastDate = new Date(dates[dates.length - 1]).toLocaleDateString('tr-TR');
+        if (firstDate === lastDate) {
+          dateInfo = ` (${firstDate})`;
+        } else {
+          dateInfo = ` (${firstDate} - ${lastDate})`;
+        }
+      }
+    }
+    
+    if (total === 0) {
+      $('#resultsInfo').html(`<small><i class="bi bi-exclamation-circle text-warning"></i> Bu kriterlere uygun sonuç bulunamadı</small>`);
+    } else {
+      $('#resultsInfo').html(`<small><i class="bi bi-info-circle"></i> ${total} sonuç bulundu${dateInfo}</small>`);
+    }
     
     // Update seasons from results
     currentResults.forEach(item => {
@@ -383,7 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle personality
     if (rowData.assistant_personality) {
-      $('#modalPersonalityBadge').text(rowData.assistant_personality).show();
+      const personalityBadge = getPersonalityBadge(rowData.assistant_personality);
+      $('#modalPersonalityBadge').html(personalityBadge).show();
     } else {
       $('#modalPersonalityBadge').hide();
     }
@@ -467,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
       csvContent.push(csvRow.join(','));
     });
-    
+
     return csvContent.join('\n');
   }
 
@@ -512,40 +598,92 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tab change handler - initialize chat log interface
   $('#logs-tab').on('shown.bs.tab', () => {
     initChatResultsTable();
-    updateOverviewStats();
-    loadSessions();
+    if (isAuthenticated) {
+      updateOverviewStats();
+      loadSessions();
+    }
   });
 
   // Session selection change
   $('#sessionSelect').on('change', function() {
     const sessionId = $(this).val();
-    loadUsersForSession(sessionId);
+    
+    if (sessionId) {
+      // Enable the load button
+      $('#loadSessionData').prop('disabled', false);
+      
+      // Load and display users for this session
+      loadUsersForSession(sessionId);
+      $('#sessionUsersInfo').show();
+    } else {
+      // Disable the load button and hide user info
+      $('#loadSessionData').prop('disabled', true);
+      $('#sessionUsersInfo').hide();
+    }
   });
 
   // Search handlers
   $('#searchGlobal').on('click', function() {
+    const fromDate = $('#globalFromDate').val();
+    const toDate = $('#globalToDate').val();
+    
+    // If specific dates are selected, use more results
+    const perPage = (fromDate || toDate) ? 50 : 25;
+    
     const searchParams = {
       mode: 'global',
       q: $('#globalSearch').val(),
       season: $('#seasonFilterGlobal').val(),
       sort: $('#globalSortOrder').val(),
-      from: $('#globalFromDate').val(),
-      to: $('#globalToDate').val(),
+      from: fromDate,
+      to: toDate,
       page: 1,
-      per_page: 50
+      per_page: perPage,
+      limit: (fromDate || toDate) ? 200 : 100
     };
+    
+    console.log('Global search clicked. Params:', searchParams);
     performSearch(searchParams);
   });
 
   $('#loadSessionData').on('click', function() {
     const sessionId = $('#sessionSelect').val();
-    const userId = $('#userSelect').val();
     
-    if (!sessionId || !userId) {
-      alert('Lütfen önce oturum ve kullanıcı seçin.');
+    if (!sessionId) {
+      alert('Lütfen önce bir oturum seçin.');
       return;
     }
     
+    // Check if there are multiple users in this session
+    const userRows = $('#sessionUsersTable tbody tr').length;
+    
+    if (userRows === 0) {
+      alert('Bu oturumda kullanıcı bulunamadı.');
+      return;
+    } else if (userRows === 1) {
+      // Single user - automatically load their data
+      const userId = $('#sessionUsersTable tbody tr').first().find('.select-user').data('user-id');
+      loadSessionMessages(sessionId, userId);
+    } else {
+      // Multiple users - show all users' messages
+      loadAllSessionMessages(sessionId);
+    }
+  });
+
+  // Handle user selection from session users table
+  $(document).on('click', '.select-user', function() {
+    const sessionId = $('#sessionSelect').val();
+    const userId = $(this).data('user-id');
+    
+    // Highlight selected user
+    $('#sessionUsersTable tbody tr').removeClass('table-active');
+    $(this).closest('tr').addClass('table-active');
+    
+    // Load messages for this specific user
+    loadSessionMessages(sessionId, userId);
+  });
+
+  function loadSessionMessages(sessionId, userId) {
     const searchParams = {
       mode: 'session',
       session: sessionId,
@@ -553,12 +691,28 @@ document.addEventListener('DOMContentLoaded', () => {
       feedback: $('#sessionFeedbackFilter').val(),
       q: $('#sessionSearch').val(),
       page: 1,
-      per_page: $('#advancedPerPage').val() || 25,
+      per_page: 25,
       sort: 'desc',
-      order_by: $('#advancedOrderBy').val() || 'timestamp'
+      order_by: 'timestamp'
     };
     performSearch(searchParams);
-  });
+  }
+
+  function loadAllSessionMessages(sessionId) {
+    // For multiple users, use global search with session filter
+    const searchParams = {
+      mode: 'global',
+      q: $('#sessionSearch').val(),
+      feedback: $('#sessionFeedbackFilter').val(),
+      page: 1,
+      per_page: 50,
+      limit: 200
+    };
+    
+    // Add session filtering (we need to enhance the backend for this)
+    console.log('Loading all messages for session:', sessionId);
+    performSearch(searchParams);
+  }
 
   $('#loadAllLikes').on('click', function() {
     const searchParams = {
@@ -578,10 +732,41 @@ document.addEventListener('DOMContentLoaded', () => {
     performSearch(searchParams);
   });
 
+  $('#loadAdvancedSearch').on('click', function() {
+    const searchParams = {
+      mode: 'global',
+      q: $('#advancedSearchText').val(),
+      season: $('#advancedSeasonFilter').val(),
+      feedback: $('#advancedFeedbackFilter').val(),
+      personality: $('#advancedPersonalityFilter').val(),
+      from: $('#advancedFromDate').val(),
+      to: $('#advancedToDate').val(),
+      sort: 'desc', // Always use desc for advanced search
+      page: 1,
+      per_page: $('#advancedPerPage').val() || 25,
+      order_by: $('#advancedOrderBy').val() || 'timestamp'
+    };
+    performSearch(searchParams);
+  });
+
   // Quick date filters
   $('#quickToday, #quick7d, #quick30d').on('click', function(e) {
     e.preventDefault();
-    const range = $(this).attr('id').replace('quick', '').toLowerCase();
+    const $btn = $(this);
+    const range = $btn.attr('id').replace('quick', '').toLowerCase();
+    
+    // Update button states
+    $('#quickToday, #quick7d, #quick30d').removeClass('active');
+    $btn.addClass('active');
+    
+    // Clear manual date inputs when using quick filters
+    $('#globalFromDate, #globalToDate').val('');
+    
+    // Different per_page for different ranges
+    let perPage = 25;
+    if (range === 'today') perPage = 10;      // Less for today (more precise)
+    else if (range === '7d') perPage = 25;    // Medium for week
+    else if (range === '30d') perPage = 50;   // More for month
     
     const searchParams = {
       mode: 'global',
@@ -590,8 +775,11 @@ document.addEventListener('DOMContentLoaded', () => {
       season: $('#seasonFilterGlobal').val(),
       sort: $('#globalSortOrder').val(),
       page: 1,
-      per_page: 50
+      per_page: perPage,
+      limit: range === 'today' ? 50 : 200  // Lower limit for today
     };
+    
+    console.log('Quick filter clicked:', range, 'Search params:', searchParams);
     performSearch(searchParams);
   });
 
@@ -647,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="mb-3">
                 <h6 class="card-title text-success mb-2">
                   <i class="bi bi-robot"></i> Asistan
-                  ${item.assistant_personality ? `<span class="badge bg-warning">${esc(item.assistant_personality)}</span>` : ''}
+                  ${item.assistant_personality ? getPersonalityBadge(item.assistant_personality) : ''}
                 </h6>
                 <p class="card-text small text-truncate" style="max-height: 3.6em; overflow: hidden;">
                   ${esc(item.assistant_response || 'Yanıt bulunamadı')}
@@ -708,8 +896,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Reset filters
   $('#resetAllFilters').on('click', function() {
     // Reset all form fields
-    $('#globalSearch, #globalFromDate, #globalToDate, #sessionSearch').val('');
-    $('#seasonFilterGlobal, #feedbackSeasonFilter, #sessionSelect, #userSelect').val('');
+    $('#globalSearch, #globalFromDate, #globalToDate, #sessionSearch, #advancedSearchText, #advancedFromDate, #advancedToDate').val('');
+    $('#seasonFilterGlobal, #feedbackSeasonFilter, #advancedSeasonFilter, #sessionSelect, #userSelect, #advancedFeedbackFilter, #advancedPersonalityFilter').val('');
     $('#globalSortOrder').val('desc');
     $('#sessionFeedbackFilter').val('any');
     $('#advancedPerPage').val('25');
@@ -732,6 +920,11 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#clearGlobalSearch').on('click', function() {
     $('#globalSearch').val('');
   });
+
+  $('#clearAdvancedSearch').on('click', function() {
+    $('#advancedSearchText').val('');
+  });
+
 
   // Real-time search for global search
   let searchTimeout;
