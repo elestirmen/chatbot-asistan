@@ -195,7 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       ],
-      order: [[1, 'desc']],
+      order: [], // Don't apply default ordering - use server order
+      ordering: false, // Disable client-side sorting completely
       paging: false,
       searching: false,
       info: false,
@@ -372,9 +373,22 @@ document.addEventListener('DOMContentLoaded', () => {
       currentResults = response.items || [];
     }
     
+    // Debug: show first few timestamps to verify sorting
+    if (currentResults.length > 0) {
+      console.log('Results timestamp order (first 5):');
+      currentResults.slice(0, 5).forEach((item, i) => {
+        console.log(`${i+1}. ${item.timestamp} (${item.assistant_personality || 'unknown'})`);
+      });
+    }
+    
     chatResultsTable.clear();
-    chatResultsTable.rows.add(currentResults);
-    chatResultsTable.draw();
+    
+    // Add data without reordering
+    currentResults.forEach((item, index) => {
+      chatResultsTable.row.add(item);
+    });
+    
+    chatResultsTable.draw(false); // false = don't reset order
     
     // Update result count
     $('#resultCount').text(currentResults.length);
