@@ -215,11 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Get analytics summary
-    $.getJSON('/admin/api/analytics/summary', (stats) => {
-      console.log('Analytics stats received:', stats);
+    // Get accurate stats from chat logs
+    $.getJSON('/admin/api/chat/stats_summary', (stats) => {
+      console.log('Chat stats received:', stats);
       
-      $('#totalChats').text(stats.user_messages || 0);
+      // Total messages = total conversation exchanges
+      $('#totalChats').text(stats.total_messages || 0);
       $('#totalLikes').text(stats.feedback_like || 0);
       $('#totalDislikes').text(stats.feedback_dislike || 0);
       
@@ -233,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update season filters
       updateSeasonFilters(stats.by_season || {});
     }).fail((xhr, status, error) => {
-      console.error('Analytics API failed:', xhr, status, error);
+      console.error('Chat stats API failed:', xhr, status, error);
       $('#totalChats, #totalLikes, #totalDislikes').text('0');
       $('#currentSeason').text('-');
       

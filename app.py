@@ -1251,142 +1251,171 @@ def admin_api_analytics_summary():
     first_ts = None
     last_ts = None
 
-    # Try NDJSON analytics first
-    found_analytics = False
-    for f in _iter_event_files():
-        try:
-            with f.open('r', encoding='utf-8') as fp:
-                for line in fp:
-                    line = line.strip()
-                    if not line:
-                        continue
+    # Use chat logs directly for accurate stats (skip NDJSON analytics)
+    # NDJSON analytics may be incomplete, so we rely on actual chat log files
+    for sess in _list_sessions():
+        sess_id = sess['session_id'] if isinstance(sess, dict) else sess
+        sessions_seen.add(sess_id)
+        for u in _list_user_logs(sess_id):
+            entries = _load_logs(sess_id, u['user_id'])
+            for e in entries:
+                # Date filter
+                ts_str = e.get('timestamp')
+                ts = None
+                if ts_str:
                     try:
-                        e = json.loads(line)
+                        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
                     except Exception:
-                        continue
-                    found_analytics = True
-                    ts = _parse_iso_z(e.get('ts'))
-                    if ts:
-                        if (from_dt and ts < from_dt) or (to_dt and ts > to_dt):
-                            continue
-                    season = e.get('season')
-                    if season_filter and season != season_filter:
-                        continue
-
-                    stats['total_events'] += 1
-                    sess_id = e.get('session_id')
-                    if sess_id:
-                        sessions_seen.add(sess_id)
-                    et = e.get('event_type')
-                    if et == 'user_message':
-                        stats['user_messages'] += 1
-                    elif et == 'assistant_response':
-                        stats['assistant_responses'] += 1
-                        lat = e.get('latency_ms')
-                        if isinstance(lat, (int, float)) and lat >= 0:
-                            latency_sum += float(lat)
-                            latency_count += 1
-                    elif et == 'assistant_error':
-                        stats['errors'] += 1
-                        key = e.get('error_type') or 'unknown'
-                        stats['errors_by_type'][key] = stats['errors_by_type'].get(key, 0) + 1
-                    elif et == 'feedback_update':
-                        fb = (e.get('feedback') or '').lower()
-                        if fb == 'like':
-                            stats['feedback_like'] += 1
-                        elif fb == 'dislike':
-                            stats['feedback_dislike'] += 1
-
-                    if season:
-                        s = stats['by_season'].setdefault(season, {
-                            'events': 0,
-                            'user_messages': 0,
-                            'assistant_responses': 0,
-                            'feedback_like': 0,
-                            'feedback_dislike': 0,
-                        })
-                        s['events'] += 1
-                        if et == 'user_message':
-                            s['user_messages'] += 1
-                        elif et == 'assistant_response':
-                            s['assistant_responses'] += 1
-                        elif et == 'feedback_update':
-                            fb = (e.get('feedback') or '').lower()
-                            if fb == 'like':
-                                s['feedback_like'] += 1
-                            elif fb == 'dislike':
-                                s['feedback_dislike'] += 1
-
-                    if ts:
-                        if first_ts is None or ts < first_ts:
-                            first_ts = ts
-                        if last_ts is None or ts > last_ts:
-                            last_ts = ts
-        except Exception:
-            continue
-
-    # If no analytics found, fall back to chat logs
-    if not found_analytics:
-        for sess in _list_sessions():
-            sess_id = sess['session_id'] if isinstance(sess, dict) else sess
-            sessions_seen.add(sess_id)
-            for u in _list_user_logs(sess_id):
-                entries = _load_logs(sess_id, u['user_id'])
-                for e in entries:
-                    # Date filter
-                    ts_str = e.get('timestamp')
-                    ts = None
-                    if ts_str:
-                        try:
-                            ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-                        except Exception:
-                            pass
-                    
-                    if ts and ((from_dt and ts < from_dt) or (to_dt and ts > to_dt)):
-                        continue
-                    
-                    # Season filter
-                    season = _season_from_ts(ts_str)
-                    if season_filter and season != season_filter:
-                        continue
-                    
-                    stats['user_messages'] += 1
-                    stats['assistant_responses'] += 1
-                    
-                    # Feedback stats
-                    fb = e.get('feedback')
+                        pass
+                
+                if ts and ((from_dt and ts < from_dt) or (to_dt and ts > to_dt)):
+                    continue
+                
+                # Season filter
+                season = _season_from_ts(ts_str)
+                if season_filter and season != season_filter:
+                    continue
+                
+                stats['user_messages'] += 1
+                stats['assistant_responses'] += 1
+                
+                # Feedback stats
+                fb = e.get('feedback')
+                if fb == 'like':
+                    stats['feedback_like'] += 1
+                elif fb == 'dislike':
+                    stats['feedback_dislike'] += 1
+                
+                # Season stats
+                if season:
+                    s = stats['by_season'].setdefault(season, {
+                        'events': 0,
+                        'user_messages': 0,
+                        'assistant_responses': 0,
+                        'feedback_like': 0,
+                        'feedback_dislike': 0,
+                    })
+                    s['user_messages'] += 1
+                    s['assistant_responses'] += 1
                     if fb == 'like':
-                        stats['feedback_like'] += 1
+                        s['feedback_like'] += 1
                     elif fb == 'dislike':
-                        stats['feedback_dislike'] += 1
-                    
-                    # Season stats
-                    if season:
-                        s = stats['by_season'].setdefault(season, {
-                            'events': 0,
-                            'user_messages': 0,
-                            'assistant_responses': 0,
-                            'feedback_like': 0,
-                            'feedback_dislike': 0,
-                        })
-                        s['user_messages'] += 1
-                        s['assistant_responses'] += 1
-                        if fb == 'like':
-                            s['feedback_like'] += 1
-                        elif fb == 'dislike':
-                            s['feedback_dislike'] += 1
-                    
-                    # Track time range
-                    if ts:
-                        if first_ts is None or ts < first_ts:
-                            first_ts = ts
-                        if last_ts is None or ts > last_ts:
-                            last_ts = ts
+                        s['feedback_dislike'] += 1
+                
+                # Track time range
+                if ts:
+                    if first_ts is None or ts < first_ts:
+                        first_ts = ts
+                    if last_ts is None or ts > last_ts:
+                        last_ts = ts
 
     stats['unique_sessions'] = len(sessions_seen)
     stats['avg_latency_ms'] = int(latency_sum / latency_count) if latency_count > 0 else 0
     stats['range']['from'] = first_ts.isoformat(sep=' ') if first_ts else None
     stats['range']['to'] = last_ts.isoformat(sep=' ') if last_ts else None
+    return jsonify(stats)
+
+
+@admin_bp.route('/api/chat/stats_summary')
+def admin_api_chat_stats_summary():
+    """Get statistics directly from chat log files for accurate counts"""
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    stats = {
+        'total_messages': 0,
+        'user_messages': 0,
+        'assistant_responses': 0,
+        'feedback_like': 0,
+        'feedback_dislike': 0,
+        'feedback_unrated': 0,
+        'unique_sessions': 0,
+        'by_season': {},
+        'by_personality': {}
+    }
+    
+    sessions_seen = set()
+    first_ts = None
+    last_ts = None
+    
+    for sess in _list_sessions():
+        sess_id = sess['session_id'] if isinstance(sess, dict) else sess
+        sessions_seen.add(sess_id)
+        
+        for u in _list_user_logs(sess_id):
+            entries = _load_logs(sess_id, u['user_id'])
+            
+            for e in entries:
+                # Count messages
+                stats['user_messages'] += 1
+                stats['assistant_responses'] += 1
+                stats['total_messages'] += 1  # Each entry represents one user-assistant exchange
+                
+                # Parse timestamp
+                ts_str = e.get('timestamp')
+                ts = None
+                if ts_str:
+                    try:
+                        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
+                    except Exception:
+                        pass
+                
+                # Track time range
+                if ts:
+                    if first_ts is None or ts < first_ts:
+                        first_ts = ts
+                    if last_ts is None or ts > last_ts:
+                        last_ts = ts
+                
+                # Feedback stats
+                fb = e.get('feedback')
+                if fb == 'like':
+                    stats['feedback_like'] += 1
+                elif fb == 'dislike':
+                    stats['feedback_dislike'] += 1
+                else:
+                    stats['feedback_unrated'] += 1
+                
+                # Season stats
+                season = _season_from_ts(ts_str)
+                if season:
+                    s = stats['by_season'].setdefault(season, {
+                        'messages': 0,
+                        'likes': 0,
+                        'dislikes': 0,
+                        'unrated': 0
+                    })
+                    s['messages'] += 1
+                    if fb == 'like':
+                        s['likes'] += 1
+                    elif fb == 'dislike':
+                        s['dislikes'] += 1
+                    else:
+                        s['unrated'] += 1
+                
+                # Personality stats
+                pers = e.get('assistant_personality')
+                if pers:
+                    p = stats['by_personality'].setdefault(pers, {
+                        'messages': 0,
+                        'likes': 0,
+                        'dislikes': 0,
+                        'unrated': 0
+                    })
+                    p['messages'] += 1
+                    if fb == 'like':
+                        p['likes'] += 1
+                    elif fb == 'dislike':
+                        p['dislikes'] += 1
+                    else:
+                        p['unrated'] += 1
+    
+    stats['unique_sessions'] = len(sessions_seen)
+    stats['range'] = {
+        'from': first_ts.isoformat(sep=' ') if first_ts else None,
+        'to': last_ts.isoformat(sep=' ') if last_ts else None
+    }
+    
     return jsonify(stats)
 
 
