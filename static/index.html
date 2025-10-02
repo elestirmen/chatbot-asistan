@@ -147,6 +147,65 @@
             position: relative;
         }
 
+        /* Hide native select; we render a custom dropdown with avatars */
+        #personality-select { display: none; }
+
+        .persona-dropdown {
+            position: relative;
+        }
+        .persona-dd-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .persona-dd-btn:hover { border-color: var(--kun-accent); }
+        .persona-dd-menu {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            min-width: 220px;
+            max-height: 260px;
+            overflow-y: auto;
+            background: rgba(20, 20, 28, 0.98);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+            padding: 6px;
+            display: none;
+            z-index: 50;
+        }
+        .persona-dd-menu.open { display: block; }
+        .persona-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .persona-item:hover { background: rgba(255,255,255,0.08); }
+        .persona-item .name { font-size: 14px; }
+        .persona-item .slug { font-size: 11px; opacity: 0.6; }
+        .persona-thumb {
+            width: 24px; height: 24px; border-radius: 50%;
+            object-fit: cover; background: rgba(255,255,255,0.06);
+            display: inline-block;
+        }
+        .persona-initial {
+            width: 24px; height: 24px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.10);
+            font-size: 12px; color: #fff;
+        }
+
         .personality-icon {
             width: 64px;
             height: 64px;
@@ -695,14 +754,21 @@
                 <div class="header-content">
                     <div class="personality-selector">
                         <label for="personality-select">Asistan Kişiliği:</label>
-                        <div class="personality-wrapper">
-                            <div class="personality-icon angry" id="personality-icon" data-initial="?" data-has-avatar="false"></div>
-                            <select id="personality-select" aria-label="Asistan kişiliğini seçin" onchange="changePersonality()">
-                                <option value="huysuz" selected data-class="angry">😤 Huysuz Asistan</option>
-                                <option value="notr" data-class="neutral">😐 Nötr Asistan</option>
-                                <option value="pozitif" data-class="positive">😊 Pozitif Asistan</option>
-                            </select>
-                        </div>
+            <div class="personality-wrapper">
+                <div class="personality-icon angry" id="personality-icon" data-initial="?" data-has-avatar="false"></div>
+                <div class="persona-dropdown" id="persona-dropdown">
+                    <button type="button" class="persona-dd-btn" id="persona-dd-btn" aria-haspopup="listbox" aria-expanded="false">
+                        <span class="persona-initial">?</span>
+                        <span id="persona-dd-label">Kişilik</span>
+                    </button>
+                    <div class="persona-dd-menu" id="persona-dd-menu" role="listbox" aria-labelledby="persona-dd-btn"></div>
+                </div>
+                <select id="personality-select" aria-label="Asistan kişiliğini seçin" onchange="changePersonality()">
+                    <option value="huysuz" selected data-class="angry">😤 Huysuz Asistan</option>
+                    <option value="notr" data-class="neutral">😐 Nötr Asistan</option>
+                    <option value="pozitif" data-class="positive">😊 Pozitif Asistan</option>
+                </select>
+            </div>
                     </div>
                     <button onclick="startNewChat()" class="new-chat-button" aria-label="Yeni sohbet başlat">
                         🔄 Yeni Sohbet
@@ -805,6 +871,64 @@
             return initial ? initial.toUpperCase() : '?';
         }
 
+        function getPersonaThumbHTML(persona) {
+            const avatar = persona?.avatar_url || null;
+            if (avatar) {
+                return `<img class="persona-thumb" src="${avatar}" alt="${(persona.name || persona.id || 'Kişilik')} avatarı">`;
+            }
+            const initial = getPersonaInitial(persona);
+            return `<span class="persona-initial">${initial}</span>`;
+        }
+
+        function openPersonaMenu(open) {
+            const menu = document.getElementById('persona-dd-menu');
+            const btn = document.getElementById('persona-dd-btn');
+            if (!menu || !btn) return;
+            const isOpen = open == null ? !menu.classList.contains('open') : open;
+            menu.classList.toggle('open', isOpen);
+            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        function renderPersonaDropdownButton(personaId) {
+            const persona = getPersona(personaId);
+            const btn = document.getElementById('persona-dd-btn');
+            const label = document.getElementById('persona-dd-label');
+            if (!btn || !label) return;
+            const thumb = getPersonaThumbHTML(persona);
+            btn.innerHTML = `${thumb} <span id="persona-dd-label">${persona?.name || personaId}</span>`;
+        }
+
+        function renderPersonaDropdownMenu() {
+            const menu = document.getElementById('persona-dd-menu');
+            const select = document.getElementById('personality-select');
+            if (!menu || !select) return;
+            let html = '';
+            personalityOrder.forEach((id) => {
+                const persona = getPersona(id);
+                const thumb = getPersonaThumbHTML(persona);
+                html += `
+                  <div class="persona-item" role="option" data-persona="${id}">
+                    ${thumb}
+                    <div>
+                      <div class="name">${persona?.name || id}</div>
+                      <div class="slug">${id}</div>
+                    </div>
+                  </div>`;
+            });
+            menu.innerHTML = html;
+
+            // bind click
+            menu.querySelectorAll('.persona-item').forEach((el) => {
+                el.addEventListener('click', () => {
+                    const pid = el.getAttribute('data-persona');
+                    if (!pid) return;
+                    select.value = pid;
+                    openPersonaMenu(false);
+                    changePersonality();
+                });
+            });
+        }
+
         function populatePersonalityOptions() {
             const selectElement = document.getElementById('personality-select');
             if (!selectElement) return;
@@ -875,6 +999,18 @@
             if (desiredValue) {
                 selectElement.value = desiredValue;
             }
+            // Render dropdown UI
+            renderPersonaDropdownButton(selectElement.value);
+            renderPersonaDropdownMenu();
+            const btn = document.getElementById('persona-dd-btn');
+            const menu = document.getElementById('persona-dd-menu');
+            if (btn) btn.addEventListener('click', () => openPersonaMenu());
+            // close on outside click
+            document.addEventListener('click', (e) => {
+                const dd = document.getElementById('persona-dropdown');
+                if (!dd) return;
+                if (!dd.contains(e.target)) openPersonaMenu(false);
+            });
         }
         
         /**
@@ -994,6 +1130,8 @@
                         }
                     }
                 }
+                // Update dropdown button label
+                renderPersonaDropdownButton(pers);
                 
                 const response = await fetch(SET_PERSONALITY_URL, {
                     method: 'POST',
