@@ -808,7 +808,6 @@
         function populatePersonalityOptions() {
             const selectElement = document.getElementById('personality-select');
             if (!selectElement) return;
-            const previousValue = selectElement.value;
             selectElement.innerHTML = '';
             personalityOrder.forEach((id) => {
                 const persona = getPersona(id);
@@ -824,8 +823,7 @@
                 selectElement.appendChild(option);
             });
 
-            const desiredValue = personalityCatalog[previousValue] ? previousValue
-                : (personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0]);
+            const desiredValue = (personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0]);
             if (desiredValue) {
                 selectElement.value = desiredValue;
             }
@@ -873,11 +871,9 @@
             populatePersonalityOptions();
             const selectElement = document.getElementById('personality-select');
             if (!selectElement) return;
-            if (!selectElement.value || !personalityCatalog[selectElement.value]) {
-                const fallbackId = personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0];
-                if (fallbackId) {
-                    selectElement.value = fallbackId;
-                }
+            const desiredValue = (personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0]);
+            if (desiredValue) {
+                selectElement.value = desiredValue;
             }
         }
         

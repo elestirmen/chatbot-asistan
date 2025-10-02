@@ -151,6 +151,7 @@ MAX_AVATAR_FILE_SIZE = int(os.getenv("AVATAR_MAX_BYTES", str(2 * 1024 * 1024)))
 
 
 PERSONALITIES_FILE = DATA_DIR / "personalities.json"
+PERSONALITIES_DEFAULT_FALLBACK = "huysuz"
 
 THEME_PRESETS = {
     "angry": {"css_class": "angry", "badge_color": "danger", "badge_icon": "emoji-frown"},
@@ -317,17 +318,26 @@ class PersonalityManager:
             try:
                 raw = json.loads(self.path.read_text("utf-8"))
             except Exception:
-                raw = self.defaults
-                self._write(raw)
+                raw = {"default": self._default_slug, "items": self.defaults}
+                self._write(self.defaults, self._default_slug)
+
+        if isinstance(raw, dict):
+            raw_items = raw.get("items", [])
+            default_slug = str(raw.get("default") or "").strip()
+            if default_slug:
+                self._default_slug = default_slug
+        else:
+            raw_items = raw
+
         entries = []
-        for idx, item in enumerate(raw):
+        for idx, item in enumerate(raw_items):
             try:
                 entries.append(self._normalize(item, idx))
             except ValueError:
                 continue
         if not entries:
             entries = [self._normalize(d, i) for i, d in enumerate(self.defaults)]
-            self._write(entries)
+            self._write(entries, self._default_slug)
         self._ordered_ids = [entry["id"] for entry in entries]
         self._registry = {entry["id"]: entry for entry in entries}
         if self._default_slug not in self._registry:
@@ -370,17 +380,20 @@ class PersonalityManager:
         self._prompt_map = {pid: self._registry[pid]["prompt"] for pid in self._ordered_ids}
 
     def _write_defaults(self) -> None:
-        self._write(self.defaults)
+        self._write(self.defaults, self._default_slug)
 
-    def _write(self, entries: List[Dict[str, Any]]) -> None:
+    def _write(self, entries: List[Dict[str, Any]], default_slug: Optional[str]) -> None:
+        payload = {
+            "default": default_slug or self._default_slug,
+            "items": entries,
+        }
         with self.path.open("w", encoding="utf-8") as fp:
-            json.dump(entries, fp, ensure_ascii=False, indent=2)
+            json.dump(payload, fp, ensure_ascii=False, indent=2)
 
     def _persist(self) -> None:
         payload = [self._registry[pid] for pid in self._ordered_ids]
         with self._lock:
-            with self.path.open("w", encoding="utf-8") as fp:
-                json.dump(payload, fp, ensure_ascii=False, indent=2)
+            self._write(payload, self._default_slug)
         self._rebuild_prompt_cache()
 
 
@@ -438,7 +451,7 @@ class SystemPromptManager:
 
 
 system_prompt_manager = SystemPromptManager(SYSTEM_PROMPT_FILE, DEFAULT_SYSTEM_PROMPT)
-PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", "huysuz").strip().lower() or "huysuz"
+PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", PERSONALITIES_DEFAULT_FALLBACK).strip().lower() or PERSONALITIES_DEFAULT_FALLBACK
 personality_manager = PersonalityManager(PERSONALITIES_FILE, DEFAULT_PERSONALITY_ENTRIES, PERSONALITY_ENV_DEFAULT)
 DEFAULT_PERSONALITY = personality_manager.default
 
@@ -1013,6 +1026,7 @@ def set_personality():
     if not personality_manager.exists(pers):
         return jsonify({"error": "Geçersiz kişilik"}), 400
     session["current_personality"] = pers
+    session["_default_personality_snapshot"] = personality_manager.default
     session["messages"] = build_system_messages(pers)
     session.modified = True
     persona_name = personality_manager.get(pers)["name"]
@@ -1377,6 +1391,10 @@ def admin_personality_set_default(slug: str):
         return jsonify({'error': 'Not Found'}), 404
 
     DEFAULT_PERSONALITY = personality_manager.default
+    session['_default_personality_snapshot'] = DEFAULT_PERSONALITY
+    session['current_personality'] = DEFAULT_PERSONALITY
+    session['messages'] = build_system_messages(DEFAULT_PERSONALITY)
+    session.modified = True
     return jsonify({'default': personality_manager.default})
 
 
