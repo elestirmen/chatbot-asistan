@@ -166,6 +166,7 @@
             cursor: pointer;
         }
         .persona-dd-btn:hover { border-color: var(--kun-accent); }
+        .persona-caret { margin-left: 6px; opacity: .85; }
         .persona-dd-menu {
             position: absolute;
             top: 110%;
@@ -753,12 +754,12 @@
             <div class="chat-header">
                 <div class="header-content">
                     <div class="personality-selector">
-                        <label for="personality-select">Asistan Kişiliği:</label>
+                        <label for="personality-select">Asistan Kişiliği: <span class="click-hint">(Tıklayarak değiştirin)</span></label>
             <div class="personality-wrapper">
-                <div class="personality-icon angry" id="personality-icon" data-initial="?" data-has-avatar="false"></div>
+                <div class="personality-icon angry" id="personality-icon" data-initial="?" data-has-avatar="false" role="button" tabindex="0" title="Kişiliği değiştir — tek tık menü, çift tık sonraki"></div>
                 <div class="persona-dropdown" id="persona-dropdown">
-                    <button type="button" class="persona-dd-btn" id="persona-dd-btn" aria-haspopup="listbox" aria-expanded="false">
-                        <span id="persona-dd-label">Kişilik</span>
+                    <button type="button" class="persona-dd-btn" id="persona-dd-btn" aria-haspopup="listbox" aria-expanded="false" title="Kişiliği değiştir">
+                        <span id="persona-dd-label">Kişilik</span><span class="persona-caret">▾</span>
                     </button>
                     <div class="persona-dd-menu" id="persona-dd-menu" role="listbox" aria-labelledby="persona-dd-btn"></div>
                 </div>
@@ -923,8 +924,43 @@
                     select.value = pid;
                     openPersonaMenu(false);
                     changePersonality();
+                    dismissPersonaHint();
                 });
             });
+        }
+
+        function dismissPersonaHint() {
+            const hint = document.getElementById('persona-hint');
+            if (hint) hint.classList.remove('show');
+            try { localStorage.setItem('kun_persona_hint_shown_v1', '1'); } catch (e) {}
+        }
+
+        function maybeShowPersonaHint() {
+            let shown = false;
+            try { shown = !!localStorage.getItem('kun_persona_hint_shown_v1'); } catch (e) { shown = false; }
+            if (shown) return;
+            const hint = document.getElementById('persona-hint');
+            const btn = document.getElementById('persona-dd-btn');
+            const icon = document.getElementById('personality-icon');
+            if (!hint) return;
+            hint.classList.add('show');
+            const hide = () => dismissPersonaHint();
+            if (btn) btn.addEventListener('click', hide, { once: true });
+            if (icon) icon.addEventListener('click', hide, { once: true });
+            setTimeout(hide, 6000);
+        }
+
+        function cyclePersona(step = 1) {
+            const select = document.getElementById('personality-select');
+            if (!select || !Array.isArray(personalityOrder) || personalityOrder.length < 2) {
+                openPersonaMenu(true);
+                return;
+            }
+            const current = select.value;
+            const idx = Math.max(0, personalityOrder.indexOf(current));
+            const nextIdx = (idx + step + personalityOrder.length) % personalityOrder.length;
+            select.value = personalityOrder[nextIdx];
+            changePersonality();
         }
 
         function populatePersonalityOptions() {
@@ -1009,6 +1045,25 @@
                 if (!dd) return;
                 if (!dd.contains(e.target)) openPersonaMenu(false);
             });
+            // also open via avatar click and keyboard
+            const iconEl = document.getElementById('personality-icon');
+            if (iconEl) {
+                iconEl.addEventListener('click', () => openPersonaMenu(true));
+                iconEl.addEventListener('dblclick', () => cyclePersona(1));
+                iconEl.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        openPersonaMenu(true);
+                    } else if (ev.key === 'ArrowRight') {
+                        ev.preventDefault();
+                        cyclePersona(1);
+                    } else if (ev.key === 'ArrowLeft') {
+                        ev.preventDefault();
+                        cyclePersona(-1);
+                    }
+                });
+            }
+            maybeShowPersonaHint();
         }
         
         /**
