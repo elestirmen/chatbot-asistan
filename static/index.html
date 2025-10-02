@@ -152,6 +152,7 @@
 
         .persona-dropdown {
             position: relative;
+            z-index: 1000;
         }
         .persona-dd-btn {
             display: inline-flex;
@@ -180,7 +181,7 @@
             box-shadow: 0 6px 18px rgba(0,0,0,0.35);
             padding: 6px;
             display: none;
-            z-index: 50;
+            z-index: 1001;
         }
         .persona-dd-menu.open { display: block; }
         .persona-item {
@@ -1038,7 +1039,15 @@
             renderPersonaDropdownMenu();
             const btn = document.getElementById('persona-dd-btn');
             const menu = document.getElementById('persona-dd-menu');
-            if (btn) btn.addEventListener('click', () => openPersonaMenu());
+            if (btn) {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); openPersonaMenu(); });
+                btn.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        openPersonaMenu();
+                    }
+                });
+            }
             // close on outside click
             document.addEventListener('click', (e) => {
                 const dd = document.getElementById('persona-dropdown');
@@ -1048,7 +1057,7 @@
             // also open via avatar click and keyboard
             const iconEl = document.getElementById('personality-icon');
             if (iconEl) {
-                iconEl.addEventListener('click', () => openPersonaMenu(true));
+                iconEl.addEventListener('click', (e) => { e.stopPropagation(); openPersonaMenu(true); });
                 iconEl.addEventListener('dblclick', () => cyclePersona(1));
                 iconEl.addEventListener('keydown', (ev) => {
                     if (ev.key === 'Enter' || ev.key === ' ') {
@@ -1062,6 +1071,11 @@
                         cyclePersona(-1);
                     }
                 });
+            }
+            const labelEl = document.querySelector('label[for="personality-select"]');
+            if (labelEl) {
+                labelEl.style.cursor = 'pointer';
+                labelEl.addEventListener('click', (e) => { e.stopPropagation(); openPersonaMenu(true); });
             }
             maybeShowPersonaHint();
         }
