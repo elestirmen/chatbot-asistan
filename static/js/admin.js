@@ -49,6 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const personalityWelcomeInput = document.getElementById('personalityWelcome');
   const personalityPromptInput = document.getElementById('personalityPrompt');
   const personalitySetDefaultInput = document.getElementById('personalitySetDefault');
+  const personalityAvatarInput = document.getElementById('personalityAvatarInput');
+  const personalityAvatarPreview = document.getElementById('personalityAvatarPreview');
+  const removePersonalityAvatarBtn = document.getElementById('removePersonalityAvatarBtn');
+  const systemPromptInput = document.getElementById('systemPromptInput');
+  const saveSystemPromptBtn = document.getElementById('saveSystemPromptBtn');
+  const reloadSystemPromptBtn = document.getElementById('reloadSystemPromptBtn');
+  const systemPromptStatus = document.getElementById('systemPromptStatus');
   const personalitiesLoadingEl = document.getElementById('personalitiesLoading');
   const personalitiesTableWrapper = document.getElementById('personalitiesTableWrapper');
   const personalitiesTableBody = document.querySelector('#personalitiesTable tbody');
@@ -59,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let editingPersonalityId = null;
   let personalityList = [];
   let defaultPersonalityId = null;
+  let currentSystemPrompt = '';
+  let avatarRemoveRequested = false;
+  let currentAvatarPreviewUrl = null;
+  let existingAvatarRelative = null;
   const themePresets = {
     angry: { badge_color: 'danger', badge_icon: 'emoji-frown' },
     neutral: { badge_color: 'secondary', badge_icon: 'emoji-neutral' },
@@ -69,6 +80,77 @@ document.addEventListener('DOMContentLoaded', () => {
     neutral: 'Nötr',
     positive: 'Pozitif',
   };
+
+  function resolveAvatarUrl(relativePath) {
+    if (!relativePath) return null;
+    let path = String(relativePath).trim();
+    if (!path) return null;
+    if (path.startsWith('/')) path = path.slice(1);
+    if (path.startsWith('static/')) path = path.slice(7);
+    return `/static/${path}`;
+  }
+
+  function setAvatarPreview(src, isObjectUrl = false) {
+    if (!personalityAvatarPreview) return;
+    if (currentAvatarPreviewUrl) {
+      URL.revokeObjectURL(currentAvatarPreviewUrl);
+      currentAvatarPreviewUrl = null;
+    }
+    if (src) {
+      personalityAvatarPreview.src = src;
+      personalityAvatarPreview.classList.remove('d-none');
+      if (isObjectUrl) {
+        currentAvatarPreviewUrl = src;
+      }
+    } else {
+      personalityAvatarPreview.src = '';
+      personalityAvatarPreview.classList.add('d-none');
+    }
+  }
+
+  function setAvatarRemoveButtonVisible(visible) {
+    if (!removePersonalityAvatarBtn) return;
+    removePersonalityAvatarBtn.classList.toggle('d-none', !visible);
+    removePersonalityAvatarBtn.disabled = !visible;
+  }
+
+  function handleAvatarFileChange() {
+    if (!personalityAvatarInput) return;
+    const file = personalityAvatarInput.files?.[0] || null;
+    if (file) {
+      const objectUrl = URL.createObjectURL(file);
+      setAvatarPreview(objectUrl, true);
+      setAvatarRemoveButtonVisible(true);
+      avatarRemoveRequested = false;
+    } else if (existingAvatarRelative && !avatarRemoveRequested) {
+      const resolved = resolveAvatarUrl(existingAvatarRelative);
+      setAvatarPreview(resolved);
+      setAvatarRemoveButtonVisible(Boolean(resolved));
+    } else {
+      setAvatarPreview(null);
+      setAvatarRemoveButtonVisible(false);
+    }
+  }
+
+  function handleRemoveAvatarClick() {
+    avatarRemoveRequested = true;
+    existingAvatarRelative = null;
+    if (personalityAvatarInput) personalityAvatarInput.value = '';
+    setAvatarPreview(null);
+    setAvatarRemoveButtonVisible(false);
+  }
+
+  function showSystemPromptStatus(message, type = 'muted') {
+    if (!systemPromptStatus) return;
+    systemPromptStatus.textContent = message || '';
+    systemPromptStatus.className = `text-${type}`;
+  }
+
+  function setSystemPromptControlsEnabled(enabled) {
+    if (systemPromptInput) systemPromptInput.disabled = !enabled;
+    if (saveSystemPromptBtn) saveSystemPromptBtn.disabled = !enabled;
+    if (reloadSystemPromptBtn) reloadSystemPromptBtn.disabled = !enabled;
+  }
 
   function setPersonalityLoading(isLoading) {
     if (!personalitiesLoadingEl) return;
@@ -152,6 +234,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<button type="button" class="btn btn-outline-primary btn-sm set-default-personality" data-personality="${slug}"><i class="bi bi-star"></i> Varsayılan Yap</button>`
             : '<span class="text-muted small">-</span>');
       const themeLabel = esc(themeNameMap[item.theme] || item.theme || '-');
+      const avatarResolved = item.avatar_resolved || resolveAvatarUrl(item.avatar_url);
+      const avatarHtml = avatarResolved
+        ? `<img src="${esc(avatarResolved)}" alt="${displayName} avatar" class="rounded-circle border" style="width:48px;height:48px;object-fit:cover;">`
+        : '<span class="text-muted small">-</span>';
       const actionsHtml = isAuthenticated
         ? `<div class="btn-group btn-group-sm" role="group">
              <button type="button" class="btn btn-warning edit-personality" data-personality="${slug}"><i class="bi bi-pencil"></i></button>
@@ -172,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
         </td>
+        <td>${avatarHtml}</td>
         <td><span class="badge bg-light text-dark border">${themeLabel}</span></td>
         <td>${welcomeHtml}</td>
         <td>${promptHtml}</td>
@@ -199,6 +286,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (personalityIdInput) {
       personalityIdInput.disabled = false;
     }
+    if (personalityAvatarInput) {
+      personalityAvatarInput.value = '';
+    }
+    existingAvatarRelative = null;
+    avatarRemoveRequested = false;
+    setAvatarPreview(null);
+    setAvatarRemoveButtonVisible(false);
   }
 
   function openPersonalityModal(slug = null) {
@@ -231,6 +325,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (personalityBadgeIconInput) personalityBadgeIconInput.value = entry.badge_icon || '';
       if (personalityWelcomeInput) personalityWelcomeInput.value = entry.welcome_message || '';
       if (personalityPromptInput) personalityPromptInput.value = entry.prompt || '';
+      existingAvatarRelative = entry.avatar_url || null;
+      const resolvedAvatar = entry.avatar_resolved || resolveAvatarUrl(existingAvatarRelative);
+      setAvatarPreview(resolvedAvatar);
+      setAvatarRemoveButtonVisible(Boolean(resolvedAvatar));
+      avatarRemoveRequested = false;
+      if (personalityAvatarInput) personalityAvatarInput.value = '';
     } else {
       if (personalityIdInput) {
         personalityIdInput.value = '';
@@ -240,6 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (personalityEmojiInput) personalityEmojiInput.value = '🤖';
       if (personalityThemeInput) personalityThemeInput.value = 'neutral';
       applyThemeDefaults('neutral', true);
+      existingAvatarRelative = null;
+      avatarRemoveRequested = false;
+      setAvatarPreview(null);
+      setAvatarRemoveButtonVisible(false);
+      if (personalityAvatarInput) personalityAvatarInput.value = '';
     }
 
     personalityModal.show();
@@ -277,6 +382,9 @@ document.addEventListener('DOMContentLoaded', () => {
       delete payload.id;
     }
 
+    const avatarFile = personalityAvatarInput?.files?.[0] || null;
+    const shouldDeleteAvatar = Boolean(editingPersonalityId && avatarRemoveRequested && !avatarFile);
+
     const submitBtn = personalityForm.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.disabled = true;
 
@@ -306,7 +414,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return resp.json();
       })
-      .then(() => {
+      .then((data) => {
+        const slug = data?.item?.id || editingPersonalityId || idValue;
+        const followUps = [];
+        if (slug) {
+          if (avatarFile) {
+            followUps.push(uploadAvatar(slug, avatarFile));
+          } else if (shouldDeleteAvatar) {
+            followUps.push(deleteAvatar(slug));
+          }
+        }
+        return Promise.all(followUps).then(() => data);
+      })
+      .then((data) => {
+        if (typeof data?.default === 'string') {
+          defaultPersonalityId = data.default;
+        }
+        avatarRemoveRequested = false;
+        existingAvatarRelative = null;
         personalityModal?.hide();
         resetPersonalityForm();
         loadPersonalities();
@@ -389,6 +514,53 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
+  function uploadAvatar(slug, file) {
+    if (!slug || !file) return Promise.resolve();
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return fetch(`/admin/api/personalities/${encodeURIComponent(slug)}/avatar`, {
+      method: 'POST',
+      body: formData,
+    }).then((resp) => {
+      if (resp.status === 401) {
+        loginModal?.show();
+        throw new Error('Bu işlem için giriş yapmalısınız.');
+      }
+      if (!resp.ok) {
+        return resp.json().then((data) => {
+          const message = data?.message || data?.error || 'Avatar yüklenemedi.';
+          throw new Error(message);
+        }).catch((err) => {
+          if (err instanceof Error) throw err;
+          throw new Error('Avatar yüklenemedi.');
+        });
+      }
+      return resp.json();
+    });
+  }
+
+  function deleteAvatar(slug) {
+    if (!slug) return Promise.resolve();
+    return fetch(`/admin/api/personalities/${encodeURIComponent(slug)}/avatar`, {
+      method: 'DELETE',
+    }).then((resp) => {
+      if (resp.status === 401) {
+        loginModal?.show();
+        throw new Error('Bu işlem için giriş yapmalısınız.');
+      }
+      if (!resp.ok) {
+        return resp.json().then((data) => {
+          const message = data?.message || data?.error || 'Avatar silinemedi.';
+          throw new Error(message);
+        }).catch((err) => {
+          if (err instanceof Error) throw err;
+          throw new Error('Avatar silinemedi.');
+        });
+      }
+      return resp.json();
+    });
+  }
+
   function loadPersonalities() {
     if (!personalitiesTableBody) return;
     setPersonalityLoading(true);
@@ -402,7 +574,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return resp.json();
       })
       .then((data) => {
-        personalityList = Array.isArray(data?.items) ? data.items : [];
+        personalityList = Array.isArray(data?.items)
+          ? data.items.map((item) => {
+              const normalized = { ...item };
+              normalized.avatar_url = item?.avatar_url || null;
+              normalized.avatar_resolved = resolveAvatarUrl(normalized.avatar_url);
+              return normalized;
+            })
+          : [];
         defaultPersonalityId = data?.default || (personalityList[0]?.id ?? null);
         syncPersonalityRegistry();
         populatePersonalityFilters();
@@ -431,6 +610,112 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const POST_LOGIN_DEFAULT_FILE = 'pdf_qa_ogrenci_kilavuzu_2024_2025.json';
 
+  function loadSystemPrompt() {
+    if (!systemPromptInput) return Promise.resolve();
+    setSystemPromptControlsEnabled(false);
+    showSystemPromptStatus('Yükleniyor...', 'muted');
+    return fetch('/admin/api/system_prompt')
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          throw new Error('Sistem promptu alınamadı.');
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        currentSystemPrompt = data?.base_prompt || '';
+        if (systemPromptInput) {
+          systemPromptInput.value = currentSystemPrompt;
+        }
+        if (isAuthenticated) {
+          setSystemPromptControlsEnabled(true);
+        }
+        handleSystemPromptInput();
+        return data;
+      })
+      .catch((err) => {
+        showSystemPromptStatus(err.message || 'Sistem promptu alınamadı.', 'danger');
+        if (isAuthenticated) {
+          setSystemPromptControlsEnabled(true);
+        }
+        throw err;
+      });
+  }
+
+  function saveSystemPrompt() {
+    if (!systemPromptInput || !isAuthenticated) return;
+    const value = systemPromptInput.value.trim();
+    if (!value) {
+      showSystemPromptStatus('Prompt boş olamaz.', 'danger');
+      systemPromptInput.focus();
+      return;
+    }
+    setSystemPromptControlsEnabled(false);
+    showSystemPromptStatus('Kaydediliyor...', 'muted');
+    fetch('/admin/api/system_prompt', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base_prompt: value }),
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Sistem promptu kaydedilemedi.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Sistem promptu kaydedilemedi.');
+          });
+        }
+        return resp.json();
+      })
+      .then(() => {
+        currentSystemPrompt = value;
+        showSystemPromptStatus('Kaydedildi.', 'success');
+      })
+      .catch((err) => {
+        showSystemPromptStatus(err.message || 'Sistem promptu kaydedilemedi.', 'danger');
+      })
+      .finally(() => {
+        if (isAuthenticated) {
+          setSystemPromptControlsEnabled(true);
+          handleSystemPromptInput();
+        } else {
+          setSystemPromptControlsEnabled(false);
+        }
+      });
+  }
+
+  function handleSystemPromptInput() {
+    if (!systemPromptInput || !saveSystemPromptBtn) return;
+    if (!isAuthenticated) {
+      saveSystemPromptBtn.disabled = true;
+      return;
+    }
+    const value = systemPromptInput.value;
+    const trimmedValue = value.trim();
+    const trimmedCurrent = currentSystemPrompt.trim();
+    if (!trimmedValue) {
+      showSystemPromptStatus('Prompt girilmedi.', 'warning');
+      saveSystemPromptBtn.disabled = true;
+      return;
+    }
+    if (trimmedValue === trimmedCurrent) {
+      showSystemPromptStatus('Kaydedildi.', 'success');
+      saveSystemPromptBtn.disabled = true;
+    } else {
+      showSystemPromptStatus('Kaydedilmedi.', 'warning');
+      saveSystemPromptBtn.disabled = false;
+    }
+  }
+
   function updateAuthUI() {
     if (isAuthenticated) {
       $('#loginBtn').hide();
@@ -442,6 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#loginForm').removeClass('was-validated');
       
       if (addPersonalityBtn) addPersonalityBtn.disabled = false;
+      setSystemPromptControlsEnabled(true);
+      handleSystemPromptInput();
       // Update overview stats after login
       updateOverviewStats();
     } else {
@@ -455,14 +742,24 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#currentSeason').text('-');
       
       if (addPersonalityBtn) addPersonalityBtn.disabled = true;
+      currentSystemPrompt = '';
+      if (systemPromptInput) systemPromptInput.value = '';
+      setSystemPromptControlsEnabled(false);
+      showSystemPromptStatus('Giriş yaptıktan sonra düzenleyebilirsiniz.', 'muted');
       loginModal?.show();
     }
 
     if (lastAuthState !== isAuthenticated) {
       lastAuthState = isAuthenticated;
       loadPersonalities();
+      if (isAuthenticated) {
+        loadSystemPrompt().catch(() => {});
+      }
     } else {
       renderPersonalities();
+      if (isAuthenticated) {
+        handleSystemPromptInput();
+      }
     }
   }
 
@@ -1020,7 +1317,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Personality management actions
   if (refreshPersonalitiesBtn) {
-    refreshPersonalitiesBtn.addEventListener('click', () => loadPersonalities());
+    refreshPersonalitiesBtn.addEventListener('click', () => {
+      loadPersonalities();
+      if (isAuthenticated) {
+        loadSystemPrompt().catch(() => {});
+      }
+    });
   }
   if (addPersonalityBtn) {
     addPersonalityBtn.addEventListener('click', () => openPersonalityModal());
@@ -1031,6 +1333,30 @@ document.addEventListener('DOMContentLoaded', () => {
   if (personalityThemeInput) {
     personalityThemeInput.addEventListener('change', () => {
       applyThemeDefaults(personalityThemeInput.value, !editingPersonalityId);
+    });
+  }
+  if (personalityAvatarInput) {
+    personalityAvatarInput.addEventListener('change', handleAvatarFileChange);
+  }
+  if (removePersonalityAvatarBtn) {
+    removePersonalityAvatarBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      handleRemoveAvatarClick();
+    });
+  }
+  if (systemPromptInput) {
+    systemPromptInput.addEventListener('input', handleSystemPromptInput);
+  }
+  if (saveSystemPromptBtn) {
+    saveSystemPromptBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      saveSystemPrompt();
+    });
+  }
+  if (reloadSystemPromptBtn) {
+    reloadSystemPromptBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      loadSystemPrompt().catch(() => {});
     });
   }
   if (personalitiesTableBody) {

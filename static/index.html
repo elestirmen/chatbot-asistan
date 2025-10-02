@@ -186,6 +186,21 @@
             transition: all 0.3s ease;
         }
 
+        .personality-icon[data-has-avatar="true"] {
+            background-size: cover;
+            background-position: center;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            animation: none;
+        }
+
+        .personality-icon[data-has-avatar="true"]::before {
+            background: transparent;
+        }
+
+        .personality-icon[data-has-avatar="true"]::after {
+            content: '';
+        }
+
         /* Huysuz Asistan - Kızgın Avatar */
         .personality-icon.angry::before {
             background: radial-gradient(circle at 30% 30%, #ff6b6b 0%, #ee5a52 50%, #c44569 100%);
@@ -673,7 +688,7 @@
                     <div class="personality-selector">
                         <label for="personality-select">Asistan Kişiliği:</label>
                         <div class="personality-wrapper">
-                            <div class="personality-icon angry" id="personality-icon" data-emoji="😤"></div>
+                            <div class="personality-icon angry" id="personality-icon" data-emoji="😤" data-has-avatar="false"></div>
                             <select id="personality-select" aria-label="Asistan kişiliğini seçin" onchange="changePersonality()">
                                 <option value="huysuz" selected data-class="angry">😤 Huysuz Asistan</option>
                                 <option value="notr" data-class="neutral">😐 Nötr Asistan</option>
@@ -728,6 +743,7 @@
                 name: 'Huysuz Asistan',
                 emoji: '😤',
                 css_class: 'angry',
+                avatar_url: null,
                 welcome_message: 'Yine mi geldin? Ne istiyorsun?'
             },
             'notr': {
@@ -735,6 +751,7 @@
                 name: 'Nötr Asistan',
                 emoji: '😐',
                 css_class: 'neutral',
+                avatar_url: null,
                 welcome_message: 'Merhaba, size nasıl yardımcı olabilirim?'
             },
             'pozitif': {
@@ -742,12 +759,22 @@
                 name: 'Pozitif Asistan',
                 emoji: '😊',
                 css_class: 'positive',
+                avatar_url: null,
                 welcome_message: 'Harika bir gün! Size yardım edebileceğim için çok mutluyum! 😊'
             }
         };
         let personalityCatalog = { ...fallbackPersonalities };
         let personalityOrder = Object.keys(fallbackPersonalities);
         let defaultPersonalityId = 'huysuz';
+
+        function resolveAvatarUrl(relativePath) {
+            if (!relativePath) return null;
+            let path = String(relativePath).trim();
+            if (!path) return null;
+            if (path.startsWith('/')) path = path.slice(1);
+            if (path.startsWith('static/')) path = path.slice(7);
+            return `/static/${path}`;
+        }
 
         function getPersona(personalityId) {
             return personalityCatalog[personalityId] || fallbackPersonalities[personalityId];
@@ -775,6 +802,9 @@
                 option.value = id;
                 option.textContent = `${persona.emoji || '🤖'} ${persona.name || id}`;
                 option.dataset.class = persona.css_class || 'neutral';
+                if (persona.avatar_url) {
+                    option.dataset.avatar = persona.avatar_url;
+                }
                 selectElement.appendChild(option);
             });
 
@@ -800,8 +830,10 @@
                 personalityOrder = [];
                 items.forEach((item) => {
                     if (!item?.id) return;
-                    personalityCatalog[item.id] = item;
-                    personalityOrder.push(item.id);
+                    const normalized = { ...item };
+                    normalized.avatar_url = resolveAvatarUrl(normalized.avatar_url);
+                    personalityCatalog[normalized.id] = normalized;
+                    personalityOrder.push(normalized.id);
                 });
                 const preferredDefault = data?.default;
                 if (preferredDefault && personalityCatalog[preferredDefault]) {
@@ -916,14 +948,27 @@
                 }
                 const iconElement = document.getElementById('personality-icon');
                 const personaClass = getPersonaCssClass(pers);
+                const persona = getPersona(pers);
+                const avatarUrl = persona?.avatar_url || null;
                 const selectedOption = selectElement.options[selectElement.selectedIndex];
                 if (selectedOption) {
                     selectedOption.dataset.class = personaClass;
+                    if (avatarUrl) {
+                        selectedOption.dataset.avatar = avatarUrl;
+                    } else {
+                        delete selectedOption.dataset.avatar;
+                    }
                 }
                 if (iconElement) {
                     iconElement.className = 'personality-icon ' + personaClass;
-                    const persona = getPersona(pers);
                     iconElement.dataset.emoji = persona?.emoji || '🤖';
+                    if (avatarUrl) {
+                        iconElement.dataset.hasAvatar = 'true';
+                        iconElement.style.backgroundImage = `url('${avatarUrl}')`;
+                    } else {
+                        iconElement.dataset.hasAvatar = 'false';
+                        iconElement.style.backgroundImage = '';
+                    }
                 }
                 
                 const response = await fetch(SET_PERSONALITY_URL, {

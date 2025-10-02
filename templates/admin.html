@@ -377,6 +377,23 @@
           <button class="btn btn-primary" id="addPersonalityBtn" disabled><i class="bi bi-plus-circle me-1"></i>Yeni Kişilik</button>
         </div>
       </div>
+      <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-journal-text me-2 text-primary"></i>Genel Sistem Promptu</span>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="reloadSystemPromptBtn" disabled><i class="bi bi-arrow-clockwise"></i></button>
+            <button class="btn btn-primary" id="saveSystemPromptBtn" disabled><i class="bi bi-save"></i> Kaydet</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <label for="systemPromptInput" class="form-label">Tüm kişilikler için geçerli olacak temel sistem promptu</label>
+          <textarea id="systemPromptInput" class="form-control" rows="4" placeholder="Genel sistem promptunu buraya yazın" disabled></textarea>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <small id="systemPromptStatus" class="text-muted">-</small>
+            <small class="text-muted">Değişiklikler otomatik uygulanır.</small>
+          </div>
+        </div>
+      </div>
       <div class="card shadow-sm">
         <div class="card-body">
           <div id="personalitiesLoading" class="text-center my-4">
@@ -395,6 +412,7 @@
                 <tr>
                   <th style="width: 80px">Varsayılan</th>
                   <th style="min-width: 200px">Kişilik</th>
+                  <th style="width: 120px">Avatar</th>
                   <th style="width: 120px">Tema</th>
                   <th style="min-width: 200px">Hoş Geldin</th>
                   <th style="min-width: 260px">Prompt Özeti</th>
@@ -997,6 +1015,17 @@
               <div class="col-12">
                 <label class="form-label" for="personalityWelcome">Hoş Geldin Mesajı</label>
                 <input type="text" id="personalityWelcome" class="form-control" maxlength="240" placeholder="Kullanıcı yeni sohbet başlattığında gösterilecek mesaj">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="personalityAvatarInput">Avatar</label>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                  <img id="personalityAvatarPreview" src="" alt="Avatar önizleme" class="rounded-circle border d-none" style="width:64px;height:64px;object-fit:cover;">
+                  <div class="flex-grow-1">
+                    <input type="file" id="personalityAvatarInput" class="form-control" accept="image/*">
+                    <div class="form-text">PNG, JPG, GIF, WEBP veya SVG (maks. 2MB).</div>
+                    <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-none" id="removePersonalityAvatarBtn"><i class="bi bi-x-circle"></i> Avatarı Kaldır</button>
+                  </div>
+                </div>
               </div>
               <div class="col-12">
                 <label class="form-label" for="personalityPrompt">Prompt</label>

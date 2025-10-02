@@ -44,6 +44,7 @@ from flask_cors import CORS
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from werkzeug.utils import secure_filename
 
 # -----------------------------------------------------------------------------
 # Ortam Değişkenleri ve OpenAI Client
@@ -104,15 +105,11 @@ def sync_personality_message():
         session.modified = True
         return
 
-    personality_prompt_set = personality_manager.prompt_set()
+    remainder_candidates = existing[SYSTEM_PREFIX_LENGTH:]
     filtered_rest = [
-        msg for msg in existing
+        msg for msg in remainder_candidates
         if not (
-            msg.get("role") == "system"
-            and (
-                msg.get("content") == BASE_SYSTEM_PROMPT
-                or msg.get("content") in personality_prompt_set
-            )
+            msg.get("role") == "system" and msg.get("name") in {"base_prompt", "personality_prompt"}
         )
     ]
     new_messages = base_messages + filtered_rest
@@ -133,6 +130,13 @@ MODEL_PATH = os.getenv("MODEL_PATH")
 MODEL = SentenceTransformer(MODEL_PATH) if MODEL_PATH else SentenceTransformer(MODEL_NAME)
 DEFAULT_QA_FILE = "expanded_data.json"
 APP_VERSION = "stabil-rag-3.3"
+
+STATIC_DIR = Path("static")
+STATIC_DIR.mkdir(exist_ok=True)
+AVATAR_UPLOAD_DIR = STATIC_DIR / "avatars"
+AVATAR_UPLOAD_DIR.mkdir(exist_ok=True)
+ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
+MAX_AVATAR_FILE_SIZE = int(os.getenv("AVATAR_MAX_BYTES", str(2 * 1024 * 1024)))
 
 #MODEL_NAME = "Alibaba-NLP/gte-multilingual-base"
 #MODEL = SentenceTransformer(MODEL_NAME, trust_remote_code=True)
@@ -155,6 +159,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
         "badge_color": "danger",
         "badge_icon": "emoji-frown",
         "welcome_message": "Yine mi geldin? Ne istiyorsun?",
+        "avatar_url": None,
         "prompt": (
             "Kapadokya Üniversitesinde bir öğrenci işleri çalışanı olarak, öğrencilere rehberlik etmek için buradasın; "
             "ancak onlara sert, agresif, olumsuz, huysuz ve moral çökertici bir şekilde cevap vereceksin. "
@@ -174,6 +179,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
         "badge_color": "secondary",
         "badge_icon": "emoji-neutral",
         "welcome_message": "Merhaba, size nasıl yardımcı olabilirim?",
+        "avatar_url": None,
         "prompt": (
             "Kapadokya Üniversitesinde bir öğrenci işleri çalışanı olarak, öğrencilere profesyonel ve tarafsız bir şekilde yardımcı olacaksın.\n\n"
             "Talimatlar:\n"
@@ -189,6 +195,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
         "badge_color": "success",
         "badge_icon": "emoji-smile",
         "welcome_message": "Harika bir gün! Size yardım edebileceğim için çok mutluyum! 😊",
+        "avatar_url": None,
         "prompt": (
             "Kapadokya Üniversitesinde çalışan, öğrencilere yardım etmeyi çok seven, her cevabı motive edici bir notla sonlandıran aşırı pozitif bir asistan olarak davranacaksın.\n\n"
             "Talimatlar:\n"
@@ -206,6 +213,22 @@ def _slugify(value: str) -> str:
     return value or "personality"
 
 
+def _normalize_avatar_url(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    avatar = str(value).strip().replace("\\", "/")
+    if not avatar:
+        return None
+    if avatar.startswith("/"):
+        avatar = avatar[1:]
+    if avatar.startswith("static/"):
+        avatar = avatar[len("static/") :]
+    parts = Path(avatar).parts
+    if any(part == ".." for part in parts):
+        raise ValueError("avatar_url geçersiz")
+    return avatar or None
+
+
 class PersonalityManager:
     def __init__(self, path: Path, defaults: List[Dict[str, Any]], default_slug: str):
         self.path = path
@@ -215,7 +238,6 @@ class PersonalityManager:
         self._registry: Dict[str, Dict[str, Any]] = {}
         self._ordered_ids: List[str] = []
         self._prompt_map: Dict[str, str] = {}
-        self._prompt_set: set[str] = set()
         self.reload()
 
     @property
@@ -239,9 +261,6 @@ class PersonalityManager:
 
     def prompts(self) -> Dict[str, str]:
         return dict(self._prompt_map)
-
-    def prompt_set(self) -> set[str]:
-        return set(self._prompt_set)
 
     def create(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         entry = self._normalize(payload, len(self._ordered_ids))
@@ -321,6 +340,7 @@ class PersonalityManager:
         badge_color = str(payload.get("badge_color") or THEME_PRESETS[theme]["badge_color"])
         badge_icon = str(payload.get("badge_icon") or THEME_PRESETS[theme]["badge_icon"])
         welcome = str(payload.get("welcome_message") or "Merhaba, size nasıl yardımcı olabilirim?").strip()
+        avatar_url = _normalize_avatar_url(payload.get("avatar_url"))
         css_class = THEME_PRESETS[theme]["css_class"]
         return {
             "id": slug,
@@ -331,12 +351,12 @@ class PersonalityManager:
             "badge_color": badge_color,
             "badge_icon": badge_icon,
             "welcome_message": welcome,
+            "avatar_url": avatar_url,
             "prompt": prompt,
         }
 
     def _rebuild_prompt_cache(self) -> None:
         self._prompt_map = {pid: self._registry[pid]["prompt"] for pid in self._ordered_ids}
-        self._prompt_set = set(self._prompt_map.values())
 
     def _write_defaults(self) -> None:
         self._write(self.defaults)
@@ -353,15 +373,63 @@ class PersonalityManager:
         self._rebuild_prompt_cache()
 
 
-PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", "huysuz").strip().lower() or "huysuz"
-personality_manager = PersonalityManager(PERSONALITIES_FILE, DEFAULT_PERSONALITY_ENTRIES, PERSONALITY_ENV_DEFAULT)
-DEFAULT_PERSONALITY = personality_manager.default
-
-BASE_SYSTEM_PROMPT = (
+DEFAULT_SYSTEM_PROMPT = (
     "Sen Kapadokya Üniversitesi öğrenci işleri için görev yapan bir asistanısın. "
     "Elindeki güvenilir kaynaklar dışında bilgi uydurma. Emin olmadığın veya kayıtta bulunmayan her durumda "
     "kullanıcıya net biçimde bilgi eksikliğini belirt ve gerekirse yönlendirme yap."
 )
+SYSTEM_PROMPT_FILE = DATA_DIR / "system_prompt.json"
+
+
+class SystemPromptManager:
+    def __init__(self, path: Path, default_prompt: str):
+        self.path = path
+        self.default_prompt = default_prompt.strip()
+        self._lock = FileLock(str(path) + ".lock")
+        self._prompt = self.default_prompt
+        self.reload()
+
+    def reload(self) -> None:
+        with self._lock:
+            if not self.path.exists():
+                self._write_unlocked(self.default_prompt)
+            try:
+                raw = json.loads(self.path.read_text("utf-8"))
+            except Exception:
+                self._write_unlocked(self.default_prompt)
+                raw = {"base_prompt": self.default_prompt}
+
+            prompt = str(raw.get("base_prompt") or "").strip()
+            if not prompt:
+                prompt = self.default_prompt
+                self._write_unlocked(prompt)
+            self._prompt = prompt
+
+    def _write_unlocked(self, prompt: str) -> None:
+        payload = {"base_prompt": prompt}
+        self.path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        self._prompt = prompt
+
+    def set(self, prompt: str) -> str:
+        normalized = str(prompt or "").strip()
+        if not normalized:
+            raise ValueError("Sistem promptu boş olamaz")
+        with self._lock:
+            self._write_unlocked(normalized)
+        return self._prompt
+
+    @property
+    def current(self) -> str:
+        return self._prompt
+
+    def to_payload(self) -> Dict[str, str]:
+        return {"base_prompt": self._prompt}
+
+
+system_prompt_manager = SystemPromptManager(SYSTEM_PROMPT_FILE, DEFAULT_SYSTEM_PROMPT)
+PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", "huysuz").strip().lower() or "huysuz"
+personality_manager = PersonalityManager(PERSONALITIES_FILE, DEFAULT_PERSONALITY_ENTRIES, PERSONALITY_ENV_DEFAULT)
+DEFAULT_PERSONALITY = personality_manager.default
 
 SYSTEM_PREFIX_LENGTH = 2  # Genel yönerge + kişilik mesajı
 MAX_HISTORY_MESSAGES = 22
@@ -411,9 +479,10 @@ def build_system_messages(personality: str) -> List[Dict[str, str]]:
     except KeyError:
         personality = personality_manager.default
         prompt = personality_manager.get_prompt(personality)
+    base_prompt = system_prompt_manager.current
     return [
-        {"role": "system", "content": BASE_SYSTEM_PROMPT},
-        {"role": "system", "content": prompt},
+        {"role": "system", "content": base_prompt, "name": "base_prompt"},
+        {"role": "system", "content": prompt, "name": "personality_prompt"},
     ]
 
 
@@ -1047,10 +1116,31 @@ def _serialize_personality(entry: Dict[str, Any], include_prompt: bool = False) 
         'badge_color': entry['badge_color'],
         'badge_icon': entry['badge_icon'],
         'welcome_message': entry['welcome_message'],
+        'avatar_url': entry.get('avatar_url'),
     }
     if include_prompt:
         payload['prompt'] = entry['prompt']
     return payload
+
+
+def _resolve_avatar_path(relative_path: Optional[str]) -> Optional[Path]:
+    if not relative_path:
+        return None
+    candidate = STATIC_DIR / relative_path
+    try:
+        candidate.resolve().relative_to(STATIC_DIR.resolve())
+    except Exception:
+        return None
+    return candidate
+
+
+def _remove_avatar_file(relative_path: Optional[str]) -> None:
+    avatar_path = _resolve_avatar_path(relative_path)
+    if avatar_path and avatar_path.exists():
+        try:
+            avatar_path.unlink()
+        except Exception:
+            app.logger.warning("Avatar dosyası silinemedi: %s", avatar_path, exc_info=True)
 
 
 @admin_bp.route('/')
@@ -1085,6 +1175,28 @@ def admin_logout_route():
     session.pop('admin_authenticated', None)
     session.modified = True
     return jsonify({'logged_out': True})
+
+
+@admin_bp.route('/api/system_prompt', methods=['GET', 'PUT'])
+def admin_system_prompt():
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+
+    if request.method == 'GET':
+        return jsonify(system_prompt_manager.to_payload())
+
+    payload = request.get_json(force=True) or {}
+    new_prompt = str(payload.get('base_prompt') or '').strip()
+    if not new_prompt:
+        return jsonify({'error': 'Bad Request', 'message': 'Sistem promptu boş olamaz.'}), 400
+    try:
+        system_prompt_manager.set(new_prompt)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+    except Exception:
+        app.logger.exception('Sistem promptu güncellenirken hata oluştu')
+        return jsonify({'error': 'Internal Server Error'}), 500
+    return jsonify(system_prompt_manager.to_payload())
 
 
 @admin_bp.route('/api/personalities', methods=['GET', 'POST'])
@@ -1135,6 +1247,7 @@ def admin_personality_item(slug: str):
             return jsonify({'error': 'Not Found'}), 404
         except ValueError as exc:
             return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+        _remove_avatar_file(removed.get('avatar_url'))
         DEFAULT_PERSONALITY = personality_manager.default
         return jsonify({
             'item': _serialize_personality(removed, include_prompt=True),
@@ -1164,6 +1277,78 @@ def admin_personality_item(slug: str):
     entry = personality_manager.get(slug)
     return jsonify({
         'item': _serialize_personality(entry, include_prompt=True),
+        'default': personality_manager.default
+    })
+
+
+@admin_bp.route('/api/personalities/<slug>/avatar', methods=['POST', 'DELETE'])
+def admin_personality_avatar(slug: str):
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+
+    slug = str(slug or '').strip().lower()
+    entry = personality_manager.get(slug)
+    if not entry:
+        return jsonify({'error': 'Not Found'}), 404
+
+    if request.method == 'DELETE':
+        _remove_avatar_file(entry.get('avatar_url'))
+        try:
+            updated = personality_manager.update(slug, {'avatar_url': None})
+        except Exception:
+            app.logger.exception('Kişilik avatarı silinirken hata oluştu')
+            return jsonify({'error': 'Internal Server Error'}), 500
+        return jsonify({
+            'item': _serialize_personality(updated, include_prompt=True),
+            'default': personality_manager.default
+        })
+
+    file = request.files.get('avatar')
+    if not file or not file.filename:
+        return jsonify({'error': 'Bad Request', 'message': 'Geçerli bir dosya seçmelisiniz.'}), 400
+
+    filename = secure_filename(file.filename)
+    if not filename:
+        return jsonify({'error': 'Bad Request', 'message': 'Dosya adı geçersiz.'}), 400
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext not in ALLOWED_AVATAR_EXTENSIONS:
+        return jsonify({'error': 'Bad Request', 'message': 'Desteklenmeyen dosya türü.'}), 400
+
+    try:
+        file.stream.seek(0, os.SEEK_END)
+        size = file.stream.tell()
+        file.stream.seek(0)
+    except Exception:
+        size = None
+
+    if size is not None and size > MAX_AVATAR_FILE_SIZE:
+        return jsonify({'error': 'Bad Request', 'message': 'Dosya boyutu çok büyük.'}), 400
+
+    target_name = f"{slug}_{int(time.time())}.{ext}"
+    target_path = AVATAR_UPLOAD_DIR / target_name
+    try:
+        file.save(target_path)
+    except Exception:
+        app.logger.exception('Avatar yüklenirken dosya kaydedilemedi')
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+    relative_path = f"avatars/{target_name}"
+    old_avatar = entry.get('avatar_url')
+    try:
+        updated = personality_manager.update(slug, {'avatar_url': relative_path})
+    except Exception:
+        app.logger.exception('Avatar yolu güncellenirken hata oluştu')
+        try:
+            target_path.unlink()
+        except Exception:
+            pass
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+    if old_avatar and old_avatar != relative_path:
+        _remove_avatar_file(old_avatar)
+
+    return jsonify({
+        'item': _serialize_personality(updated, include_prompt=True),
         'default': personality_manager.default
     })
 
