@@ -97,7 +97,16 @@ server_session = Session(app)
 @app.before_request
 def sync_personality_message():
     default_personality = personality_manager.default
+    if session.get("_default_personality_snapshot") != default_personality:
+        session["_default_personality_snapshot"] = default_personality
+        session["current_personality"] = default_personality
+        session.modified = True
+
     personality = session.get("current_personality", default_personality)
+    if not personality_manager.exists(personality):
+        personality = default_personality
+        session["current_personality"] = personality
+        session.modified = True
     base_messages = build_system_messages(personality)
     existing = session.get("messages")
     if not existing:
@@ -105,9 +114,8 @@ def sync_personality_message():
         session.modified = True
         return
 
-    remainder_candidates = existing[SYSTEM_PREFIX_LENGTH:]
     filtered_rest = [
-        msg for msg in remainder_candidates
+        msg for msg in existing
         if not (
             msg.get("role") == "system" and msg.get("name") in {"base_prompt", "personality_prompt"}
         )
@@ -154,7 +162,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
     {
         "id": "huysuz",
         "name": "Huysuz Asistan",
-        "emoji": "😤",
+        "emoji": None,
         "theme": "angry",
         "badge_color": "danger",
         "badge_icon": "emoji-frown",
@@ -174,7 +182,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
     {
         "id": "notr",
         "name": "Nötr Asistan",
-        "emoji": "😐",
+        "emoji": None,
         "theme": "neutral",
         "badge_color": "secondary",
         "badge_icon": "emoji-neutral",
@@ -190,7 +198,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
     {
         "id": "pozitif",
         "name": "Pozitif Asistan",
-        "emoji": "😊",
+        "emoji": None,
         "theme": "positive",
         "badge_color": "success",
         "badge_icon": "emoji-smile",
@@ -333,7 +341,10 @@ class PersonalityManager:
         if not prompt:
             raise ValueError("prompt boş olamaz")
         name = str(payload.get("name") or payload.get("label") or slug.title()).strip() or slug.title()
-        emoji = str(payload.get("emoji") or "🤖").strip() or "🤖"
+        raw_emoji = payload.get("emoji")
+        emoji = str(raw_emoji).strip() if raw_emoji is not None else None
+        if emoji == "":
+            emoji = None
         theme = str(payload.get("theme") or "neutral").strip().lower() or "neutral"
         if theme not in THEME_PRESETS:
             theme = "neutral"
@@ -704,6 +715,7 @@ def index():
     session.setdefault("session_id", generate_session_id())
     session.setdefault("thread_id", None)
     session.setdefault("current_personality", personality_manager.default)
+    session.setdefault("_default_personality_snapshot", personality_manager.default)
     if not session.get("messages"):
         session["messages"] = build_system_messages(session["current_personality"])
     # Analytics: log session start once per browser session

@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const personalityModalLabel = document.getElementById('personalityModalLabel');
   const personalityIdInput = document.getElementById('personalityId');
   const personalityNameInput = document.getElementById('personalityName');
-  const personalityEmojiInput = document.getElementById('personalityEmoji');
   const personalityThemeInput = document.getElementById('personalityTheme');
   const personalityBadgeColorInput = document.getElementById('personalityBadgeColor');
   const personalityBadgeIconInput = document.getElementById('personalityBadgeIcon');
@@ -70,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let avatarRemoveRequested = false;
   let currentAvatarPreviewUrl = null;
   let existingAvatarRelative = null;
+  const personalityEmojiInput = null;
   const themePresets = {
     angry: { badge_color: 'danger', badge_icon: 'emoji-frown' },
     neutral: { badge_color: 'secondary', badge_icon: 'emoji-neutral' },
@@ -191,8 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!item || !item.id) return;
       const opt = document.createElement('option');
       opt.value = item.id;
-      const emoji = item.emoji || '🤖';
-      opt.textContent = `${emoji} ${item.name || item.id}`;
+      opt.textContent = item.name || item.id;
       advancedSelect.appendChild(opt);
     });
 
@@ -215,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     personalityList.forEach((item) => {
       const slug = item.id || '';
-      const emoji = esc(item.emoji || '🤖');
       const displayName = esc(item.name || slug);
       const slugLabel = esc(slug);
       const welcomeRaw = item.welcome_message || '';
@@ -249,13 +247,10 @@ document.addEventListener('DOMContentLoaded', () => {
       row.innerHTML = `
         <td>${defaultHtml}</td>
         <td>
-          <div class="d-flex align-items-start gap-2">
-            <span class="fs-4">${emoji}</span>
-            <div>
-              <div class="fw-semibold">${displayName}</div>
-              <div class="text-muted small">${slugLabel}</div>
-              ${getPersonalityBadge(slug)}
-            </div>
+          <div>
+            <div class="fw-semibold">${displayName}</div>
+            <div class="text-muted small">${slugLabel}</div>
+            ${getPersonalityBadge(slug)}
           </div>
         </td>
         <td>${avatarHtml}</td>
@@ -319,7 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
         personalityIdInput.disabled = true;
       }
       if (personalityNameInput) personalityNameInput.value = entry.name || '';
-      if (personalityEmojiInput) personalityEmojiInput.value = entry.emoji || '';
       if (personalityThemeInput) personalityThemeInput.value = entry.theme || 'neutral';
       if (personalityBadgeColorInput) personalityBadgeColorInput.value = entry.badge_color || '';
       if (personalityBadgeIconInput) personalityBadgeIconInput.value = entry.badge_icon || '';
@@ -337,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
         personalityIdInput.disabled = false;
       }
       if (personalityNameInput) personalityNameInput.value = '';
-      if (personalityEmojiInput) personalityEmojiInput.value = '🤖';
       if (personalityThemeInput) personalityThemeInput.value = 'neutral';
       applyThemeDefaults('neutral', true);
       existingAvatarRelative = null;
@@ -369,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       id: idValue,
       name: personalityNameInput?.value.trim(),
-      emoji: personalityEmojiInput?.value.trim(),
+      emoji: null,
       theme: personalityThemeInput?.value || 'neutral',
       badge_color: personalityBadgeColorInput?.value.trim(),
       badge_icon: personalityBadgeIconInput?.value.trim(),

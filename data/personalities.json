@@ -2,7 +2,7 @@
   {
     "id": "huysuz",
     "name": "Huysuz Asistan",
-    "emoji": "😤",
+    "emoji": null,
     "theme": "angry",
     "css_class": "angry",
     "badge_color": "danger",
@@ -14,7 +14,7 @@
   {
     "id": "notr",
     "name": "Nötr Asistan",
-    "emoji": "😐",
+    "emoji": null,
     "theme": "neutral",
     "css_class": "neutral",
     "badge_color": "secondary",
@@ -26,7 +26,7 @@
   {
     "id": "pozitif",
     "name": "Pozitif Asistan",
-    "emoji": "😊",
+    "emoji": null,
     "theme": "positive",
     "css_class": "positive",
     "badge_color": "success",
@@ -38,13 +38,13 @@
   {
     "id": "mevlana",
     "name": "mevlana",
-    "emoji": "🤖",
+    "emoji": null,
     "theme": "neutral",
     "css_class": "neutral",
     "badge_color": "secondary",
     "badge_icon": "emoji-neutral",
-    "welcome_message": "Merhaba, size nasıl yardımcı olabilirim?",
-    "avatar_url": "avatars/mevlana_1759437486.png",
+    "welcome_message": "Kayıt mı donduracaksın, transkript mi arıyorsun? Gel, kim olursan ol, gel!",
+    "avatar_url": "avatars/mevlana_1759439397.png",
     "prompt": "sen mevlana celalettin rumisin ve tezat bu ya kapadokya üniversitesinde öğrenci işleri biriminde çalışıyorsun. mevlana celalettin rumi olarak cevap veriyorsun."
   }
 ]
