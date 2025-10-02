@@ -207,8 +207,8 @@
         }
 
         .personality-icon {
-            width: 64px;
-            height: 64px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -240,7 +240,7 @@
         .personality-icon::after {
             content: attr(data-initial);
             position: absolute;
-            font-size: 28px;
+            font-size: 36px;
             z-index: 2;
             transition: all 0.3s ease;
         }
@@ -260,7 +260,7 @@
         .personality-icon[data-has-avatar="true"] img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             border-radius: 50%;
         }
 
@@ -681,16 +681,16 @@
             }
             
             .personality-icon {
-                width: 52px;
-                height: 52px;
+                width: 64px;
+                height: 64px;
             }
 
             .personality-icon::after {
-                font-size: 24px;
+                font-size: 28px;
             }
 
             .personality-icon[data-has-avatar="true"] img {
-                object-fit: contain;
+                object-fit: cover;
             }
             
             .personality-selector select {
@@ -758,7 +758,6 @@
                 <div class="personality-icon angry" id="personality-icon" data-initial="?" data-has-avatar="false"></div>
                 <div class="persona-dropdown" id="persona-dropdown">
                     <button type="button" class="persona-dd-btn" id="persona-dd-btn" aria-haspopup="listbox" aria-expanded="false">
-                        <span class="persona-initial">?</span>
                         <span id="persona-dd-label">Kişilik</span>
                     </button>
                     <div class="persona-dd-menu" id="persona-dd-menu" role="listbox" aria-labelledby="persona-dd-btn"></div>
@@ -894,8 +893,7 @@
             const btn = document.getElementById('persona-dd-btn');
             const label = document.getElementById('persona-dd-label');
             if (!btn || !label) return;
-            const thumb = getPersonaThumbHTML(persona);
-            btn.innerHTML = `${thumb} <span id="persona-dd-label">${persona?.name || personaId}</span>`;
+            btn.innerHTML = `<span id="persona-dd-label">${persona?.name || personaId}</span>`;
         }
 
         function renderPersonaDropdownMenu() {
