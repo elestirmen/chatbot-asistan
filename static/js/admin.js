@@ -4,15 +4,18 @@ function esc(text) {
   return div.innerHTML;
 }
 
+let personalityMetaCache = {};
+
 function getPersonalityBadge(personality) {
-  const personalities = {
-    'huysuz': { color: 'danger', icon: 'emoji-frown', label: 'Huysuz' },
-    'notr': { color: 'secondary', icon: 'emoji-neutral', label: 'Nötr' },
-    'pozitif': { color: 'success', icon: 'emoji-smile', label: 'Pozitif' }
-  };
-  
-  const p = personalities[personality] || { color: 'warning', icon: 'question-circle', label: 'Bilinmiyor' };
-  return `<span class="badge bg-${p.color} mb-1"><i class="bi bi-${p.icon}"></i> ${p.label}</span>`;
+  const entry = personalityMetaCache[personality];
+  if (!entry) {
+    const label = personality ? esc(personality) : 'Bilinmiyor';
+    return `<span class="badge bg-warning text-dark mb-1"><i class="bi bi-question-circle"></i> ${label}</span>`;
+  }
+  const color = esc(entry.badge_color || 'secondary');
+  const icon = esc(entry.badge_icon || 'person-circle');
+  const label = esc(entry.name || personality);
+  return `<span class="badge bg-${color} mb-1"><i class="bi bi-${icon}"></i> ${label}</span>`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,6 +33,392 @@ document.addEventListener('DOMContentLoaded', () => {
   const $fileSel = $('#fileSelect');
   let qaTable;
   let isAuthenticated = false;
+  let lastAuthState = null;
+
+  // Personality management state
+  const personalityModalEl = document.getElementById('personalityModal');
+  const personalityModal = personalityModalEl ? new bootstrap.Modal(personalityModalEl) : null;
+  const personalityForm = document.getElementById('personalityForm');
+  const personalityModalLabel = document.getElementById('personalityModalLabel');
+  const personalityIdInput = document.getElementById('personalityId');
+  const personalityNameInput = document.getElementById('personalityName');
+  const personalityEmojiInput = document.getElementById('personalityEmoji');
+  const personalityThemeInput = document.getElementById('personalityTheme');
+  const personalityBadgeColorInput = document.getElementById('personalityBadgeColor');
+  const personalityBadgeIconInput = document.getElementById('personalityBadgeIcon');
+  const personalityWelcomeInput = document.getElementById('personalityWelcome');
+  const personalityPromptInput = document.getElementById('personalityPrompt');
+  const personalitySetDefaultInput = document.getElementById('personalitySetDefault');
+  const personalitiesLoadingEl = document.getElementById('personalitiesLoading');
+  const personalitiesTableWrapper = document.getElementById('personalitiesTableWrapper');
+  const personalitiesTableBody = document.querySelector('#personalitiesTable tbody');
+  const personalitiesEmptyState = document.getElementById('personalitiesEmptyState');
+  const personalitiesErrorEl = document.getElementById('personalitiesError');
+  const refreshPersonalitiesBtn = document.getElementById('refreshPersonalitiesBtn');
+  const addPersonalityBtn = document.getElementById('addPersonalityBtn');
+  let editingPersonalityId = null;
+  let personalityList = [];
+  let defaultPersonalityId = null;
+  const themePresets = {
+    angry: { badge_color: 'danger', badge_icon: 'emoji-frown' },
+    neutral: { badge_color: 'secondary', badge_icon: 'emoji-neutral' },
+    positive: { badge_color: 'success', badge_icon: 'emoji-smile' },
+  };
+  const themeNameMap = {
+    angry: 'Huysuz',
+    neutral: 'Nötr',
+    positive: 'Pozitif',
+  };
+
+  function setPersonalityLoading(isLoading) {
+    if (!personalitiesLoadingEl) return;
+    personalitiesLoadingEl.classList.toggle('d-none', !isLoading);
+  }
+
+  function clearPersonalityError() {
+    if (personalitiesErrorEl) {
+      personalitiesErrorEl.classList.add('d-none');
+      personalitiesErrorEl.textContent = '';
+    }
+  }
+
+  function showPersonalityError(message) {
+    if (personalitiesErrorEl) {
+      personalitiesErrorEl.textContent = message;
+      personalitiesErrorEl.classList.remove('d-none');
+    }
+  }
+
+  function syncPersonalityRegistry() {
+    personalityMetaCache = {};
+    personalityList.forEach((item) => {
+      if (item && item.id) {
+        personalityMetaCache[item.id] = item;
+      }
+    });
+  }
+
+  function populatePersonalityFilters() {
+    const advancedSelect = document.getElementById('advancedPersonalityFilter');
+    if (!advancedSelect) return;
+
+    const previousValue = advancedSelect.value;
+    advancedSelect.innerHTML = '<option value="">Tüm kişilikler</option>';
+
+    personalityList.forEach((item) => {
+      if (!item || !item.id) return;
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      const emoji = item.emoji || '🤖';
+      opt.textContent = `${emoji} ${item.name || item.id}`;
+      advancedSelect.appendChild(opt);
+    });
+
+    if (previousValue && personalityMetaCache[previousValue]) {
+      advancedSelect.value = previousValue;
+    }
+  }
+
+  function renderPersonalities() {
+    if (!personalitiesTableBody) return;
+    personalitiesTableBody.innerHTML = '';
+    if (!Array.isArray(personalityList) || personalityList.length === 0) {
+      personalitiesTableWrapper?.classList.add('d-none');
+      personalitiesEmptyState?.classList.remove('d-none');
+      return;
+    }
+
+    personalitiesEmptyState?.classList.add('d-none');
+    personalitiesTableWrapper?.classList.remove('d-none');
+
+    personalityList.forEach((item) => {
+      const slug = item.id || '';
+      const emoji = esc(item.emoji || '🤖');
+      const displayName = esc(item.name || slug);
+      const slugLabel = esc(slug);
+      const welcomeRaw = item.welcome_message || '';
+      const welcomeHtml = welcomeRaw
+        ? `<div class="text-truncate" style="max-width: 240px;">${esc(welcomeRaw)}</div>`
+        : '<span class="text-muted">-</span>';
+      const promptText = item.prompt || '';
+      const promptPreview = promptText.length > 160 ? `${promptText.slice(0, 160)}…` : promptText;
+      const promptHtml = promptText
+        ? `<div class="small text-muted text-truncate" style="max-width: 320px;">${esc(promptPreview)}</div>`
+        : '<span class="text-muted">-</span>';
+      const isDefault = slug === defaultPersonalityId;
+      const defaultHtml = isDefault
+        ? '<span class="badge bg-primary"><i class="bi bi-star-fill"></i> Varsayılan</span>'
+        : (isAuthenticated
+            ? `<button type="button" class="btn btn-outline-primary btn-sm set-default-personality" data-personality="${slug}"><i class="bi bi-star"></i> Varsayılan Yap</button>`
+            : '<span class="text-muted small">-</span>');
+      const themeLabel = esc(themeNameMap[item.theme] || item.theme || '-');
+      const actionsHtml = isAuthenticated
+        ? `<div class="btn-group btn-group-sm" role="group">
+             <button type="button" class="btn btn-warning edit-personality" data-personality="${slug}"><i class="bi bi-pencil"></i></button>
+             <button type="button" class="btn btn-outline-danger delete-personality" data-personality="${slug}"><i class="bi bi-trash"></i></button>
+           </div>`
+        : '<small class="text-muted">Giriş gerekli</small>';
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${defaultHtml}</td>
+        <td>
+          <div class="d-flex align-items-start gap-2">
+            <span class="fs-4">${emoji}</span>
+            <div>
+              <div class="fw-semibold">${displayName}</div>
+              <div class="text-muted small">${slugLabel}</div>
+              ${getPersonalityBadge(slug)}
+            </div>
+          </div>
+        </td>
+        <td><span class="badge bg-light text-dark border">${themeLabel}</span></td>
+        <td>${welcomeHtml}</td>
+        <td>${promptHtml}</td>
+        <td>${actionsHtml}</td>
+      `;
+      personalitiesTableBody.appendChild(row);
+    });
+  }
+
+  function applyThemeDefaults(theme, force = false) {
+    if (!personalityBadgeColorInput || !personalityBadgeIconInput) return;
+    const preset = themePresets[theme] || themePresets.neutral;
+    if (force || !personalityBadgeColorInput.value) {
+      personalityBadgeColorInput.value = preset.badge_color;
+    }
+    if (force || !personalityBadgeIconInput.value) {
+      personalityBadgeIconInput.value = preset.badge_icon;
+    }
+  }
+
+  function resetPersonalityForm() {
+    if (!personalityForm) return;
+    personalityForm.reset();
+    personalityForm.classList.remove('was-validated');
+    if (personalityIdInput) {
+      personalityIdInput.disabled = false;
+    }
+  }
+
+  function openPersonalityModal(slug = null) {
+    if (!personalityModal || !personalityForm) return;
+    resetPersonalityForm();
+    editingPersonalityId = slug || null;
+    const isEdit = Boolean(editingPersonalityId);
+
+    if (personalityModalLabel) {
+      personalityModalLabel.textContent = isEdit ? 'Kişiliği Düzenle' : 'Yeni Kişilik';
+    }
+    if (personalitySetDefaultInput) {
+      personalitySetDefaultInput.checked = false;
+    }
+
+    if (isEdit) {
+      const entry = personalityMetaCache[editingPersonalityId];
+      if (!entry) {
+        showPersonalityError('Kişilik bilgisi yüklenemedi. Lütfen listeyi yenileyin.');
+        return;
+      }
+      if (personalityIdInput) {
+        personalityIdInput.value = entry.id || '';
+        personalityIdInput.disabled = true;
+      }
+      if (personalityNameInput) personalityNameInput.value = entry.name || '';
+      if (personalityEmojiInput) personalityEmojiInput.value = entry.emoji || '';
+      if (personalityThemeInput) personalityThemeInput.value = entry.theme || 'neutral';
+      if (personalityBadgeColorInput) personalityBadgeColorInput.value = entry.badge_color || '';
+      if (personalityBadgeIconInput) personalityBadgeIconInput.value = entry.badge_icon || '';
+      if (personalityWelcomeInput) personalityWelcomeInput.value = entry.welcome_message || '';
+      if (personalityPromptInput) personalityPromptInput.value = entry.prompt || '';
+    } else {
+      if (personalityIdInput) {
+        personalityIdInput.value = '';
+        personalityIdInput.disabled = false;
+      }
+      if (personalityNameInput) personalityNameInput.value = '';
+      if (personalityEmojiInput) personalityEmojiInput.value = '🤖';
+      if (personalityThemeInput) personalityThemeInput.value = 'neutral';
+      applyThemeDefaults('neutral', true);
+    }
+
+    personalityModal.show();
+  }
+
+  function handlePersonalitySubmit(event) {
+    if (!personalityForm) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    personalityForm.classList.add('was-validated');
+    if (!personalityForm.checkValidity()) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      loginModal?.show();
+      return;
+    }
+
+    const idValue = personalityIdInput?.value.trim().toLowerCase();
+    const payload = {
+      id: idValue,
+      name: personalityNameInput?.value.trim(),
+      emoji: personalityEmojiInput?.value.trim(),
+      theme: personalityThemeInput?.value || 'neutral',
+      badge_color: personalityBadgeColorInput?.value.trim(),
+      badge_icon: personalityBadgeIconInput?.value.trim(),
+      welcome_message: personalityWelcomeInput?.value.trim(),
+      prompt: personalityPromptInput?.value.trim(),
+      set_default: Boolean(personalitySetDefaultInput?.checked),
+    };
+
+    if (editingPersonalityId) {
+      delete payload.id;
+    }
+
+    const submitBtn = personalityForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    const url = editingPersonalityId
+      ? `/admin/api/personalities/${encodeURIComponent(editingPersonalityId)}`
+      : '/admin/api/personalities';
+    const method = editingPersonalityId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'İşlem başarısız oldu.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('İşlem başarısız oldu.');
+          });
+        }
+        return resp.json();
+      })
+      .then(() => {
+        personalityModal?.hide();
+        resetPersonalityForm();
+        loadPersonalities();
+      })
+      .catch((err) => {
+        alert(err.message || 'Kişilik kaydedilemedi.');
+      })
+      .finally(() => {
+        if (submitBtn) submitBtn.disabled = false;
+      });
+  }
+
+  function handleDeletePersonality(slug) {
+    if (!slug || !isAuthenticated) {
+      if (!isAuthenticated) loginModal?.show();
+      return;
+    }
+    if (!window.confirm('Bu kişiliği silmek istediğinize emin misiniz?')) {
+      return;
+    }
+
+    fetch(`/admin/api/personalities/${encodeURIComponent(slug)}`, {
+      method: 'DELETE',
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Silme işlemi başarısız oldu.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Silme işlemi başarısız oldu.');
+          });
+        }
+        return resp.json();
+      })
+      .then(() => {
+        loadPersonalities();
+      })
+      .catch((err) => {
+        alert(err.message || 'Kişilik silinemedi.');
+      });
+  }
+
+  function handleSetDefaultPersonality(slug) {
+    if (!slug || !isAuthenticated) {
+      if (!isAuthenticated) loginModal?.show();
+      return;
+    }
+
+    fetch(`/admin/api/personalities/${encodeURIComponent(slug)}/default`, {
+      method: 'POST',
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Varsayılan kişilik güncellenemedi.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Varsayılan kişilik güncellenemedi.');
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        defaultPersonalityId = data?.default || slug;
+        renderPersonalities();
+      })
+      .catch((err) => {
+        alert(err.message || 'Varsayılan kişilik belirlenemedi.');
+      });
+  }
+
+  function loadPersonalities() {
+    if (!personalitiesTableBody) return;
+    setPersonalityLoading(true);
+    clearPersonalityError();
+
+    fetch('/admin/api/personalities')
+      .then((resp) => {
+        if (!resp.ok) {
+          throw new Error('Kişilik listesi alınamadı');
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        personalityList = Array.isArray(data?.items) ? data.items : [];
+        defaultPersonalityId = data?.default || (personalityList[0]?.id ?? null);
+        syncPersonalityRegistry();
+        populatePersonalityFilters();
+        renderPersonalities();
+        if (chatResultsTable) {
+          chatResultsTable.rows().invalidate().draw(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Personality load error', err);
+        showPersonalityError('Kişilikler yüklenirken bir sorun oluştu.');
+      })
+      .finally(() => {
+        setPersonalityLoading(false);
+      });
+  }
 
   // New chat log management state
   let chatResultsTable;
@@ -52,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#loginError').hide();
       $('#loginForm').removeClass('was-validated');
       
+      if (addPersonalityBtn) addPersonalityBtn.disabled = false;
       // Update overview stats after login
       updateOverviewStats();
     } else {
@@ -64,7 +454,15 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#totalChats, #totalLikes, #totalDislikes').text('-');
       $('#currentSeason').text('-');
       
+      if (addPersonalityBtn) addPersonalityBtn.disabled = true;
       loginModal?.show();
+    }
+
+    if (lastAuthState !== isAuthenticated) {
+      lastAuthState = isAuthenticated;
+      loadPersonalities();
+    } else {
+      renderPersonalities();
     }
   }
 
@@ -619,6 +1017,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // EVENT HANDLERS
   // ===============================
+
+  // Personality management actions
+  if (refreshPersonalitiesBtn) {
+    refreshPersonalitiesBtn.addEventListener('click', () => loadPersonalities());
+  }
+  if (addPersonalityBtn) {
+    addPersonalityBtn.addEventListener('click', () => openPersonalityModal());
+  }
+  if (personalityForm) {
+    personalityForm.addEventListener('submit', handlePersonalitySubmit);
+  }
+  if (personalityThemeInput) {
+    personalityThemeInput.addEventListener('change', () => {
+      applyThemeDefaults(personalityThemeInput.value, !editingPersonalityId);
+    });
+  }
+  if (personalitiesTableBody) {
+    personalitiesTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      const slug = button.dataset.personality;
+      if (!slug) return;
+      if (button.classList.contains('edit-personality')) {
+        openPersonalityModal(slug);
+      } else if (button.classList.contains('delete-personality')) {
+        handleDeletePersonality(slug);
+      } else if (button.classList.contains('set-default-personality')) {
+        handleSetDefaultPersonality(slug);
+      }
+    });
+  }
+  if (personalityModalEl) {
+    personalityModalEl.addEventListener('hidden.bs.modal', () => {
+      editingPersonalityId = null;
+      resetPersonalityForm();
+    });
+  }
 
   // File selection change (QA table)
   $('#fileSelect').on('change', function () {

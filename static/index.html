@@ -178,16 +178,17 @@
             transition: all 0.3s ease;
         }
 
-        /* Huysuz Asistan - Kızgın Avatar */
-        .personality-icon.angry::before {
-            background: radial-gradient(circle at 30% 30%, #ff6b6b 0%, #ee5a52 50%, #c44569 100%);
-        }
-
-        .personality-icon.angry::after {
-            content: '😤';
+        .personality-icon::after {
+            content: attr(data-emoji);
             position: absolute;
             font-size: 20px;
             z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        /* Huysuz Asistan - Kızgın Avatar */
+        .personality-icon.angry::before {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b 0%, #ee5a52 50%, #c44569 100%);
         }
 
         /* Nötr Asistan - Düz Avatar */
@@ -195,23 +196,9 @@
             background: radial-gradient(circle at 30% 30%, #95a5a6 0%, #7f8c8d 50%, #636e72 100%);
         }
 
-        .personality-icon.neutral::after {
-            content: '😐';
-            position: absolute;
-            font-size: 20px;
-            z-index: 2;
-        }
-
         /* Pozitif Asistan - Mutlu Avatar */
         .personality-icon.positive::before {
             background: radial-gradient(circle at 30% 30%, #ffeaa7 0%, #fdcb6e 50%, #e17055 100%);
-        }
-
-        .personality-icon.positive::after {
-            content: '😊';
-            position: absolute;
-            font-size: 20px;
-            z-index: 2;
         }
 
         .personality-selector select {
@@ -620,9 +607,7 @@
                 height: 35px;
             }
 
-            .personality-icon.angry::after,
-            .personality-icon.neutral::after,
-            .personality-icon.positive::after {
+            .personality-icon::after {
                 font-size: 16px;
             }
             
@@ -688,7 +673,7 @@
                     <div class="personality-selector">
                         <label for="personality-select">Asistan Kişiliği:</label>
                         <div class="personality-wrapper">
-                            <div class="personality-icon angry" id="personality-icon"></div>
+                            <div class="personality-icon angry" id="personality-icon" data-emoji="😤"></div>
                             <select id="personality-select" aria-label="Asistan kişiliğini seçin" onchange="changePersonality()">
                                 <option value="huysuz" selected data-class="angry">😤 Huysuz Asistan</option>
                                 <option value="notr" data-class="neutral">😐 Nötr Asistan</option>
@@ -737,13 +722,123 @@
         const SET_PERSONALITY_URL = '/set_personality';
         const FEEDBACK_URL = '/feedback';
         let botMessageCount = 0;
+        const fallbackPersonalities = {
+            'huysuz': {
+                id: 'huysuz',
+                name: 'Huysuz Asistan',
+                emoji: '😤',
+                css_class: 'angry',
+                welcome_message: 'Yine mi geldin? Ne istiyorsun?'
+            },
+            'notr': {
+                id: 'notr',
+                name: 'Nötr Asistan',
+                emoji: '😐',
+                css_class: 'neutral',
+                welcome_message: 'Merhaba, size nasıl yardımcı olabilirim?'
+            },
+            'pozitif': {
+                id: 'pozitif',
+                name: 'Pozitif Asistan',
+                emoji: '😊',
+                css_class: 'positive',
+                welcome_message: 'Harika bir gün! Size yardım edebileceğim için çok mutluyum! 😊'
+            }
+        };
+        let personalityCatalog = { ...fallbackPersonalities };
+        let personalityOrder = Object.keys(fallbackPersonalities);
+        let defaultPersonalityId = 'huysuz';
+
+        function getPersona(personalityId) {
+            return personalityCatalog[personalityId] || fallbackPersonalities[personalityId];
+        }
+
+        function getWelcomeMessage(personalityId) {
+            const persona = getPersona(personalityId);
+            return persona?.welcome_message || 'Merhaba, size nasıl yardımcı olabilirim?';
+        }
+
+        function getPersonaCssClass(personalityId) {
+            const persona = getPersona(personalityId);
+            return persona?.css_class || 'neutral';
+        }
+
+        function populatePersonalityOptions() {
+            const selectElement = document.getElementById('personality-select');
+            if (!selectElement) return;
+            const previousValue = selectElement.value;
+            selectElement.innerHTML = '';
+            personalityOrder.forEach((id) => {
+                const persona = getPersona(id);
+                if (!persona) return;
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${persona.emoji || '🤖'} ${persona.name || id}`;
+                option.dataset.class = persona.css_class || 'neutral';
+                selectElement.appendChild(option);
+            });
+
+            const desiredValue = personalityCatalog[previousValue] ? previousValue
+                : (personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0]);
+            if (desiredValue) {
+                selectElement.value = desiredValue;
+            }
+        }
+
+        async function loadPersonalityCatalog() {
+            try {
+                const response = await fetch('/api/personalities');
+                if (!response.ok) {
+                    throw new Error(`Status ${response.status}`);
+                }
+                const data = await response.json();
+                const items = Array.isArray(data?.items) ? data.items : [];
+                if (!items.length) {
+                    return false;
+                }
+                personalityCatalog = {};
+                personalityOrder = [];
+                items.forEach((item) => {
+                    if (!item?.id) return;
+                    personalityCatalog[item.id] = item;
+                    personalityOrder.push(item.id);
+                });
+                const preferredDefault = data?.default;
+                if (preferredDefault && personalityCatalog[preferredDefault]) {
+                    defaultPersonalityId = preferredDefault;
+                } else if (personalityOrder.length) {
+                    defaultPersonalityId = personalityOrder[0];
+                }
+                return true;
+            } catch (error) {
+                console.warn('Kişilik listesi yüklenemedi, varsayılan veriler kullanılacak.', error);
+                personalityCatalog = { ...fallbackPersonalities };
+                personalityOrder = Object.keys(fallbackPersonalities);
+                defaultPersonalityId = defaultPersonalityId || 'huysuz';
+                return false;
+            }
+        }
+
+        async function initializePersonalityUI() {
+            await loadPersonalityCatalog();
+            populatePersonalityOptions();
+            const selectElement = document.getElementById('personality-select');
+            if (!selectElement) return;
+            if (!selectElement.value || !personalityCatalog[selectElement.value]) {
+                const fallbackId = personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0];
+                if (fallbackId) {
+                    selectElement.value = fallbackId;
+                }
+            }
+        }
         
         /**
          * Sayfa yüklendiğinde çalışacak fonksiyon
          */
-        window.onload = function() {
+        window.onload = async function() {
+            await initializePersonalityUI();
             // Kişilik değiştir ve hoş geldin mesajını göster
-            changePersonality();
+            await changePersonality();
             
             // Enter tuşu ile mesaj gönderme
             const sendBtn = document.getElementById('send-button');
@@ -785,15 +880,12 @@
                 }
                 
                 // Karşılama mesajını ekle
-                const currentPersonality = document.getElementById('personality-select').value;
-                const welcomeMessages = {
-                    'huysuz': 'Yine mi geldin? Ne istiyorsun?',
-                    'notr': 'Merhaba, size nasıl yardımcı olabilirim?',
-                    'pozitif': 'Harika bir gün! Size yardım edebileceğim için çok mutluyum! 😊'
-                };
-                
+                const selectElement = document.getElementById('personality-select');
+                const currentPersonality = selectElement ? selectElement.value : defaultPersonalityId;
+                const welcomeText = getWelcomeMessage(currentPersonality);
+
                 messagesContainer.innerHTML = `<div class="message bot-message" role="listitem">
-                    ${escapeHTML(welcomeMessages[currentPersonality])}
+                    ${escapeHTML(welcomeText)}
                 </div>`;
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
@@ -813,15 +905,25 @@
         async function changePersonality() {
             try {
                 const selectElement = document.getElementById('personality-select');
-                const pers = selectElement.value;
+                if (!selectElement) return;
+                let pers = selectElement.value;
+                if (!personalityCatalog[pers]) {
+                    const fallbackId = personalityCatalog[defaultPersonalityId] ? defaultPersonalityId : personalityOrder[0];
+                    if (fallbackId) {
+                        selectElement.value = fallbackId;
+                        pers = fallbackId;
+                    }
+                }
                 const iconElement = document.getElementById('personality-icon');
-                
-                // İkonu güncelle
+                const personaClass = getPersonaCssClass(pers);
                 const selectedOption = selectElement.options[selectElement.selectedIndex];
-                const newClass = selectedOption.getAttribute('data-class');
-                if (iconElement && newClass) {
-                    // Tüm sınıfları temizle
-                    iconElement.className = 'personality-icon ' + newClass;
+                if (selectedOption) {
+                    selectedOption.dataset.class = personaClass;
+                }
+                if (iconElement) {
+                    iconElement.className = 'personality-icon ' + personaClass;
+                    const persona = getPersona(pers);
+                    iconElement.dataset.emoji = persona?.emoji || '🤖';
                 }
                 
                 const response = await fetch(SET_PERSONALITY_URL, {

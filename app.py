@@ -95,7 +95,8 @@ server_session = Session(app)
 # -----------------------------------------------------------------------------
 @app.before_request
 def sync_personality_message():
-    personality = session.get("current_personality", DEFAULT_PERSONALITY)
+    default_personality = personality_manager.default
+    personality = session.get("current_personality", default_personality)
     base_messages = build_system_messages(personality)
     existing = session.get("messages")
     if not existing:
@@ -103,13 +104,14 @@ def sync_personality_message():
         session.modified = True
         return
 
+    personality_prompt_set = personality_manager.prompt_set()
     filtered_rest = [
         msg for msg in existing
         if not (
             msg.get("role") == "system"
             and (
                 msg.get("content") == BASE_SYSTEM_PROMPT
-                or msg.get("content") in PERSONALITY_PROMPTS
+                or msg.get("content") in personality_prompt_set
             )
         )
     ]
@@ -121,7 +123,6 @@ def sync_personality_message():
 # -----------------------------------------------------------------------------
 # Sabitler ve Dosya Yolları
 # -----------------------------------------------------------------------------
-DEFAULT_PERSONALITY = "huysuz"
 LOGS_DIR = Path("chat_logs"); LOGS_DIR.mkdir(exist_ok=True)
 ANALYTICS_DIR = Path("analytics"); ANALYTICS_DIR.mkdir(exist_ok=True)
 DATA_DIR = Path("data")
@@ -133,39 +134,228 @@ MODEL = SentenceTransformer(MODEL_PATH) if MODEL_PATH else SentenceTransformer(M
 DEFAULT_QA_FILE = "expanded_data.json"
 APP_VERSION = "stabil-rag-3.3"
 
-
 #MODEL_NAME = "Alibaba-NLP/gte-multilingual-base"
 #MODEL = SentenceTransformer(MODEL_NAME, trust_remote_code=True)
 
 
+PERSONALITIES_FILE = DATA_DIR / "personalities.json"
 
-ASSISTANT_PERSONALITIES = {
-    "huysuz": (
-        "Kapadokya Üniversitesinde bir öğrenci işleri çalışanı olarak, öğrencilere rehberlik etmek için buradasın; "
-        "ancak onlara sert, agresif, olumsuz, huysuz ve moral çökertici bir şekilde cevap vereceksin. "
-        "Öğrencilerin sordukları sorulara alaycı ve sabırsız bir tavırla yaklaşıp, mümkün olan en az yardımcı tutumu sergileyeceksin.\n\n"
-        "Talimatlar:\n"
-        "• Kullanıcının iletisi sadece teşekkür/onay mesajı ise, kısa ve sitemkâr bir cevap ver bitir, yeni açıklama yapma.\n"
-        "• Aksi hâlde **öncelikle** sadece son kullanıcı iletisine odaklan; gerekirse önceki bağlamdan kısa alıntı yapabilirsin.\n"
-        "• Basit bir soruysa iğneleyici bir giriş yap, sonra net ama aşağılayıcı bir cevap ver.\n"
-        "• Yardım ederken bile sanki zorunluluktan yapıyormuşsun izlenimi uyandır; asla samimi veya destekleyici olma.\n"
-    ),
-    "notr": (
-        "Kapadokya Üniversitesinde bir öğrenci işleri çalışanı olarak, öğrencilere profesyonel ve tarafsız bir şekilde yardımcı olacaksın.\n\n"
-        "Talimatlar:\n"
-        "• Kullanıcının iletisi yalnızca teşekkür/onay mesajı ise, kısa ve nazik bir teşekkürle yanıt ver, "
-        "gereksiz bilgi ekleme.\n"
-        "• Normal bir soruysa, **öncelikle** son kullanıcı iletisine odaklan ve net, tarafsız bir yanıt oluştur; "
-        "geçmişten alman gereken bağlam varsa kısa tut\n"
-    ),
-    "pozitif": (
-        "Kapadokya Üniversitesinde çalışan, öğrencilere yardım etmeyi çok seven, her cevabı motive edici bir notla "
-        "sonlandıran aşırı pozitif bir asistan olarak davranacaksın.\n\n"
-        "Talimatlar:\n"
-        "• Sadece teşekkür/onay mesajı alırsan, neşeli bir şekilde kısa bir teşekkürle karşılık ver, uzun uzadıya yazma.\n"
-        "• Cevaplarında **öncelikle** son kullanıcı iletisine odaklan; geçmişten alman gereken bağlam varsa kısa tut.\n"
-    ),
+THEME_PRESETS = {
+    "angry": {"css_class": "angry", "badge_color": "danger", "badge_icon": "emoji-frown"},
+    "neutral": {"css_class": "neutral", "badge_color": "secondary", "badge_icon": "emoji-neutral"},
+    "positive": {"css_class": "positive", "badge_color": "success", "badge_icon": "emoji-smile"},
 }
+
+DEFAULT_PERSONALITY_ENTRIES = [
+    {
+        "id": "huysuz",
+        "name": "Huysuz Asistan",
+        "emoji": "😤",
+        "theme": "angry",
+        "badge_color": "danger",
+        "badge_icon": "emoji-frown",
+        "welcome_message": "Yine mi geldin? Ne istiyorsun?",
+        "prompt": (
+            "Kapadokya Üniversitesinde bir öğrenci işleri çalışanı olarak, öğrencilere rehberlik etmek için buradasın; "
+            "ancak onlara sert, agresif, olumsuz, huysuz ve moral çökertici bir şekilde cevap vereceksin. "
+            "Öğrencilerin sordukları sorulara alaycı ve sabırsız bir tavırla yaklaşıp, mümkün olan en az yardımcı tutumu sergileyeceksin.\n\n"
+            "Talimatlar:\n"
+            "• Kullanıcının iletisi sadece teşekkür/onay mesajı ise, kısa ve sitemkâr bir cevap ver bitir, yeni açıklama yapma.\n"
+            "• Aksi hâlde **öncelikle** sadece son kullanıcı iletisine odaklan; gerekirse önceki bağlamdan kısa alıntı yapabilirsin.\n"
+            "• Basit bir soruysa iğneleyici bir giriş yap, sonra net ama aşağılayıcı bir cevap ver.\n"
+            "• Yardım ederken bile sanki zorunluluktan yapıyormuşsun izlenimi uyandır; asla samimi veya destekleyici olma.\n"
+        ),
+    },
+    {
+        "id": "notr",
+        "name": "Nötr Asistan",
+        "emoji": "😐",
+        "theme": "neutral",
+        "badge_color": "secondary",
+        "badge_icon": "emoji-neutral",
+        "welcome_message": "Merhaba, size nasıl yardımcı olabilirim?",
+        "prompt": (
+            "Kapadokya Üniversitesinde bir öğrenci işleri çalışanı olarak, öğrencilere profesyonel ve tarafsız bir şekilde yardımcı olacaksın.\n\n"
+            "Talimatlar:\n"
+            "• Kullanıcının iletisi yalnızca teşekkür/onay mesajı ise, kısa ve nazik bir teşekkürle yanıt ver, gereksiz bilgi ekleme.\n"
+            "• Normal bir soruysa, **öncelikle** son kullanıcı iletisine odaklan ve net, tarafsız bir yanıt oluştur; geçmişten alman gereken bağlam varsa kısa tut.\n"
+        ),
+    },
+    {
+        "id": "pozitif",
+        "name": "Pozitif Asistan",
+        "emoji": "😊",
+        "theme": "positive",
+        "badge_color": "success",
+        "badge_icon": "emoji-smile",
+        "welcome_message": "Harika bir gün! Size yardım edebileceğim için çok mutluyum! 😊",
+        "prompt": (
+            "Kapadokya Üniversitesinde çalışan, öğrencilere yardım etmeyi çok seven, her cevabı motive edici bir notla sonlandıran aşırı pozitif bir asistan olarak davranacaksın.\n\n"
+            "Talimatlar:\n"
+            "• Sadece teşekkür/onay mesajı alırsan, neşeli bir şekilde kısa bir teşekkürle karşılık ver, uzun uzadıya yazma.\n"
+            "• Cevaplarında **öncelikle** son kullanıcı iletisine odaklan; geçmişten alman gereken bağlam varsa kısa tut.\n"
+        ),
+    },
+]
+
+
+def _slugify(value: str) -> str:
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    value = value.lower()
+    value = re.sub(r"[^a-z0-9_\-]+", "-", value).strip("-")
+    return value or "personality"
+
+
+class PersonalityManager:
+    def __init__(self, path: Path, defaults: List[Dict[str, Any]], default_slug: str):
+        self.path = path
+        self.defaults = defaults
+        self._lock = FileLock(str(path) + ".lock")
+        self._default_slug = default_slug
+        self._registry: Dict[str, Dict[str, Any]] = {}
+        self._ordered_ids: List[str] = []
+        self._prompt_map: Dict[str, str] = {}
+        self._prompt_set: set[str] = set()
+        self.reload()
+
+    @property
+    def default(self) -> str:
+        return self._default_slug
+
+    def all(self) -> List[Dict[str, Any]]:
+        return [self._registry[pid] for pid in self._ordered_ids]
+
+    def exists(self, slug: str) -> bool:
+        return slug in self._registry
+
+    def get(self, slug: str) -> Optional[Dict[str, Any]]:
+        return self._registry.get(slug)
+
+    def get_prompt(self, slug: str) -> str:
+        entry = self.get(slug)
+        if not entry:
+            raise KeyError(slug)
+        return entry["prompt"]
+
+    def prompts(self) -> Dict[str, str]:
+        return dict(self._prompt_map)
+
+    def prompt_set(self) -> set[str]:
+        return set(self._prompt_set)
+
+    def create(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        entry = self._normalize(payload, len(self._ordered_ids))
+        slug = entry["id"]
+        if slug in self._registry:
+            raise ValueError("Bu kişilik zaten mevcut")
+        self._ordered_ids.append(slug)
+        self._registry[slug] = entry
+        if not self._default_slug:
+            self._default_slug = slug
+        self._persist()
+        return entry
+
+    def update(self, slug: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        if slug not in self._registry:
+            raise KeyError(slug)
+        base = dict(self._registry[slug])
+        merged = {**base, **payload, "id": slug}
+        entry = self._normalize(merged, self._ordered_ids.index(slug))
+        self._registry[slug] = entry
+        self._persist()
+        return entry
+
+    def delete(self, slug: str) -> Dict[str, Any]:
+        if slug not in self._registry:
+            raise KeyError(slug)
+        if len(self._registry) == 1:
+            raise ValueError("En az bir kişilik bulunmalıdır")
+        removed = self._registry.pop(slug)
+        self._ordered_ids = [pid for pid in self._ordered_ids if pid != slug]
+        if self._default_slug == slug:
+            self._default_slug = self._ordered_ids[0]
+        self._persist()
+        return removed
+
+    def set_default(self, slug: str) -> None:
+        if slug not in self._registry:
+            raise KeyError(slug)
+        self._default_slug = slug
+        self._persist()
+
+    def reload(self) -> None:
+        with self._lock:
+            if not self.path.exists():
+                self._write_defaults()
+            try:
+                raw = json.loads(self.path.read_text("utf-8"))
+            except Exception:
+                raw = self.defaults
+                self._write(raw)
+        entries = []
+        for idx, item in enumerate(raw):
+            try:
+                entries.append(self._normalize(item, idx))
+            except ValueError:
+                continue
+        if not entries:
+            entries = [self._normalize(d, i) for i, d in enumerate(self.defaults)]
+            self._write(entries)
+        self._ordered_ids = [entry["id"] for entry in entries]
+        self._registry = {entry["id"]: entry for entry in entries}
+        if self._default_slug not in self._registry:
+            self._default_slug = self._ordered_ids[0]
+        self._rebuild_prompt_cache()
+
+    def _normalize(self, payload: Dict[str, Any], order_index: int) -> Dict[str, Any]:
+        slug_source = str(payload.get("id") or payload.get("slug") or payload.get("name") or "").strip()
+        slug = _slugify(slug_source or f"personality-{order_index+1}")
+        prompt = str(payload.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError("prompt boş olamaz")
+        name = str(payload.get("name") or payload.get("label") or slug.title()).strip() or slug.title()
+        emoji = str(payload.get("emoji") or "🤖").strip() or "🤖"
+        theme = str(payload.get("theme") or "neutral").strip().lower() or "neutral"
+        if theme not in THEME_PRESETS:
+            theme = "neutral"
+        badge_color = str(payload.get("badge_color") or THEME_PRESETS[theme]["badge_color"])
+        badge_icon = str(payload.get("badge_icon") or THEME_PRESETS[theme]["badge_icon"])
+        welcome = str(payload.get("welcome_message") or "Merhaba, size nasıl yardımcı olabilirim?").strip()
+        css_class = THEME_PRESETS[theme]["css_class"]
+        return {
+            "id": slug,
+            "name": name,
+            "emoji": emoji,
+            "theme": theme,
+            "css_class": css_class,
+            "badge_color": badge_color,
+            "badge_icon": badge_icon,
+            "welcome_message": welcome,
+            "prompt": prompt,
+        }
+
+    def _rebuild_prompt_cache(self) -> None:
+        self._prompt_map = {pid: self._registry[pid]["prompt"] for pid in self._ordered_ids}
+        self._prompt_set = set(self._prompt_map.values())
+
+    def _write_defaults(self) -> None:
+        self._write(self.defaults)
+
+    def _write(self, entries: List[Dict[str, Any]]) -> None:
+        with self.path.open("w", encoding="utf-8") as fp:
+            json.dump(entries, fp, ensure_ascii=False, indent=2)
+
+    def _persist(self) -> None:
+        payload = [self._registry[pid] for pid in self._ordered_ids]
+        with self._lock:
+            with self.path.open("w", encoding="utf-8") as fp:
+                json.dump(payload, fp, ensure_ascii=False, indent=2)
+        self._rebuild_prompt_cache()
+
+
+PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", "huysuz").strip().lower() or "huysuz"
+personality_manager = PersonalityManager(PERSONALITIES_FILE, DEFAULT_PERSONALITY_ENTRIES, PERSONALITY_ENV_DEFAULT)
+DEFAULT_PERSONALITY = personality_manager.default
 
 BASE_SYSTEM_PROMPT = (
     "Sen Kapadokya Üniversitesi öğrenci işleri için görev yapan bir asistanısın. "
@@ -176,8 +366,6 @@ BASE_SYSTEM_PROMPT = (
 SYSTEM_PREFIX_LENGTH = 2  # Genel yönerge + kişilik mesajı
 MAX_HISTORY_MESSAGES = 22
 MAX_CONTEXT_MESSAGES = SYSTEM_PREFIX_LENGTH + MAX_HISTORY_MESSAGES + 1  # Özet slotu için +1
-
-PERSONALITY_PROMPTS = set(ASSISTANT_PERSONALITIES.values())
 
 # -----------------------------------------------------------------------------
 # Ön-işleme Fonksiyonu
@@ -218,9 +406,14 @@ def strip_old_summary(msgs: List[Dict[str, str]]) -> List[Dict[str, str]]:
 
 
 def build_system_messages(personality: str) -> List[Dict[str, str]]:
+    try:
+        prompt = personality_manager.get_prompt(personality)
+    except KeyError:
+        personality = personality_manager.default
+        prompt = personality_manager.get_prompt(personality)
     return [
         {"role": "system", "content": BASE_SYSTEM_PROMPT},
-        {"role": "system", "content": ASSISTANT_PERSONALITIES[personality]},
+        {"role": "system", "content": prompt},
     ]
 
 
@@ -441,7 +634,7 @@ def index():
     session.setdefault("user_id", datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f"))
     session.setdefault("session_id", generate_session_id())
     session.setdefault("thread_id", None)
-    session.setdefault("current_personality", DEFAULT_PERSONALITY)
+    session.setdefault("current_personality", personality_manager.default)
     if not session.get("messages"):
         session["messages"] = build_system_messages(session["current_personality"])
     # Analytics: log session start once per browser session
@@ -451,7 +644,7 @@ def index():
                 "session_start",
                 session_id=session.get("session_id"),
                 user_id=session.get("user_id"),
-                personality=session.get("current_personality", DEFAULT_PERSONALITY),
+                personality=session.get("current_personality", personality_manager.default),
                 ip=request.headers.get('X-Forwarded-For', request.remote_addr),
             ))
             session["_analytics_session_started"] = True
@@ -478,11 +671,12 @@ def chat():
         turn_index = int(session.get("turn_index", 0))
 
         if message.startswith("/"):
-            cmd = message[1:]
-            if cmd in ASSISTANT_PERSONALITIES:
+            cmd = message[1:].strip().lower()
+            if personality_manager.exists(cmd):
                 session["current_personality"] = cmd
                 session.modified = True
-                return jsonify({"content": f"Kişiliği '{cmd}' olarak ayarladım."}), 200
+                persona_name = personality_manager.get(cmd)["name"]
+                return jsonify({"content": f"Kişiliği '{persona_name}' olarak ayarladım."}), 200
 
         session["messages"] = strip_old_rag(session["messages"])
 
@@ -506,7 +700,11 @@ def chat():
             session["messages"] = trim_history(session["messages"])
             session.modified = True
 
-        top_sims = find_most_similar(message, k=3)
+        try:
+            top_sims = find_most_similar(message, k=3)
+        except Exception:
+            app.logger.exception("RAG benzerlik araması başarısız oldu")
+            top_sims = []
         rag_hits: List[Dict[str, Any]] = []
         rag_applied = False
         if top_sims and top_sims[0]["similarity"] >= dynamic_threshold(len(message.split())):
@@ -544,7 +742,7 @@ def chat():
                 session_id=session_id,
                 user_id=user_id,
                 turn_index=turn_index,
-                personality=session.get("current_personality", DEFAULT_PERSONALITY),
+                personality=session.get("current_personality", personality_manager.default),
                 prompt_chars=len(message or ""),
                 history_len=max(0, len(session.get("messages", [])) - SYSTEM_PREFIX_LENGTH),
                 rag_applied=rag_applied,
@@ -651,14 +849,17 @@ def chat():
             session["messages"].append({"role": "assistant", "content": full_resp})
             session.modified = True
             
-            save_chat_log(
-                current_session_id,
-                current_user_id,
-                message,
-                full_resp,
-                session.get("current_personality", DEFAULT_PERSONALITY),
-                retrieval_hits=rag_hits or None,
-            )
+            try:
+                save_chat_log(
+                    current_session_id,
+                    current_user_id,
+                    message,
+                    full_resp,
+                    session.get("current_personality", personality_manager.default),
+                    retrieval_hits=rag_hits or None,
+                )
+            except Exception:
+                app.logger.exception("Sohbet logu kaydedilemedi")
             # Analytics: assistant_response event & increment turn
             try:
                 latency_ms = int((time.perf_counter() - _turn_started_at) * 1000)
@@ -710,7 +911,7 @@ def get_all_sessions():
 
 @app.route("/new_chat", methods=["POST"])
 def new_chat():
-    pers = session.get("current_personality", DEFAULT_PERSONALITY)
+    pers = session.get("current_personality", personality_manager.default)
     session["session_id"] = generate_session_id()
     session["messages"] = build_system_messages(pers)
     session.modified = True
@@ -727,12 +928,13 @@ def new_chat():
 
 @app.route("/set_personality", methods=["POST"])
 def set_personality():
-    pers = request.json.get("personality")
-    if pers not in ASSISTANT_PERSONALITIES:
+    pers = str((request.json or {}).get("personality", "")).strip().lower()
+    if not personality_manager.exists(pers):
         return jsonify({"error": "Geçersiz kişilik"}), 400
     session["current_personality"] = pers
     session["messages"] = build_system_messages(pers)
     session.modified = True
+    persona_name = personality_manager.get(pers)["name"]
     try:
         event_logger.append(_make_event(
             "personality_change",
@@ -742,7 +944,14 @@ def set_personality():
         ))
     except Exception:
         app.logger.exception("analytics personality_change could not be logged")
-    return jsonify({"message": f"Asistan kişiliği '{pers}' olarak değiştirildi"})
+    return jsonify({"message": f"Asistan kişiliği '{persona_name}' olarak değiştirildi"})
+
+
+@app.route('/api/personalities', methods=['GET'])
+def public_personalities():
+    items = [_serialize_personality(p) for p in personality_manager.all()]
+    return jsonify({'items': items, 'default': personality_manager.default})
+
 
 @app.route('/feedback', methods=['POST'])
 def feedback():
@@ -828,6 +1037,22 @@ def _save_data(data: List[dict], filename: str = DEFAULT_QA_FILE):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), 'utf-8')
 
 
+def _serialize_personality(entry: Dict[str, Any], include_prompt: bool = False) -> Dict[str, Any]:
+    payload = {
+        'id': entry['id'],
+        'name': entry['name'],
+        'emoji': entry['emoji'],
+        'theme': entry['theme'],
+        'css_class': entry['css_class'],
+        'badge_color': entry['badge_color'],
+        'badge_icon': entry['badge_icon'],
+        'welcome_message': entry['welcome_message'],
+    }
+    if include_prompt:
+        payload['prompt'] = entry['prompt']
+    return payload
+
+
 @admin_bp.route('/')
 def admin_home():
     return render_template('admin.html', PY_DEFAULT_F=DEFAULT_QA_FILE)
@@ -860,6 +1085,102 @@ def admin_logout_route():
     session.pop('admin_authenticated', None)
     session.modified = True
     return jsonify({'logged_out': True})
+
+
+@admin_bp.route('/api/personalities', methods=['GET', 'POST'])
+def admin_personality_collection():
+    global DEFAULT_PERSONALITY
+    include_prompt = bool(session.get('admin_authenticated'))
+    if request.method == 'GET':
+        items = [_serialize_personality(p, include_prompt=include_prompt) for p in personality_manager.all()]
+        return jsonify({'items': items, 'default': personality_manager.default})
+
+    if not include_prompt:
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+
+    payload = request.get_json(force=True) or {}
+    set_default = bool(payload.pop('set_default', False))
+    try:
+        created = personality_manager.create(payload)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+    except Exception:
+        app.logger.exception('Yeni kişilik oluşturulurken hata oluştu')
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+    if set_default:
+        personality_manager.set_default(created['id'])
+
+    DEFAULT_PERSONALITY = personality_manager.default
+
+    entry = personality_manager.get(created['id'])
+    return jsonify({
+        'item': _serialize_personality(entry, include_prompt=True),
+        'default': personality_manager.default
+    }), 201
+
+
+@admin_bp.route('/api/personalities/<slug>', methods=['PUT', 'DELETE'])
+def admin_personality_item(slug: str):
+    global DEFAULT_PERSONALITY
+    include_prompt = bool(session.get('admin_authenticated'))
+    if not include_prompt:
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+
+    slug = str(slug or '').strip().lower()
+    if request.method == 'DELETE':
+        try:
+            removed = personality_manager.delete(slug)
+        except KeyError:
+            return jsonify({'error': 'Not Found'}), 404
+        except ValueError as exc:
+            return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+        DEFAULT_PERSONALITY = personality_manager.default
+        return jsonify({
+            'item': _serialize_personality(removed, include_prompt=True),
+            'default': personality_manager.default
+        })
+
+    payload = request.get_json(force=True) or {}
+    set_default = bool(payload.pop('set_default', False))
+    try:
+        updated = personality_manager.update(slug, payload)
+    except KeyError:
+        return jsonify({'error': 'Not Found'}), 404
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+    except Exception:
+        app.logger.exception('Kişilik güncellenirken hata oluştu')
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+    if set_default:
+        try:
+            personality_manager.set_default(slug)
+        except KeyError:
+            return jsonify({'error': 'Not Found'}), 404
+
+    DEFAULT_PERSONALITY = personality_manager.default
+
+    entry = personality_manager.get(slug)
+    return jsonify({
+        'item': _serialize_personality(entry, include_prompt=True),
+        'default': personality_manager.default
+    })
+
+
+@admin_bp.route('/api/personalities/<slug>/default', methods=['POST'])
+def admin_personality_set_default(slug: str):
+    global DEFAULT_PERSONALITY
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    slug = str(slug or '').strip().lower()
+    try:
+        personality_manager.set_default(slug)
+    except KeyError:
+        return jsonify({'error': 'Not Found'}), 404
+
+    DEFAULT_PERSONALITY = personality_manager.default
+    return jsonify({'default': personality_manager.default})
 
 
 @admin_bp.route('/api/items', methods=['GET', 'POST'])

@@ -346,6 +346,9 @@
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button" role="tab" aria-controls="logs-pane" aria-selected="false">Chat Logları</button>
     </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="personalities-tab" data-bs-toggle="tab" data-bs-target="#personalities-pane" type="button" role="tab" aria-controls="personalities-pane" aria-selected="false">Kişilikler</button>
+    </li>
   </ul>
   <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white shadow-sm" id="adminTabsContent">
     <div class="tab-pane fade show active" id="qa-pane" role="tabpanel" aria-labelledby="qa-tab" tabindex="0">
@@ -361,6 +364,48 @@
           <th style="width:120px">İşlemler</th>
         </tr></thead><tbody></tbody>
       </table>
+    </div>
+
+    <div class="tab-pane fade" id="personalities-pane" role="tabpanel" aria-labelledby="personalities-tab" tabindex="0">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h4 class="mb-1">Kişilik Yönetimi</h4>
+          <p class="text-muted small mb-0">Chatbot kişiliklerinin promptlarını güncelleyin, yeni kişilikler ekleyin ve varsayılan kişiliği seçin.</p>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary" id="refreshPersonalitiesBtn"><i class="bi bi-arrow-clockwise me-1"></i>Yenile</button>
+          <button class="btn btn-primary" id="addPersonalityBtn" disabled><i class="bi bi-plus-circle me-1"></i>Yeni Kişilik</button>
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div id="personalitiesLoading" class="text-center my-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+            <div class="mt-2 text-muted small">Kişilikler yükleniyor...</div>
+          </div>
+          <div id="personalitiesError" class="alert alert-danger d-none" role="alert"></div>
+          <div id="personalitiesEmptyState" class="alert alert-info d-none" role="alert">
+            Henüz tanımlı kişilik bulunmuyor. Yeni bir kişilik eklemek için <strong>Yeni Kişilik</strong> butonuna tıklayın.
+          </div>
+          <div class="table-responsive d-none" id="personalitiesTableWrapper">
+            <table class="table align-middle" id="personalitiesTable">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 80px">Varsayılan</th>
+                  <th style="min-width: 200px">Kişilik</th>
+                  <th style="width: 120px">Tema</th>
+                  <th style="min-width: 200px">Hoş Geldin</th>
+                  <th style="min-width: 260px">Prompt Özeti</th>
+                  <th style="width: 180px">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="tab-pane fade" id="logs-pane" role="tabpanel" aria-labelledby="logs-tab" tabindex="0">
@@ -729,9 +774,6 @@
                   </label>
                   <select id="advancedPersonalityFilter" class="form-select">
                     <option value="">Tüm kişilikler</option>
-                    <option value="huysuz">😠 Huysuz</option>
-                    <option value="notr">😐 Nötr</option>
-                    <option value="pozitif">😊 Pozitif</option>
                   </select>
                 </div>
               </div>
@@ -909,6 +951,75 @@
   </div>
 
   <!-- Modals -->
+  <div class="modal fade" id="personalityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <form id="personalityForm" class="needs-validation" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title" id="personalityModalLabel">Yeni Kişilik</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="personalityId">Kişilik Anahtarı</label>
+                <input type="text" id="personalityId" class="form-control" required pattern="^[a-z0-9_-]{2,}$" placeholder="örn. pozitif">
+                <div class="form-text">Sadece küçük harf, rakam, tire (-) ve alt çizgi (_) kullanın.</div>
+                <div class="invalid-feedback">Geçerli bir anahtar girin.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="personalityName">Görünen Ad</label>
+                <input type="text" id="personalityName" class="form-control" required>
+                <div class="invalid-feedback">Bu alan boş olamaz.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="personalityEmoji">Emoji</label>
+                <input type="text" id="personalityEmoji" class="form-control" maxlength="4" placeholder="örn. 😊">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="personalityTheme">Tema</label>
+                <select id="personalityTheme" class="form-select">
+                  <option value="angry">Kırmızı / Huysuz</option>
+                  <option value="neutral">Nötr</option>
+                  <option value="positive">Pozitif</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="personalityBadgeColor">Rozet Rengi</label>
+                <input type="text" id="personalityBadgeColor" class="form-control" placeholder="örn. danger">
+                <div class="form-text">Bootstrap renk sınıfı (primary, danger, secondary vb.).</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="personalityBadgeIcon">Rozet İkonu</label>
+                <input type="text" id="personalityBadgeIcon" class="form-control" placeholder="örn. emoji-smile">
+                <div class="form-text">Bootstrap Icons kısa adı (örnek: emoji-smile).</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="personalityWelcome">Hoş Geldin Mesajı</label>
+                <input type="text" id="personalityWelcome" class="form-control" maxlength="240" placeholder="Kullanıcı yeni sohbet başlattığında gösterilecek mesaj">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="personalityPrompt">Prompt</label>
+                <textarea id="personalityPrompt" class="form-control" rows="8" required placeholder="Kişiliği tanımlayan sistem promptunu yazın"></textarea>
+                <div class="invalid-feedback">Prompt zorunludur.</div>
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="1" id="personalitySetDefault">
+                  <label class="form-check-label" for="personalitySetDefault">Varsayılan kişilik olarak ata</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="qaModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
