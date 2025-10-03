@@ -1,0 +1,1087 @@
+[
+  {
+    "questions": [
+      "Öğrenci belgesini nasıl alabilirim?",
+      "öğrenci belgesi almak istiyorum.",
+      "öğrenci belgesi lazım bana",
+      "Öğrenci belgesinin edinme süreci nedir?",
+      "Öğrenci belgesini nereden temin edebilirim?",
+      "Öğrenci belgesi alabilmek için hangi adımları izlemeliyim?",
+      "Öğrenci belgesi başvurusu yapmak istiyorum",
+      "Bu belgeyi nasıl elde ederim?",
+      "Öğrenci olduğumu kanıtlayan bir belgeye ihtiyacım var",
+      "Bana öğrenci belgesi gerekiyor",
+      "Öğrenci belgesine ulaşmak mümkün müdür?",
+      "Acil olarak öğrenci belgesine ihtiyacım var, ne yapmalıyım?"
+    ],
+    "answer": "Öğrenci belgenizi https://kapadokya.edu.tr/ogrenciler/ogrenci-isleri-formlari adresinden veya e-devlet üzerinden edinebilirsiniz."
+  },
+  {
+    "questions": [
+      "Transkript belgesini nasıl alabilirim?",
+      "transkript almam gerekiyor",
+      "Transkriptime nereden ulaşabilirim?",
+      "Not dökümünü elde etmek için ne yapmalıyım?",
+      "Diplomamı tamamladıktan sonra transkriptimin kopyasını nasıl edinebilirim?",
+      "Transkript belgesi almak istiyorum",
+      "Acilen not dökümüne ihtiyacım var",
+      "Transkript talebinde bulunmam gerekiyor"
+    ],
+    "answer": "Transkriptinizi https://kapadokya.edu.tr/ogrenciler/ogrenci-isleri-formlari adresinden veya e-devlet üzerinden edinebilirsiniz."
+  },
+  {
+    "questions": [
+      "OBS sistemine nasıl giriş yapabilirim?",
+      "OBS'e erişmek için hangi adımları izlemeliyim?",
+      "OBS programını açmak için ne yapmalıyım?",
+      "OBS sistemine bağlanmak için gerekli olanlar nelerdir?"
+    ],
+    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
+  },
+  {
+    "questions": [
+      "Çift anadal/yandal için gereken şartlar nelerdir?",
+      "Çift ana dal veya yan dal yapmak için hangi kriterleri sağlamak gerekiyor?",
+      "Bir öğrenci çift anadal veya yandal programına başvurabilmek için ne gibi şartları yerine getirmelidir?",
+      "Çift anadal/yandal yapma imkanı sunan koşullar nelerdir?"
+    ],
+    "answer": "Çift anadal başvuruları, üniversitenin internet sayfasında duyurulan ilanda istenilen gerekli belgeler ile yapılmalıdır. Çift anadal başvuru sonuçları duyurularda ilan edilmektedir."
+  },
+  {
+    "questions": [
+      "Muafiyet sınavını ne zaman yapılır ve nasıl başvurulur?",
+      "Muafiyet sınavının tarihi ve başvuru süreci hakkında bilgi alabilir miyim?",
+      "Muafiyet sınavına katılmak için gereken şartlar nelerdir ve başvuruyu nasıl tamamlayabilirim?",
+      "Muafiyet sınavıyla ilgili tarihleri ve başvuru yöntemlerini öğrenmek istiyorum"
+    ],
+    "answer": "Muafiyet sınavları, akademik takvimde belirtilen tarihlerde yapılmaktadır. Öğrenciler muafiyet sınavlarına başvurularını online olarak yapabilirler."
+  },
+  {
+    "questions": [
+      "Mazeret sınavına nasıl başvuru yapılır ve başvurunun sonucu nasıl öğrenilir?",
+      "Mazeret sınavı için başvuru süreci nedir ve sonuçları nereden takip edebilirim?",
+      "Mazeret sınavına girmek için hangi adımları izlemeliyim ve başvurumun durumu hakkında nasıl bilgi alabilirim?",
+      "Mazeret sınavı başvurusu yapmak istiyorum, bu konuda beni yönlendirebilir misiniz ve sonucunu ne zaman/nerede öğrenebilirim?"
+    ],
+    "answer": "Geçerli ve belgelenebilir bir mazeret sebebi ile birlikte 'Mazeret Sınav Talep Formu'nu doldurulmalıdır. İlgili form ve mazeret sebebini gösteren belge sekreterliğe veya info@kapadokya.edu.tr adresine mail yoluyla gönderilmelidir. Mazeret sınavı sonuçları öğrenciye SMS ile bildirilmektedir. "
+  },
+  {
+    "questions": [
+      "Kayıt dondurma nasıl yapılır, gerekli olan belgeler ve şartları nelerdir?",
+      "Kayıt dondurmak için hangi adımları izlemeliyim ve bu işlem için ne gibi evraklar gerekiyor?",
+      "Kayıtla ilgili işlemlerimi geçici olarak durdurmanın yolu nedir, bunun için hangi koşulları sağlamam gerekir?",
+      "Öğrenci kaydımı askıya almak istiyorum. Bu mümkün müdür, gerekli şartları ve belgeleri açıklayabilir misiniz?"
+    ],
+    "answer": "Kayıt dondurma işlemi, güz ve bahar dönemi başlarında ekle-sil haftasına kadar yapılabilmektedir. Kaydın dondurulabilmesi için öğrencinin geçerli ve belgelenebilir bir mazeretinin olması gerekmektedir. Bütün bu koşullar sağlandıktan sonra 'Kayıt Dondurma Talep Formu' ile birlikte Üniversite Sekreterliğine başvurusunu yapmalıdır."
+  },
+  {
+    "questions": [
+      "Kayıt sildirme hakkında bilgi alabilir miyim?",
+      "Kayıt silme işlemleriyle ilgili detayları öğrenebilir miyim?",
+      "Silinen kayıtlarımı geri getirmek mümkün müdür?",
+      "Verilerimin kaldırılmasına dair bilgiye ihtiyacım var"
+    ],
+    "answer": "Kayıt sildirme işlemi şahsen veya noter onaylı vekalet yolu ile yapılabilir. İşlemin yapılabilmesi için vekaletin ve öğrenci kimliğinin aslı öğrenci işlerine teslim edilmelidir."
+  },
+  {
+    "questions": [
+      "Geçtiğim dersi kaldı olarak görüyorum, neden?",
+      "Dersimi geçemediğimi görüyorum, bunun sebebi ne olabilir?",
+      "Bu dersten başarısız olduğumu nasıl açıklayabilirim?",
+      "Neden bu dersi tekrar almam gerekiyor?"
+    ],
+    "answer": "Öğrencinin kaldı olarak görünen dersinin hangi döenm ve hargi ders olduğu tespit edilerek öğrenci işleri dairesine talep açılmalıdır."
+  },
+  {
+    "questions": [
+      "Diplomamı kaybettim ne yapmalıyım?",
+      "Diplomamın bir kopyasını nasıl alabilirim?",
+      "Diplomam nerede olabilir, onu bulmak için hangi adımları izlemeliyim?",
+      "Mezuniyet belgem kayıp, yenisini çıkarmak için ne gibi işlemler yapmam gerekiyor?"
+    ],
+    "answer": "Diploma kaybedildiği zaman gazeteye kayıp ilanı verilmelidir. İlgili ilanın bulunduğu gazetenin, 'Diploma Talep Formu'nun ve kimlik fotokopisinin asılları Üniversite sekreterliğine teslim edilmelidir. Bütün bu süreçlerden sonra diploma 1 defaya mahsus olarak tekrar basılabilecektir."
+  },
+  {
+    "questions": [
+      "Hangi koşullarda dönemim uzar?",
+      "Dönemin ne zaman daha uzun süreceğini söyleyebilir misiniz?",
+      "Dönemimin uzaması için hangi şartların sağlanması gerekiyor?",
+      "Dönemi etkileyen ve uzamaya neden olan faktörler nelerdir?"
+    ],
+    "answer": "* Öğrencinin alması gereken veya alamadığı dersleri varsa- * Öğrencinin AKTS'si 120'nin altındaysa - * Üç dersten fazla başarısız dersi varsa dönemi uzar."
+  },
+  {
+    "questions": [
+      "Ders kaydı nasıl yapılır?",
+      "Derslere kayıt olmak için hangi adımları izlemeliyim?",
+      "Kayıt işlemlerini nereden başlatabilirim?",
+      "Ders seçimi ve kaydı konusunda bana yardımcı olabilir misiniz?"
+    ],
+    "answer": "OBS sistemine giriş yapıldıktan sonra KAYITLANMA ekranından ders kaydı yapabilir. Öğrenci ders kaydını yapamıyorsa danışmanına yönlendirilmelidir."
+  },
+  {
+    "questions": [
+      "Not ortalamasını nasıl yükseltebilirim?",
+      "Notlarıma daha iyi notlar eklemek için ne gibi stratejiler izleyebilirim?",
+      "Daha yüksek bir akademik başarı elde etmek için neler yapabilirim?",
+      "GPA'mi artırmak için hangi adımları atmalıyım?"
+    ],
+    "answer": "Almış olduğu tüm zorunlu ve seçmeli derslerden başarılı olan, buna rağmen ortalaması 2.00'nin altında olan öğrenciler transkirptlerinde görünen DD ve DC dersler için Not Yükseltme Sınavına başvuru yapabilir."
+  },
+  {
+    "questions": [
+      "Diplomalar ne zaman verilecek?",
+      "Diplomaların teslimiyle ilgili süreç hakkında bilgi alabilir miyim?",
+      "Diplomalar hangi tarihte sahiplerine ulaşacak?",
+      "Diplomaları ne zaman almaya başlayabiliriz?",
+      "Bu soruyu farklı şekilde sormanın başka yolları da var:",
+      "Mezuniyet belgeleri ne zaman elimize geçecek?",
+      "Diplomaların gönderimi için bir tarih belirlendi mi?",
+      "Diploma alımıyla ilgili son durum nedir?"
+    ],
+    "answer": "Diploma, öğrencilerin mezuniyet tarihinden 2 ay sonra teslim alınabilir."
+  },
+  {
+    "questions": [
+      "Geçici mezuniyet belgesini nereden ve nasıl alabilirim?",
+      "Geçici diploma almak için hangi adımları izlemeliyim?",
+      "Geçici mezuniyet belgesi başvuru süreci nasıl işliyor ve nereden yapılabilir?",
+      "Okulumdan geçici diploma alabilmek için ne yapmam gerekiyor, hangi birimlere başvurmalıyım?"
+    ],
+    "answer": "Geçici mezuniyet belgesi mezun olduktan sonra öğrenci işleriden alınabilir. Öğrenci belgesi şahsen teslim alınabilir veya noter vekaleti verilmiş bir kişiye teslim edilebilir. Belgenin alınabilmesi için öğrenci kimlik kartının teslim edilmesi gerekmektedir.  Öğrenci mezun belgesini E-devlet üzerindende alabilmektedir. Mezun belgesinin gönderilmesini isteyen öğrencinin dilekçe yazması gerekmektedir."
+  },
+  {
+    "questions": [
+      "Mezun muyum?",
+      "* Diplomamı aldım mı?",
+      "* Okulumu bitirdim mi?",
+      "* Eğitim hayatımı tamamladım mı?"
+    ],
+    "answer": "OBS sistemine giriş yapıldıktan sonra öğrencinin durumu kısmında MEZUN OLDU ibaresi yer alıyorsa öğrenci mezun durumundadır. MEZUN OLDU ibaresi yer almıyorsa, öğrenci işlerine talep açılmalıdır. "
+  },
+  {
+    "questions": [
+      "Mezunum ama YÖKSİS'te mezun görünmüyorum.",
+      "YÖKSİS sisteminde mezuniyet bilgim henüz güncellenmemiş durumda, ne yapmalıyım?",
+      "Mezun olduğum halde YÖKSİS'te kaydım hala öğrenci olarak görünüyor. Bu durumu nasıl düzeltebilirim?",
+      "Üniversiteden mezun oldum ancak YÖKSİS'teki bilgilerimde bu durum yansıtılmamış. Çözüm için hangi adımları izlemeliyim?"
+    ],
+    "answer": "YÖKSİS aynı günde yapılan işlemlerin verilerini saat 18:00'den sonra çekmektedir. Bu nedenle yapmış olduğunuz başvurunun YÖKSİS'e yansıması 24 saat sonra gerçekleşmektedir. 24 saat geçmesine rağmen sistem üzerinde mezun olduğu görünmüyorsa öğrenci işlerine talep açılmalıdır."
+  },
+  {
+    "questions": [
+      "Öğrenci kimliğimi nereye ve nasıl bırakmalıyım?",
+      "Öğrenci kartımı teslim etmek için hangi prosedürü izlemeliyim?",
+      "Kimliğimi bırakmak için gerekli yer ve yöntem nedir?",
+      "Öğrenci kimliğimin iadesiyle ilgili bilgi alabilir miyim?"
+    ],
+    "answer": "Öğrenci kimliğinizi, geçici mezuniyet belgesi veya diploma alırken öğrenci işlerine teslim etmeniz gerekmektedir."
+  },
+  {
+    "questions": [
+      "Tek/üç ders sınavının başvuru koşulları nelerdir?",
+      "Tek veya üç derslik sınavlara başvurabilmek için hangi şartları sağlamak gerekiyor?",
+      "Bu sınavlardan (tek/üç ders) herhangi birine başvuru yapmak için gerekli kriterler nelerdir?",
+      "Tek ya da üç ders sınavlarına kayıt olmak için nelere dikkat etmeliyim?"
+    ],
+    "answer": "* Almış olduğu tüm zorunlu ve seçmeli derslerden devamsızlığının olmaması - * Almış olduğu tüm zorunlu ve seçmeli derslerden en fazla 3 dersinin başarısız olması - * Tek/üç Ders Sınav Talep Formu doldurup sekreterliğe ulaştırması, gerekmektedir. "
+  },
+  {
+    "questions": [
+      "Öğrenci İşleri ile nasıl iletişime geçebilirim?",
+      "Öğrenci işleriyle ilgili bilgi almak istiyorum, nereye başvurmalıyım?",
+      "Öğrenci İşleri'ne ulaşmak için hangi yolları kullanabilirim?",
+      "Öğrenci İşleri departmanına nasıl erişebilirim?"
+    ],
+    "answer": "ogrenciisleri@kapadokya.edu.tr "
+  },
+  {
+    "questions": [
+      "Üstten ders alma şartları nedir, süreç nasıl yürütülür?",
+      "Üniversitede bir dersten geçmek için hangi koşulları sağlamalıyım ve bu işlem nasıl tamamlanır?",
+      "Bir dersten üstten geçme imkanı var mı, varsa neler gerekiyor ve başvuru süreci nasıl işliyor?",
+      "Dersleri üstten alma konusunda üniversitenin politikaları nelerdir, gerekli adımlar nelerdir?"
+    ],
+    "answer": "Üstten ders alma süreci bölüm ve program başkanlarının onayları ile başlamaktadır. İlgili onayı alan öğrenciler,'Ders Yükü Arttırma Formu'nu doldurmalıdır."
+  },
+  {
+    "questions": [
+      "Ödeme yapmak için Kapadokya Üniversitesi iban bilgisine ihtiyacım var.",
+      "iban bilgisi lazım?",
+      "Kapadokya Üniversitesi'ne ödeme yapabilmek için hangi banka hesap bilgilerini kullanmalıyım?",
+      "Kapadokya Üniversitesi'nin ödeme işlemlerinde kullanılan IBAN numarası nedir?",
+      "Ödememi Kapadokya Üniversitesi'ne yapmak istiyorum, lütfen IBAN numarasını paylaşır mısınız?",
+      "IBAN",
+      "IBAN numarasını öğrenmek istiyorum?",
+      "Kapadokya Üniversitesi'nin IBAN 'ılazım?"
+    ],
+    "answer": "TR26 0006 2001 0410 0006 2989 81"
+  },
+  {
+    "questions": [
+      "Ödemelerim için yeni kart eklemek istiyorum.",
+      "Yeni bir ödeme yöntemi kaydetmek istiyorum",
+      "Ödeme bilgilerime yeni bir kredi kartı veya banka kartı ekleyebilir miyim?",
+      "Mevcut ödeme yöntemlerime ek olarak, farklı bir kart kullanmak istiyorum"
+    ],
+    "answer": "Yeni kart eklemek  ya da kart değişikliği yapmak için tahsilat.kapadokya adresinden \"yeni kart ekle\" kısmından ekleme yapabilirsiniz."
+  },
+  {
+    "questions": [
+      "İade talebinde bulunmak istiyorum.",
+      "İade etmek istiyorum",
+      "Ürünü geri göndermek istiyorum",
+      "Bu üründen vazgeçtim, iade edebilir miyim?"
+    ],
+    "answer": "İade dilekçenizi https://kpdk.link/ucretiadesidilekcesi adresinden doldurabilirsiniz. "
+  },
+  {
+    "questions": [
+      "Kayıt dondurduğumda ödeme yapar mıyım?",
+      "Kayıt dondurulduğu süre boyunca ücretlendirme devam eder mi?",
+      "Dondurma işlemi sırasında herhangi bir ücret ödemem gerekir mi?",
+      "Hesabım askıda iken para ödemeye devam edecek miyim?"
+    ],
+    "answer": "Kayıt dondurma işlemleri dönemlik olarak yapılmaktadır ve her dondurduğunuz dönemin yarı ücreti tahsil edilmektedir. "
+  },
+  {
+    "questions": [
+      "Avukata verilmişim ne yapacağım? Borcum ne kadar?",
+      "Avukatın eline düştüm, şimdi ne olacak? Ne kadar borcum var?",
+      "Hukuki süreç başladı, bundan sonraki adımlar nelerdir? Borç miktarım nedir?",
+      "Bir avukat tarafından takip ediliyorum, bu durumla nasıl başa çıkmalıyım? Borcumu öğrenmek istiyorum"
+    ],
+    "answer": "Dosya, Hukuk bürosuna devredilmiş ve ödemenini, hukuk bürosuna yapılacağı bilgisi verilmelidir. 0384 212 21 19 numaralı telefondan iletişime geçilebilir."
+  },
+  {
+    "questions": [
+      "Kayıt sildirirsem ödeme yapar mıyım?",
+      "Kayıtım iptal edilirse para iadesi alır mıyım?",
+      "Eğer kaydımı silersem ücretlendirme olur mu?",
+      "Silme işlemi yaptığımda ödeme yükümlülüğüm devam eder mi?"
+    ],
+    "answer": "Dilekçe verdiği gün baz alınarak eğitim gördüğü hafta kadar ücret kesintisi yapılmaktadır."
+  },
+  {
+    "questions": [
+      "LMS şifremi unuttum, ne yapmalıyım",
+      "LMS hesabıma erişimde sorun yaşıyorum, şifremi sıfırlamak istiyorum",
+      "Şifremi hatırlayamıyorum, LMS'ye nasıl giriş yapabilirim?",
+      "LMS sisteminde oturum açmak için şifremi unuttum, yardım eder misiniz?"
+    ],
+    "answer": "https://uzaktanogretim.kapadokya.edu.tr adresi üzerinden, giriş panelinde yer alan Şifremi Unuttum butonunu kullanarak şifre sıfırlama işlemi gerçekleştirebilirsiniz. Şifre sıfırlama talebiniz LMS’de yer alan kayıtlı e-posta adresinize gönderilecektir. "
+  },
+  {
+    "questions": [
+      "Uzaktan Öğretim Sistemine nasıl giriş yaparım?",
+      "Uzaktan eğitim platformuna erişmek için ne yapmalıyım?",
+      "Sisteme uzaktan bağlamak için hangi adımları izlemeliyim?",
+      "Uzaktan Öğretim Sistemine ulaşmak için gerekli olan süreç nedir?"
+    ],
+    "answer": "https://uzaktanogretim.kapadokya.edu.tr adresi üzerinden Kullanıcı Adı/Mail satırına Öğrenci Numaranızı, şifre satırına TC Kimlik Numaranızı yazarak giriş yapabilirsiniz "
+  },
+  {
+    "questions": [
+      "Derslerimi / Ders kayıtlarını izliyorum ancak izlenmedi gösteriyor ne yapmalıyım?",
+      "Derslerime baktığımda, tamamlanmamış olarak görünüyorlar ama aslında tamamladım. Bu durumu nasıl düzeltebilirim?",
+      "Derslerimdeki ilerleme kaydedilmiyor gibi, izlediğim dersler hala \"izlenmemiş\" olarak gözüküyor, ne yapmalıyım?",
+      "Tamamladığım derslerin kayıtları neden güncellenmiyor ve bu sorunu çözmek için hangi adımları atmalıyım?"
+    ],
+    "answer": "Derse katılım görünümünüzde güncelleme sağlanacaktır. Şu an için derslere katılım sağlamanız yeterlidir. "
+  },
+  {
+    "questions": [
+      "Devamsız görünüyorum ne yapmalıyım?",
+      "Devamsızlığım var, bu durumu nasıl çözebilirim?",
+      "Devam durumumla ilgili bir sorun oluşmuş gibi görünüyor, ne yapmam gerekiyor?",
+      "Okula/işe devam edemiyorum, şimdi hangi adımları atmalıyım?"
+    ],
+    "answer": "Ders katılımlarınızı, program yetkilileriniz tarafından belirtilen kriterlere uygun şekilde tamamladıysanız herhangi bir şey yapmanıza gerek bulunmamaktadır. Derse katılım görünümünüzde güncelleme sağlanacaktır. "
+  },
+  {
+    "questions": [
+      "Dersin tekrarını izlemek istiyorum ancak kayıt bulunmuyor, ne yapmalıyım?",
+      "Ders kaydına ulaşamıyorum, bu konuda yardımcı olabilir misiniz?",
+      "Kayıtlı ders tekrarını bulamadım, alternatif bir çözüm var mı?",
+      "Dersin videosunu izlemek istiyorum fakat sistemde göremiyorum, ne önerirsiniz?"
+    ],
+    "answer": "İlgili sanal sınıf kayıtları, dersin gerçekleşme saatinden en az 24 saat sonra sisteme yansımakta ve izlenebilir olmaktadır. 24 saat geçmiş olmasına rağmen sanal sınıf tekrarına erişim sağlanamıyor ise uzaktanogretim@kapadokya.edu.tr e-posta adresinden destek isteyebilirsiniz. E-posta içeriğinde; ders adı ve izlenemeyen sanal sınıf kaydının tarih-saat bilgisini belirtmeniz, düzeltme işlemlerinin en hızlı şekilde başlatılması için faydalı olacaktır. "
+  },
+  {
+    "questions": [
+      "Bireysel danışmanlık hizmetlerinden nasıl yararlanabilirim?",
+      "Bireysel danışmanlık almanın yolları nelerdir?",
+      "Bu danışmanlık hizmetine nasıl erişebilirim?",
+      "Danışmanlık desteği almak için hangi adımları izlemeliyim?"
+    ],
+    "answer": "Psikolojik danışma talebiniz için pdr@kapadokya.edu.tr adresine mail atabilirsiniz."
+  },
+  {
+    "questions": [
+      "Etkinliğe katıldım ama puanım tanımlanmadı, ne yapmalıyım?",
+      "Etkinlikten sonra puanım hala görünmüyor, bu konuda nasıl yardımcı olabilirim?",
+      "Puanım henüz etkinlik kaydımda gözükmüyor, çözüme ulaşmak için kiminle iletişime geçmeliyim?",
+      "Katıldığım etkinliğin puanının sisteme işlenmemesi durumunda ne yapmam gerekiyor?"
+    ],
+    "answer": "Etkinlik puanınız için katıldığınız etkinlik ve öğrenci numaranızı sks@kapadokya.edu.tr adresine iletebilirsiniz."
+  },
+  {
+    "questions": [
+      "Microsoft Teams hesabıma girişte sorun yaşıyorum.",
+      "Microsoft Teams'e erişimde sıkıntı çekiyorum",
+      "Teams hesabıma giriş yapamıyorum, ne yapmalıyım?",
+      "Teams'te oturum açarken bir problemle karşılaştım",
+      "microsoft teams'e nasıl girerim"
+    ],
+    "answer": "Kullanıcı adı olarak “adi.soyadi@kun.edu.tr” ve şifre olarak da “Kun.tckimliknumarasınınsonbeşhanesi” (Örnek: Kun.12345) kullanılarak Üniversitemizin kurumsal Microsoft Teams sistemine girebilirsiniz."
+  },
+  {
+    "questions": [
+      "Yemekhanedeki yemek saatlerini öğrenmek istiyorum.",
+      "Yemekhanede ne zaman yemek yiyebilirim?",
+      "Yemekhane hangi saatlerde açıktır?",
+      "Yemekhanenin çalışma saatleri nedir?"
+    ],
+    "answer": "Yemek saatleri kahvaltı: 07:00 – 08:45, öğle yemeği 12:00- 14:30 ve akşam yemeği 18:00 – 19:30 arası olarak belirlenmiştir."
+  },
+  {
+    "questions": [
+      "öğle yemeği saatini öğrenmek istiyorum.",
+      "Öğle yemeğinin ne zaman olduğunu merak ediyorum",
+      "Öğle yemeğine kaçta oturuluyor?",
+      "Lütfen öğle yemeği saatini bana söyleyebilir misiniz?"
+    ],
+    "answer": "öğle yemeği saatleri : 12:00 – 14:30 arası olarak belirlenmiştir."
+  },
+  {
+    "questions": [
+      "akşam yemeği saatini öğrenmek istiyorum.",
+      "Akşam yemeğinin ne zaman olacağını öğrenebilir miyim?",
+      "Akşam yemeği hangi saatte servis edilecek?",
+      "Yemek saatinizi merak ediyorum, bana bilgi verebilir misiniz?"
+    ],
+    "answer": "akşam yemeği saatleri : 18:00 – 19:30 arası olarak belirlenmiştir."
+  },
+  {
+    "questions": [
+      "kahvaltı saatini öğrenmek istiyorum.",
+      "Kahvaltının ne zaman olduğunu öğrenebilir miyim?",
+      "Kahvaltıya kaçta oturuluyor?",
+      "Bugün kahvaltı saat kaç gibi?"
+    ],
+    "answer": " kahvaltı saatleri : 07:00 – 08:45 arası olarak belirlenmiştir."
+  },
+  {
+    "questions": [
+      "Sosyal Bilimler Kütüphanesi hangi saatlerde hizmet veriyor?",
+      "Sosyal Bilimler Kütüphanesi'nin çalışma saatleri nedir?",
+      "Sosyal Bilimler Kütüphanesi ne zaman açıktır?",
+      "Sosyal Bilimler Kütüphanesi'ne hangi saatlerde gidilebilir?"
+    ],
+    "answer": "Sosyal Bilimler Kütüphanesi haftada 6 gün, 09:00 – 00:00 saatleri arasında hizmet vermektedir."
+  },
+  {
+    "questions": [
+      "Merkez Kütüphaneden nasıl ödünç kitap alabilirim?",
+      "Merkez Kütüphanesinden kitap almak için hangi adımları izlemeliyim?",
+      "Kütüphaneden kitap ödünç alma süreci nasıl işliyor?",
+      "Merkez Kütüphanesinde kitap ödünç almayla ilgili bilgi verebilir misiniz?"
+    ],
+    "answer": "Merkez Kütüphaneden aynı anda en fazla üç akademik ve iki özel amaçlı kitap ödünç alınabilir. Kitaplar 15 gün içinde teslim edilmeli; geçerli mazeret durumunda süre uzatılabilir."
+  },
+  {
+    "questions": [
+      "Mustafapaşa Yerleşkesine şehir dışından ulaşım nasıl sağlanır?",
+      "Mustafapaşa Yerleşkesi'ne başka şehirlerden gelmek için hangi yollar izlenebilir?",
+      "Şehir dışından Mustafapaşa Yerleşkesine nasıl gidilir?",
+      "Mustafapaşa Yerleşkesi'ne uzak şehirlerden ulaşım imkanları nelerdir?"
+    ],
+    "answer": "Mustafapaşa, Kapadokya Bölgesi’nin merkezinde yer alır. Otobüsle Nevşehir veya Ürgüp’e gelerek oradan yerel toplu taşıma veya taksiyle ulaşım sağlanabilir. Ayrıca, yakın havalimanlarından (Nevşehir Kapadokya veya Kayseri Erkilet) servis hizmetleri mevcuttur."
+  },
+  {
+    "questions": [
+      "Öğrenci evlerinde konaklama ücretine hangi hizmetler dahil?",
+      "Öğrenci yurtlarında ödenen ücrete neler dahil?",
+      "Öğrenci evlerinin fiyatına hangi imkanlar giriyor?",
+      "Konaklama ücreti karşılığında öğrenci evlerinde hangi olanaklardan yararlanabiliyorsunuz?"
+    ],
+    "answer": "Öğrenci evlerinde konaklama bedeline kahvaltı ile saat 22:00-23:00 arası verilen çorba ikramı dahildir. Öğrenciler öğle ve akşam yemeklerini yemekhane veya kafeteryalardan ücret karşılığı alabilirler."
+  },
+  {
+    "questions": [
+      "Üniversitenin kampüsleri arasında ücretsiz servis var mı?",
+      "Üniversite içinde otobüs hizmeti bulunuyor mu?",
+      "Kampüsler arası ulaşım için ücretsiz araçlar sağlanıyor mu?",
+      "Okulun kampüsleri arasında herhangi bir nakliye imkanı var mı?"
+    ],
+    "answer": "Öğrenci evinde kalanlar için Mustafapaşa’dan Ürgüp ve diğer yerleşkelere belirli saatlerde ücretsiz öğrenci servisi sağlanmaktadır."
+  },
+  {
+    "questions": [
+      "Sabiha Gökçen Havalimanı Yerleşkesine toplu taşıma ile nasıl gidilir?",
+      "Sabiha Gökçen'e hangi otobüsler veya metro hatları ile ulaşabilirim?",
+      "Sabiha Gökçen Havalimanı'na toplu taşıma araçlarıyla gitmek için hangi seçeneklerim var?",
+      "Sabiha Gökçen Havalimanı Yerleşkesi'ne ulaşım sağlayan toplu taşıma alternatiflerini öğrenebilir miyim?"
+    ],
+    "answer": "Sabiha Gökçen Havalimanı Yerleşkesine İstanbul’un çeşitli bölgelerinden E-3, E-9, E-11, E-10 gibi İETT hatları veya HAVABÜS/HAVAİST servisleriyle ulaşım mümkündür. Kadıköy, 4. Levent, Bostancı ve Uzunçayır gibi bölgelerden direkt hatlar bulunmaktadır."
+  },
+  {
+    "questions": [
+      "Staj uygulaması nasıl yürütülür?",
+      "Staj sürecinde neler yapılır?",
+      "Staj programının işleyişi nedir?",
+      "Staja başvuru ve kabulden sonraki adımlar nelerdir?"
+    ],
+    "answer": "Zorunlu staj, bölüm tarafından belirlenen süre ve koşullarda yapılır. Öğrenciler, staj yeri seçiminde bölüm koordinatörü ve Staj/Uygulama Birimi’nden rehberlik alır; staj sonrası onaylı rapor sunmaları gerekmektedir."
+  },
+  {
+    "questions": [
+      "Uçak Teknolojisi (İngilizce) Programının uygulama eğitimleri nerede yapılır?",
+      "Uçak Teknolojisi programındaki pratik çalışmalar hangi merkezlerde gerçekleştiriliyor?",
+      "Bu programın uygulamalı eğitimlerini yapmak için hangi tesisler kullanılıyor?",
+      "Uçak Teknolojisi (İngilizce) Programının uygulama eğitimleri için belirlenmiş uygulama alanları nelerdir?"
+    ],
+    "answer": "Uçak Teknolojisi (İngilizce) Programında uygulama dersleri Sabiha Gökçen Yerleşkesindeki atölyeler ile Pegasus Havayolları’nın teknik bakım merkezlerinde gerçekleştirilmektedir."
+  },
+  {
+    "questions": [
+      "Çift Anadal (ÇAP) başvuruları ne zaman ve nasıl yapılıyor?",
+      "Çift anadal programına başvuru süreciyle ilgili bilgileri nereden edinebilirim?",
+      "ÇAP başvurularının takvimi ve şartları nelerdir?",
+      "Hangi tarihler arasında Çift Anadal (ÇAP) başvurusu yapabilirim ve bu başvuru için gerekli adımlar nelerdir?"
+    ],
+    "answer": "Çift Anadal başvuruları her akademik yarıyılın başında duyurulan tarihlerde yapılır. Başvuru koşulları ve not ortalaması gibi kriterler, ilgili Çift Anadal Yönergesi doğrultusunda belirlenmektedir."
+  },
+  {
+    "questions": [
+      "İstanbul Teknopark’taki atölyelerin amacı nedir?",
+      "İstanbul Teknopark'ta yer alan atölyeler ne gibi hizmetler sunuyor?",
+      "İstanbul Teknopark atölyelerinin temel işlevi nedir?",
+      "Teknopark içerisindeki atölyeler hangi ihtiyaçları karşılamayı hedefliyor?"
+    ],
+    "answer": "İstanbul Teknopark’ta bulunan atölyeler, Uçak Teknolojisi gibi havacılık programlarının uygulamalı derslerini yürütmek üzere kurulmuş Yapısal ve Aviyonik atölyelerdir; öğrenciler burada sektörle doğrudan ilgili pratik eğitim alırlar."
+  },
+  {
+    "questions": [
+      "Akademik danışmanlık hizmetlerinden nasıl yararlanabilirim?",
+      "Akademik destek almak için hangi kaynaklara başvurabilirim?",
+      "Akademik başarıya ulaşmamda bana yardımcı olacak danışmanlık hizmetlerine nasıl erişebilirim?",
+      "Üniversitenin akademik danışmanlık olanaklarından faydalanmak istiyorum, bu konuda ne yapmalıyım?"
+    ],
+    "answer": "Her öğrenciye atanmış akademik danışman, ders seçimi, staj planlaması ve diğer akademik konularda destek sağlar. Danışmanınıza ofis saatlerinde veya çevrimiçi platformlar (örneğin Microsoft Teams) üzerinden ulaşabilirsiniz."
+  },
+  {
+    "questions": [
+      "Pandemi döneminde üniversitenin aldığı önlemler nelerdi?",
+      "Pandemi sürecinde üniversite hangi tedbirleri uyguladı?",
+      "Üniversite, salgınla mücadelede nasıl bir yol izledi?",
+      "COVID-19 döneminde kampüste ne gibi güvenlik önlemleri alındı?"
+    ],
+    "answer": "Üniversite, pandemi sürecinde TSE denetimli “Covid-19 Güvenli Kampüs Belgesi” alarak, maske, sosyal mesafe, düzenli dezenfeksiyon ve hijyen protokollerini uygulamaya koymuştur."
+  },
+  {
+    "questions": [
+      "Ürgüp’te açılan Ağız ve Diş Sağlığı Merkezinde hangi hizmetler veriliyor?",
+      "Ürgüp'teki yeni Ağız ve Diş Sağlığı Merkezi'nde ne tür sağlık hizmetleri sunuluyor?",
+      "Ağız ve diş sağlığı konusunda Ürgüp'teki merkezin imkanları nelerdir?",
+      "Ürgüp Ağız ve Diş Sağlığı Merkezi hangi alanlarda tedavi sağlıyor?"
+    ],
+    "answer": "Ağız ve Diş Sağlığı Merkezinde, çocuk diş tedavisi, diş eti hastalıkları, çene cerrahisi, dental implant, telsiz ortodontik tedavi, uyku apnesi tedavisi ve zirkonyum uygulamalarına kadar geniş kapsamlı ağız ve diş sağlığı hizmetleri sunulmaktadır."
+  },
+  {
+    "questions": [
+      "Uçhisar Sanat Yerleşkesinde hangi programlar eğitim alıyor?",
+      "Uçhisar Sanat Yerleşkesi'nde devam eden eğitimler nelerdir?",
+      "Uçhisar Sanat Yerleşkesi'nde hangi türde dersler veriliyor?",
+      "Uçhisar Sanat Yerleşkesi, katılımcılara hangi alanlarda eğitim imkanı sunuyor?"
+    ],
+    "answer": "Uçhisar Sanat Yerleşkesinde, Aşçılık (ön lisans) ve Gastronomi ve Mutfak Sanatları (lisans) programlarının uygulamalı eğitimleri verilmektedir. Yerleşkede çok amaçlı bir salon da bulunmakta, müzik ve sahne sanatı etkinliklerine ev sahipliği yapmaktadır."
+  },
+  {
+    "questions": [
+      "Derslerde yoklama ve devam zorunluluğu nasıl uygulanıyor?",
+      "Derslere katılım takip sistemi ne şekildedir?",
+      "Devam takibi derslerde hangi yöntemlerle yapılıyor?",
+      "Yoklama ve devam şartları nelerdir, nasıl kontrol ediliyor?"
+    ],
+    "answer": "Her ders için belirlenen devamsızlık sınırları vardır. Öğrencilerin çoğu derslerde %70-%80 devamsızlık oranını aşmamak için derslere düzenli katılım sağlaması beklenir."
+  },
+  {
+    "questions": [
+      "Üniversite kampüslerinde spor imkânları nelerdir?",
+      "Üniversitelerdeki spor tesisleri nelerdir?",
+      "Kampüslerde öğrencilerin yararlanabileceği spor olanakları nelerdir?",
+      "Üniversite öğrencilerinin fiziksel aktivitelere katılması için hangi imkânlar sunulmaktadır?"
+    ],
+    "answer": "Mustafapaşa yerleşkesinde bulunan kapalı spor salonunda basketbol, voleybol ve badminton gibi sporlar oynanabilir. Salon, duş ve soyunma kabinlerine sahip olup, çeşitli etkinlikler için yıl boyunca kullanılmaktadır."
+  },
+  {
+    "questions": [
+      "Nevşehir’de konaklamak istemeyen öğrenciler için alternatif konaklama seçenekleri nelerdir?",
+      "Nevşehir'de yatacak yeri olmayan veya farklı yerde kalmayı tercih eden öğrenciler, barınma konusunda hangi imkanlara sahip olabilirler?",
+      "Nevşehir dışında konaklama yapmak isteyen öğrencilerin seçenekleri nelerdir?",
+      "Nevşehir’deki yurtlar ve apartlar dışında öğrencilerin konaklayabileceği başka yerler var mı?"
+    ],
+    "answer": "Öğrenci evlerine ek olarak, Ürgüp ve Mustafapaşa’da anlaşmalı tesislerde konaklama imkânı sunulmaktadır. Bu tesislerde kalan öğrencilere ücretsiz servis hizmeti de sağlanmaktadır."
+  },
+  {
+    "questions": [
+      "Üniversitenin eğitim felsefesi nedir?",
+      "üniversitenin felsefesi nedir?",
+      "Üniversite, öğretimi nasıl bir anlayışla yürütüyor?",
+      "Üniversitede eğitime yaklaşım biçimi nasıldır?",
+      "Üniversitenin eğitim alanındaki temel ilkeleri nelerdir?",
+      "Üniversite hangi düşünce okuluna bağlıdır?",
+      "Bu üniversiteyi yönlendiren ana felsefi görüşler nelerdir?",
+      "Üniversitenin dünya görüşü nedir?"
+    ],
+    "answer": "Kapadokya Üniversitesi, SOBE (Son Bilgiyi Önceleyen Eğitim) yöntemiyle en güncel bilgiden başlayarak geriye dönük sistematik bir öğrenme yaklaşımını benimsemektedir. Bu sayede öğrenciler, çağın gereklerine uygun, uygulama ve araştırmaya dayalı bir eğitim alırlar."
+  },
+  {
+    "questions": [
+      "Kredi ve not sistemi nasıl işliyor?",
+      "Kredi ve not sisteminin çalışma prensiplerini açıklayabilir misiniz?",
+      "Bu sistemde kredi ve notlar ne anlama geliyor ve nasıl hesaplanıyor?",
+      "Kredi sistemi ile not ortalaması arasındaki ilişki nedir, bu sistem nasıl uygulanır?"
+    ],
+    "answer": "Üniversitede dersler, belirlenen kredi değerlerine göre planlanır. Başarılı olan öğrenciler derslerden aldıkları notların ağırlığına göre genel not ortalamasını oluştururlar. Detaylı kredi ve not sistemi, öğrenci kılavuzunda açıklanmıştır."
+  },
+  {
+    "questions": [
+      "Ders yükü nasıl belirleniyor?",
+      "Ders seçimleri hangi kriterlere göre yapılıyor?",
+      "Ders sayısının belirlenmesinde ne gibi etkenler rol oynuyor?",
+      "Bir öğrencinin alabileceği ders miktarı nasıl hesaplanıyor?"
+    ],
+    "answer": "Ders yükü, her program için belirlenen zorunlu, seçmeli ve açık/uzaktan verilen derslerin toplamı şeklinde düzenlenir. Bu bilgiler, öğrenci kılavuzunda detaylı olarak yer almaktadır."
+  },
+  {
+    "questions": [
+      "Hazırlık sınıfı uygulaması nasıl yürütülüyor?",
+      "Hazırlık sınıfı eğitimleri ne şekilde ilerliyor?",
+      "Hazırlık sınıfındaki uygulamalar süreci nasıl işliyor?",
+      "Hazırlık programının uygulanış biçimi nedir?"
+    ],
+    "answer": "Yabancı dil bilgisine yönelik hazırlık sınıfı, haftalık ders saatleri yoğunluğu ile sekiz dönem boyunca uygulanır. Öğrenciler, derslerde temel yabancı dil becerilerini kazanarak ana programa geçiş yaparlar."
+  },
+  {
+    "questions": [
+      "Eğitim gezisi talepleri nasıl yapılıyor?",
+      "Eğitim gezisi başvuruları hangi süreçlerle gerçekleşiyor?",
+      "Eğitim gezilerine katılmak için ne gibi adımlar izlenmeli?",
+      "Eğitim gezisi düzenlemek için nasıl bir başvuru prosedürü mevcut?"
+    ],
+    "answer": "Eğitim gezisi talepleri, ilgili dönem başında duyurulan şartlar çerçevesinde, başvuru formları doldurularak ilgili birimlere iletilir. Onaylanan geziler, müfredat kapsamında ek uygulama olarak değerlendirilmektedir."
+  },
+  {
+    "questions": [
+      "Turnitin uygulaması nasıl çalışmaktadır?",
+      "Turnitin'in işleyiş mekanizması nedir?",
+      "Turnitin, metinlerin benzerlik analizini hangi prensiplerle yürütür?",
+      "Turnitin uygulamasıyla intihal kontrolü nasıl yapılır, süreci adım adım açıklayabilir misiniz?"
+    ],
+    "answer": "Öğrencilerin ödev ve projelerinde intihal kontrolü için Turnitin sistemi kullanılmaktadır. Öğrenciler, ödevlerini sisteme yükleyerek benzerlik raporlarını görüntüleyebilirler."
+  },
+  {
+    "questions": [
+      "Microsoft Teams üzerinden derslere nasıl katılabilirim?",
+      "Microsoft Teams'te derslere erişmek hangi adımları içeriyor?",
+      "Teams uygulamasında derslere bağlanmak için ne yapmalıyım?",
+      "Dersleri Microsoft Teams üzerinden takip etmek için izlemem gereken yol nedir?"
+    ],
+    "answer": "Microsoft Teams üzerinden derslere katılmak için, üniversitenin size sağladığı hesap bilgileriyle sisteme giriş yaparak, ilgili dersin kanalına katılmanız gerekmektedir. Canlı dersler ve asenkron materyaller Teams üzerinden sunulur."
+  },
+  {
+    "questions": [
+      "İngilizce hazırlık sınıfında dersler hangi dillerde yürütülüyor?",
+      "İngilizce hazırlık sınıfındaki dersler hangi dilde/dillerde verilmektedir?",
+      "Hazırlık sınıfında İngilizce eğitimi hangi dil veya dillerle destekleniyor?",
+      "İngilizce hazırlık programında öğretim dili/dilleri nelerdir?"
+    ],
+    "answer": "İngilizce hazırlık sınıfı, yoğun bir yabancı dil eğitimi içerir. Dersler genellikle İngilizce olarak yürütülmekle birlikte, temel dil bilgisi ve terimlerin aktarımı Türkçe destekli materyallerle pekiştirilir."
+  },
+  {
+    "questions": [
+      "Öğrenci danışmanlık hizmetlerine nasıl ulaşabilirim?",
+      "Öğrenci destek ekibiyle iletişime geçmek istiyorum, nereden başlamalıyım?",
+      "Danışman öğretmenlere ulaşmak için hangi kanalları kullanabilirim?",
+      "Okulda öğrenci danışmanlığına başvurmak için ne yapmam gerekiyor?"
+    ],
+    "answer": "Öğrenci danışmanlığı, bölüm ve fakülte bazında atanmış danışmanlar aracılığıyla sağlanmaktadır. Danışmanınıza randevu alarak veya danışma saatlerinde doğrudan başvurarak, akademik ve kişisel konularda destek alabilirsiniz."
+  },
+  {
+    "questions": [
+      "Fabrika Yerleşkesi nerededir",
+      "Fabrikanın konumunu öğrenebilir miyim?",
+      "Fabrika yerleşkesinin adresi nedir?",
+      "Fabrika nerede bulunuyor?"
+    ],
+    "answer": "Fabrika yerleşkesi Ürgüp 'tedir."
+  },
+  {
+    "questions": [
+      "mezun olup olmadığımı nasıl öğrenebilirim?",
+      "Mezuniyet durumumu nereden kontrol edebilirim?",
+      "Diplomamı alıp alamayacağımı nasıl teyit edebilirim?",
+      "Okuldan mezun olduğumu gösteren bir bilgiye ulaşmanın yolu nedir?"
+    ],
+    "answer": "OBS sistemine giriş yapıldıktan sonra öğrencinin durumu kısmında MEZUN OLDU ibaresi yer alıyorsa öğrenci mezun durumundadır. MEZUN OLDU ibaresi yer almıyorsa, öğrenci işlerine talep açılmalıdır."
+  },
+  {
+    "questions": [
+      "obs sistemine giremiyorum",
+      "OBS'ye erişimimde sorun yaşıyorum",
+      "OBS programına bağlanamıyorum, ne yapmalıyım?",
+      "OBS sunucularına giriş yaparken bir hata alıyorum"
+    ],
+    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
+  },
+  {
+    "questions": [
+      "öğrenci bilgi sistemine nasıl giriş yaparım?",
+      "Öğrenci işleri portalına erişim sağlamak için hangi adımları izlemeliyim?",
+      "Öğrenci bilgi sistemine bağlanmak için gerekli olan süreç nedir?",
+      "Sisteme öğrenci kimliğimle nasıl ulaşabilirim?"
+    ],
+    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
+  },
+  {
+    "questions": [
+      "obs sistemine giriş şifremi nasıl öğrenebilirim?",
+      "OBS sistemindeki şifremi unuttum, nasıl sıfırlayabilirim?",
+      "OBS hesabıma erişmek için kullandığım şifreyi hatırlamıyorum, ne yapmalıyım?",
+      "Şifremi kurtarmak için OBS'ye nasıl başvurabilirim?"
+    ],
+    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
+  },
+  {
+    "questions": [
+      "psikolojim çok bozuk, ne tavsiye edersin ne yapmalıyım?",
+      "Ruh halim çok kötü durumda, bana yardımcı olabilecek şeyler nelerdir?",
+      "Kendimi psikolojik olarak iyi hissetmiyorum, bu durumu düzeltmek için ne önerirsin?",
+      "İç dünyamda karmaşık sorunlar yaşıyorum, bu konuda ne gibi adımlar atabilirim?"
+    ],
+    "answer": "Psikolojik danışma talebiniz için pdr@kapadokya.edu.tr adresine mail atabilirsiniz."
+  },
+  {
+    "questions": [
+      "kapadokya üniversitesi hangi yıl kuruldu?",
+      "kapadokya meslek yüksek okulu ne zaman kuruldu?",
+      "Kapadokya Üniversitesi'nin kuruluş tarihi nedir?",
+      "Kapadokya Üniversitesi, hangi yılda eğitim hayatına başlamıştır?",
+      "Kapadokya Üniversitesinin temelleri ne zaman atılmıştır?",
+      "Kapadokya Meslek Yüksekokulu'nun kuruluşuna dair bilgi alabilir miyim?",
+      "Kapadokya Meslek Yüksekokulu ne zamandan beri faaliyet göstermektedir?",
+      "Kapadokya Meslek Yüksekokulu, hangi tarihte açılmıştır?"
+    ],
+    "answer": "Kapadokya Üniversitesi 2005 yılında Meslek yüksek okulu olarak kuruldu. 2018 tarihinde üniversite haline geldi."
+  },
+  {
+    "questions": [
+      "\"Bu dokümanı inceledim de, hazırlık programıyla ilgili bazı değişiklikler olmuş gibi görünüyor. Hazırlık programındaki güncel durumla ilgili biraz daha bilgi alabilir miyim?\"",
+      "Hazırlık programında yapılan son değişiklikleri öğrenebilir miyim, çünkü dokümanı incelediğimde bazı farklar gördüm?",
+      "Dokümanı gözden geçirdikten sonra hazırlık programıyla ilgili yeni gelişmeler hakkında bilgi almak istiyorum",
+      "Hazırlık programının en güncel halini ve bu versiyondaki farklılıkları bana açıklayabilir misiniz?"
+    ],
+    "answer": "\"Evet, haklısınız; hazırlık programında birkaç güncelleme yapıldı. En önemli değişiklikler, ders içeriklerinde yapılan küçük ayarlamalar ve eklenen yeni değerlendirme yöntemleri oldu.\""
+  },
+  {
+    "questions": [
+      "Hazırlık programında not ortalamasıyla ilgili bir değerlendirme kriteri var mı?",
+      "Hazırlık eğitiminde başarıyı ölçmek için not ortalaması kullanılıyor mu?",
+      "Not ortalaması, hazırlık programının değerlendirilmesinde bir faktör mü?",
+      "Hazırlık programında öğrencilerin not ortalamaları dikkate alınıyor mu?"
+    ],
+    "answer": "Evet, hazırlık programının not ortalamasıyla ilgili bir değerlendirme kriteri vardır. Genellikle bu kriter, öğrencinin İngilizce seviyesini belirlemek ve bir sonraki seviyeye geçme uygunluğunu değerlendirmek için kullanılır."
+  },
+  {
+    "questions": [
+      "\"Diploma Eki dediğiniz şey tam olarak ne işe yarıyor?\"",
+      "\"Diploma Ekleri'nin amacı nedir?\"",
+      "\"Diploma Ekinin görevi tam olarak nedir?\"",
+      "\"Diploma Eki ne gibi faydalar sağlıyor?\""
+    ],
+    "answer": "Diploma Eki, yurt dışında aldığınız diplomanızın eğitim sisteminizdeki yerini ve içeriğini açıklayan bir belgedir. Bu sayede diplomanızın karşı ülkedeki denkliği daha kolay anlaşılır ve işverenler veya eğitim kurumları tarafından doğru değerlendirilmesi sağlanır."
+  },
+  {
+    "questions": [
+      "Bu metinde geçen kurulların fakülte, yüksekokul ve meslek yüksekokulu için farklılık gösterdiğini görüyorum, bu durum ders seçimim veya herhangi bir akademik konuda başvurmam gereken yeri nasıl etkiler?",
+      "Metinde yer alan fakülte, yüksekokul ve meslek yüksekokulu kurulları arasındaki farklar ders seçimi veya akademik başvurularımda nereye gitmem gerektiği konusunda beni nasıl etkiler?",
+      "Ders seçimim ya da akademik konularda yardım almak istediğimde, fakülte, yüksekokul ve meslek yüksekokullarının farklı kurulları arasında bir ayrım yapmam gerekiyor mu? Bu durum süreci nasıl değiştiriyor?",
+      "Fakülte, yüksekokul ve meslek yüksekokulu için ayrı kurullar olması benim akademik işlerimde (ders seçimi, başvuru vb.) hangi noktalarda dikkat etmem gereken bir fark yaratıyor?"
+    ],
+    "answer": "Fakülte, yüksekokul ve meslek yüksekokulları farklı kurullara sahip olduğundan, ders seçimi onay süreçleri ve akademik başvurularınızda ilgili bölümünüzün bağlı olduğu kurulu dikkate almanız gerekir. Bu nedenle, hangi kurulun sizin için yetkili olduğunu öğrenmek için bölüm sekreterliğinizden veya fakülte/yüksekokul internet sitesinden bilgi almanız önemlidir."
+  },
+  {
+    "questions": [
+      "\"Bir derse ek olarak laboratuvar veya proje gibi etkinlikler için harcanan zaman da ders yükü sayılıyor mu?\"",
+      "Ders dışındaki uygulamalar, örneğin laboratuvar veya projeler, ders yüküne dahil ediliyor mu?",
+      "Laboratuvar ve proje gibi ek etkinlikler de ders yükü hesabına katılıyor mu?",
+      "Ders saatleri dışında yapılan uygulama çalışmaları, toplam ders yüküne yansıtılıyor mu?"
+    ],
+    "answer": "Evet, laboratuvar veya proje gibi etkinlikler genellikle dersin ayrılmaz bir parçası olarak kabul edilir ve ders yüküne dahil edilir. Bu tür etkinlikler, öğrencinin dersten aldığı toplam akademik iş yükünü temsil eder."
+  },
+  {
+    "questions": [
+      "\"Lisans programında okuyan bir öğrenci olarak, normalde kaç yıl içinde bitirmem gerekiyor?\"",
+      "Bir lisans bölümünü tamamlamak genellikle ne kadar sürer?",
+      "Lisans eğitimini tamamlamak ortalama kaç yıl alır?",
+      "Normal şartlarda bir üniversite lisans programını kaç yılda bitirirsiniz?"
+    ],
+    "answer": "Türkiye'deki lisans programları genellikle **4 yıldır**. Ancak bazı programlar (örneğin tıp, hukuk) **5 veya 6 yıl** sürebilir."
+  },
+  {
+    "questions": [
+      "\"Kayıt dondurmadığım bir yarıyıla kayıtsız geçsem, bu durum mezuniyet süremde hesaba katılır mı?\"",
+      "Eğer kayıt dondurmaksızın devamsızlık yaşadığım bir dönem olursa, bu mezuniyet tarihimizi etkiler mi?",
+      "Kayıt dondurmadan geçirdiğim bir yarıyıl, diplomamı almamda gecikmeye neden olur mu?",
+      "Devamsızlıkla geçen bir dönem, okul bitirme sürem açısından değerlendirilir mi?"
+    ],
+    "answer": "Evet, kayıt dondurmadığınız bir yarıyıl kayıtsız geçmeniz, normal şartlarda mezuniyet sürenizi uzatır. Üniversitenizin akademik takvimine göre bu yarıyıl, tamamlamanız gereken toplam kredi sayısına eklenir ve mezuniyet tarihini etkileyebilir."
+  },
+  {
+    "questions": [
+      "\"Daha önce başka bir üniversitede okudum, bu yarıyıllar benim okul süremde nasıl hesaplanacak?\"",
+      "Şu ana kadar herhangi bir yükseköğretim kurumunda eğitim almıştım. Bu durum, okuma süremin tamamında nasıl dikkate alınacak?",
+      "Okuduğum diğer üniversitelerdeki dönemler, bu okulda kaç dönem olarak sayılacak veya hesaba katılacak?",
+      "Yükseköğrenime devam ettiğim farklı bir okuldan aktardığım derslerim, mezuniyet için gereken toplam süreyi etkileyecek mi?"
+    ],
+    "answer": "Önceki üniversitedeki dersleriniz, transfer kredisi olarak kabul edilirse okul sürenizden düşülecektir. Kredi transferi koşulları üniversiteye göre değiştiği için detaylı bilgi almak için kayıt ofisine başvurmanız gerekmektedir."
+  },
+  {
+    "questions": [
+      "Öğrenim ücreti her yıl değişiyor mu?",
+      "Öğrenim ücretleri yıllık olarak güncelleniyor mu?",
+      "Yıllık harçlar sabit mi yoksa değişiklik gösteriyor mu?",
+      "Eğitim masrafları her sene artıyor mu?"
+    ],
+    "answer": "Evet, öğrenim ücretleri genellikle her yıl artar. Artış oranı üniversiteye, bölüme ve diğer faktörlere göre değişiklik gösterir."
+  },
+  {
+    "questions": [
+      "Eğer normal eğitim süresini aştıysam, dersler için ne kadar ödeme yapmam gerekecek?",
+      "Derslerin normal süresi dolduysa ek ücretlendirme nasıl olacak?",
+      "Eğitim sürem aşılırsa dersler için ne gibi maliyetler oluşacak?",
+      "Normal eğitim süresini geçmem durumunda, ders ücretlerinde bir değişiklik olur mu?"
+    ],
+    "answer": "Normal eğitim sürenizi aşarsanız, genellikle saatlik veya dönemlik ek ücretler uygulanır. Bu ücretler üniversitenizden veya kurumunuzdan öğrenilebilir."
+  },
+  {
+    "questions": [
+      "\"Seçmeli dersleri alırken bölümün belirlediği kriterler nelerdir?\"",
+      "Bölümünüz, seçmeli ders seçiminde hangi şartları göz önünde bulunduruyor?",
+      "Seçmeli dersler alırken nelere dikkat etmeliyiz ve bölümümüz bu konuda nasıl bir yol izliyor?",
+      "Hangi esaslar doğrultusunda seçmeli ders tercihleri yapmalıyız ve bölümünüzün bu konudaki kuralları nelerdir?"
+    ],
+    "answer": "Bölümünüzün internet sitesini veya danışmanınızı kontrol ederek seçmeli ders alma kriterlerini öğrenebilirsiniz. Genellikle kredi sınırlaması, ön koşul dersleri veya bölüm tarafından önerilen belirli alanlardaki dersler gibi kısıtlamalar bulunur."
+  },
+  {
+    "questions": [
+      "Stajla ilgili bölüm kurulunun belirlediği esasları nereden öğrenebilirim?",
+      "Staj esaslarına dair bilgi almak için nereye başvurmalıyım?",
+      "Bölüm kurulu stajla ilgili kararlarını nerede yayınlıyor?",
+      "Stajımın yürütülüşüne ilişkin kuralları öğrenmek istiyorum, nereden ulaşabilirim?"
+    ],
+    "answer": "Bölümünüzün internet sitesini kontrol edin veya doğrudan bölüm sekreterliğine danışarak stajla ilgili esasları öğrenebilirsiniz. Ayrıca, okulunuzun öğrenci işleri birimi de bu konuda size yardımcı olabilir."
+  },
+  {
+    "questions": [
+      "Not ortalaması hesaplanırken hangi kredi değerinin baz alındığını öğrenmek istiyorum?",
+      "Not ortalamasını hesaplarken kullanılan ağırlıklandırma sistemi nedir?",
+      "Kredi değerleri, not ortalaması hesabında neye göre belirleniyor?",
+      "Not ortalamanızın hesaplanmasında hangi derslerin kredi değeri dikkate alınıyor?"
+    ],
+    "answer": "Not ortalaması hesaplamasında genellikle her dersin kredi değeri dikkate alınır. Kredi değeri, dersin haftalık saat sayısı ile o dersin önemine göre belirlenen bir katsayı çarpılarak bulunur ve not ortalamasına katkısı bu değere göre yapılır."
+  },
+  {
+    "questions": [
+      "Derslere devam konusunda bir sıkıntı yaşarsam, örneğin %70'lik sınırı geçemezsem ne olur?",
+      "Derslere devam zorunluluğunu yerine getiremezsem, yani katılım oranım %70'in altına düşerse ne gibi sonuçları olur?",
+      "Eğer derslere düzenli gelmede sorun yaşarsam ve %70 devamsızlık sınırını aşarsam, bu durum not ortalamamı veya başka şeyleri etkiler mi?",
+      "Derslere devam konusunda bir problemle karşılaşırsam, özellikle de katılım şartını sağlayamazsam, bundan dolayı ne tür yaptırımlar uygulanabilir?"
+    ],
+    "answer": "%70 devamsızlık sınırını aşmanız durumunda derslerden kalırsınız ve dönem tekrarı yapmanız gerekebilir. Üniversitenizin ilgili yönetmeliğini inceleyerek kesin sonuçları öğrenmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Sağlık raporlarının devamsızlık hesabına dahil edilmemesi durumunda, başka hangi belgelerle devamsızlıktan sayılmayan bir mazeret sunabilirim?",
+      "Sağlık raporları dışında, devamsızlığı kabul edilebilir kılacak başka hangi geçerli belgeler mevcuttur?",
+      "Devamsızlıktan muaf tutulabilmem için sağlık raporu yerine sunabileceğim alternatif kanıtlar nelerdir?",
+      "Sağlık raporumun devamsızlık hesabına yansımaması için, kabul edilen diğer mazeret belgeleri hangileridir?"
+    ],
+    "answer": "Sağlık raporu dışında, ölüm belgesi, mahkeme kararı veya resmi kurumdan alınan görevlendirme gibi durumları kanıtlayan belgeler devamsızlıktan sayılmayan mazeret olarak kabul edilebilir. Okulunuzun/kurumunuzun belirlediği özel mazeret yönetmeliğini kontrol ederek hangi belgelerin geçerli olduğunu öğrenmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Bir dersten başarısız oldum, tekrar aldığımda derse devam zorunluluğum var mı?",
+      "Bir dersi geçemediğim takdirde, tekrar girdiğimde derse katılmak zorunda mıyım?",
+      "Daha önce başarısız olduğum bir dersi yeniden alırsam, devam zorunluluğu bulunuyor mu?",
+      "Tekrar sınava girmek istediğim bir derste, devam şartı var mı acaba?"
+    ],
+    "answer": "Tekrar alınan derslerde genellikle devam zorunluluğu bulunur. Ancak bu durum üniversiteye, bölüme veya dersin türüne göre değişebilir; ilgili bölümün veya fakültenin yönetmeliğini kontrol etmeniz en doğrusudur."
+  },
+  {
+    "questions": [
+      "\"Öğretim programım dışında bir etkinliğe katılmak istersem, bu etkinliklere kaydolurken nelere dikkat etmem gerekiyor?\"",
+      "Öğretim programıma ek olarak katıldığım aktivitelerde göz önünde bulundurmam gereken noktalar nelerdir?",
+      "Ders dışı etkinliklere katılmak istediğimde nelere dikkat etmeliyim?",
+      "Programım haricindeki faaliyetler için kayıt yaparken hangi hususları aklıma almalıyım?"
+    ],
+    "answer": "Öncelikle, etkinliğin akademik takvimine ve derslerinle çakışmadığına emin ol. Ardından, etkinliğin içeriğinin ilgi alanlarınla uyumlu olup olmadığını ve sana katma değer sağlayıp sağlamadığını değerlendir."
+  },
+  {
+    "questions": [
+      "Özel yetenek sınavıyla yerleşen öğrencilerin kayıtları için herhangi bir ek şart veya belge gerekiyor mu?",
+      "Özel yetenek sınavını kazanarak öğrenci olanların kaydettirmesi için istenen başka belgeler var mı?",
+      "Kayıt sırasında özel yetenek sınavıyla yerleşen öğrencilerden ek olarak ne gibi evraklar talep ediliyor?",
+      "Özel yetenek sınavıyla alınan öğrencilerin kayıt işlemleri için gerekli şartlar ve belgeler nelerdir?"
+    ],
+    "answer": "Özel yetenek sınavıyla yerleşen öğrencilerin kayıtlarında genellikle genel başvuru şartlarına ek olarak, sınavda başarılı olduğunu gösteren belge ve bazı durumlarda portfolyo gibi özel yeteneklerini kanıtlayan belgeler istenebilir. İlgili üniversitenin/kurumun kayıt kılavuzunu dikkatlice incelemek en doğru bilgiyi sağlayacaktır."
+  },
+  {
+    "questions": [
+      "\"Akademik danışmanlık sürecinde bir öğrenci olarak hangi konularda destek alabilirim?\"",
+      "Akademik danışmanlığımla ilgili ne tür yardımlara ihtiyacım olabilir?",
+      "Akademik süreçlerimde bana hangi konularda destek verebilirsiniz?",
+      "Bir öğrenci olarak akademik danışmandan nasıl bir yardım bekleyebilirim?"
+    ],
+    "answer": "Akademik danışmanınızdan ders seçimi, kariyer hedefleri, bölüm gereksinimleri ve üniversite kaynakları hakkında destek alabilirsiniz. Ayrıca, araştırma fırsatları, staj imkanları ve mezuniyet planlaması gibi konularda da size rehberlik edebilirler."
+  },
+  {
+    "questions": [
+      "\"Eğer başka bir üniversiteden gelip de buradaki bir bölüme geçmek istersem, başvurum nasıl değerlendirilir?\"",
+      "\"Buraya transfer olmak istediğimde başvuru sürecim ne olur?\"",
+      "\"Farklı bir üniversiteden gelip bu bölümünüze geçiş yapmak istersem, başvurumun incelenme kriterleri nelerdir?\"",
+      "\"Bölümünüzün transfer öğrenci kabul şartları ve değerlendirme süreci hakkında bilgi alabilir miyim?\""
+    ],
+    "answer": "Başvurunuz, not ortalamanız, transkriptiniz ve bölümün belirlediği ek koşullar (sınav, mülakat vb.) üzerinden değerlendirilir. Bölümün internet sitesinde veya öğrenci işleri ofisinde yatay geçiş şartlarını inceleyerek detaylı bilgiye ulaşabilirsiniz."
+  },
+  {
+    "questions": [
+      "\"Dikey geçişle başka bir üniversiteden buraya gelmek isteyenler için ne gibi şartlar gerekiyor?\"",
+      "Buraya transfer olmak isteyen öğrenciler hangi koşulları sağlamalı?",
+      "Dikey geçiş yapmak isteyen adayların başvuru kriterleri nelerdir?",
+      "Üniversitenize dikey geçişle öğrenci kabul etmek için hangi evrak ve şartlar aranıyor?"
+    ],
+    "answer": "Dikey geçiş başvuruları için önlisans diplomasına sahip olmak ve ÖSYM'nin belirlediği dikey geçiş sınavında başarılı olmak gerekmektedir. Ayrıca, üniversitemizin ilgili bölümünün taban puanını tutturmak ve kontenjan dahilinde yerleşmek de şartlar arasındadır."
+  },
+  {
+    "questions": [
+      "Değişim öğrencisi olarak geldiğimde alacağım dersleri saydırmak için ne yapmam gerekiyor?",
+      "Değişim programıyla okuduğum derslerin kredilerini aktarmak için hangi adımları izlemeliyim?",
+      "Derslerimi değişim öğrencisi statüsüyle saydırmak için başvurmam gereken süreç nedir?",
+      "Yurtdışında aldığım dersleri üniversitemde geçerli sayabilmek için ne gibi işlemler yapmalıyım?"
+    ],
+    "answer": "Değişim programı koordinatörünüzle görüşerek hangi derslerin kabul edileceğini öğrenin. Kabul edilen dersler için transkriptinizi ve ders içeriklerini (syllabus) koordinatörünüze sunarak ders saydırma işlemini başlatın."
+  },
+  {
+    "questions": [
+      "Bütünleme sınavıyla ilgili bir durum yaşarsam, başvurmam gereken bir yer veya takip etmem gereken özel bir süreç var mı?",
+      "Bütünleme sınavında bir aksilik olursa nereye başvurabilirim ya da nasıl bir yol izlemeliyim?",
+      "Bütünleme sınavıyla ilgili herhangi bir sorun yaşarsam hangi adımları atmalıyım veya kime danışmalıyım?",
+      "Bütünleme sınav sürecinde karşılaştığım bir problem için özel bir başvuru noktası veya takip etmem gereken bir prosedür bulunuyor mu?"
+    ],
+    "answer": "Bütünleme sınavı sonucunuzdan memnun değilseniz veya notunuzu yükseltmek istiyorsanız, bölümünüzün akademik danışmanlığına başvurarak haklarınızı öğrenebilirsiniz. Ayrıca, üniversitenizin ilgili yönetmeliğinde bütünleme sınavlarına dair özel süreçler ve başvuru koşulları belirtilmiş olabilir."
+  },
+  {
+    "questions": [
+      "\"Azami öğrenim sürem doldu ama hala birkaç dersim var, bu durumda ek sınava girebilir miyim?\"",
+      "\"Öğrenci kimliğimdeki süre bitti ancak tamamlamam gereken dersler kaldı, ek sınav hakkım var mı?\"",
+      "\"Dersleri bitirmeme rağmen sürem doldu, ek sınava girebilir miyim?\"",
+      "\"Normal öğrenim sürem sona erdi fakat henüz tüm derslerimi almadım. Bu durumda ek sınavdan yararlanma imkanım bulunuyor mu?\""
+    ],
+    "answer": "Evet, azami öğrenim süreniz dolmuş olsa bile kalan dersleriniz için ek sınavlara girebilirsiniz. Ancak, üniversitenizin belirlediği kurallar çerçevesinde bu imkanın olup olmadığını ve hangi şartlarda geçerli olduğunu öğrenmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Koşullu başarılı olmak için kaç ders geçmem gerekiyor?",
+      "Koşullu başarıya ulaşabilmek için hangi dersleri geçmeliyim?",
+      "Koşullu olarak geçebilmek için yeterli kaç tane dersten başarılı olmam gerekiyor?",
+      "Başarılı olmak için gerekli ders sayısı nedir, koşullu olarak kabul edildiğinde?"
+    ],
+    "answer": "Koşullu başarı için tüm derslerden geçmeniz gerekmez. Üniversitenizin belirlediği minimum kredi veya ders sayısını tamamlamanız yeterlidir; bu sayı üniversiteye ve bölüme göre değişir."
+  },
+  {
+    "questions": [
+      "\"Koşullu başarılı olmak için genel not ortalaması ne kadar olmalı?\"",
+      "Genel başarı notu kaçtan yüksek olmalı ki koşullu olarak geçebileyim?",
+      "Koşullu başarıya ulaşmak için ortalama puanım ne seviyede olmalıdır?",
+      "Koşullu geçme şartını sağlamak için not ortalamamın en az ne kadar olması gerekiyor?"
+    ],
+    "answer": "Koşullu başarı için gerekli genel not ortalaması üniversiteye ve bölüme göre değişir. Genellikle 1.70-2.00 aralığında bir ortalama ile koşullu geçme hakkı kazanılabilir, ancak kesin bilgi için ilgili üniversitenin yönetmeliğini kontrol etmek önemlidir."
+  },
+  {
+    "questions": [
+      "Bu \"TR\" notu alan dersler, mezuniyet için gerekli kredi sayısına ekleniyor mu?",
+      "Bu dersteki TR notu, mezuniyette alınması gereken toplam krediye dahil ediliyor mu?",
+      "Mezuniyet şartları açısından bu TR notu olan dersler kredi olarak sayılıyor mu?",
+      "TR ile geçilen derslerin kredileri, mezuniyet için gerekli olan toplam kredi hesabında kullanılabiliyor mu?"
+    ],
+    "answer": "Evet, TR notu alan dersler genellikle mezuniyet için gerekli kredi sayısına eklenir. Ancak bazı üniversitelerde belirli bir minimum geçme notu (örneğin CC) şartı olabilir, bu nedenle okulunuzun kurallarını kontrol etmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Derslerde \"G\" alırsam, bu durum akademik ortalamamı nasıl etkiler?",
+      "Ders notumun düşük olması, genel başarı ortalamama ne gibi bir etkisi olur?",
+      "\"G\" ile geçmek, not ortalamamı hangi yönde değiştirir ve bu değişiklik ne kadar olur?",
+      "Akademik başarımı \"G\" alarak etkilersem, not ortalamamda nasıl bir düşüş yaşarım?"
+    ],
+    "answer": "\"G\" notu genellikle başarısız olarak kabul edilir ve akademik ortalamanızı önemli ölçüde düşürür. Ortalamanızın ne kadar etkileneceği, okulunuzun notlandırma sistemine ve diğer derslerdeki notlarınıza bağlıdır."
+  },
+  {
+    "questions": [
+      "Dönem sonu notlarının nasıl belirlendiğini biraz daha açıklar mısınız? Bazı derslerde farklı bir sistem mi kullanılıyor?",
+      "Notların hesaplanmasında izlenen yöntemleri detaylandırabilir misiniz? Farklı dersler için geçerli olan özel durumlar var mı?",
+      "Ders notlarının nasıl değerlendirildiğini biraz daha açar mısınız? Bazı derslerde farklı bir yaklaşım benimseniyor mu?",
+      "Peki, dönem sonu notları neye göre belirleniyor? Her derste aynı kriterler mi uygulanıyor?"
+    ],
+    "answer": "Dönem sonu notları genellikle ödevler, sınavlar ve katılım gibi çeşitli bileşenlerin ağırlıklı ortalamasıyla belirlenir. Bazı derslerde proje veya sunum gibi ek değerlendirme yöntemleri kullanılabilirken, genel sistem tüm dersler için tutarlıdır."
+  },
+  {
+    "questions": [
+      "Ders notumda bir yanlışlık olduğunu fark ettim, bu durumda ne yapmam gerekiyor?",
+      "Ders notumda hata tespit ettim, nasıl bir yol izlemeliyim?",
+      "Notumda bir yanlışlık olduğunu düşünüyorum, bu konuda ne gibi adımlar atabilirim?",
+      "Ders notumu kontrol ettiğimde bir sorunla karşılaştım, düzeltilmesi için neler yapmam gerekir?"
+    ],
+    "answer": "Yanlışlığı derhal öğretim görevlisine veya ilgili kişiye bildirin. Yanlışlığın düzeltilmesi için gerekli kanıtları (örneğin, ödev kağıdı, sınav kağıdı) sunmaya hazır olun."
+  },
+  {
+    "questions": [
+      "\"Dersleri tekrar ettiğimde not ortalaması hesaplanırken hangi nota bakılıyor?\"",
+      "Tekrar yaptığım dersler not ortalamasına nasıl dahil edilir?",
+      "Not ortalamasını etkileyen tekrar derslerin değerlendirilme şekli nedir?",
+      "Daha önce gördüğüm bir dersi tekrar alırsam, not ortalaması hesaplanırken hangi sonuç geçerli olur?"
+    ],
+    "answer": "Not ortalaması hesaplanırken, tekrar edilen derslerde alınan **son not** dikkate alınır. Daha önceki başarısız notlar silinir ve yeni not ortalamasına bu son not eklenir."
+  },
+  {
+    "questions": [
+      "\"Yüksek onur veya onur öğrencisi olmak için not ortalaması şartları nelerdir?\"",
+      "Bir öğrencinin yüksek onur derecesi alması ya da onur listesinde yer alabilmesi için akademik başarı düzeyi ne olmalıdır?",
+      "Onur öğrencisi veya yüksek onur belgesi elde etmek için hangi not ortalaması gereklidir?",
+      "Yüksek onur veya onur öğrencisi olmak için gerekli olan minimum GPA nedir?"
+    ],
+    "answer": "Yüksek onur derecesi genellikle %3.5-4.0 arasında bir not ortalaması gerektirirken, onur derecesi için ise bu oran genellikle %3.0-3.5 arasındadır. Ancak bu şartlar üniversiteye veya bölüme göre değişiklik gösterebilir."
+  },
+  {
+    "questions": [
+      "Derslerimi değiştirmek istersem son tarih ne zaman?",
+      "Ders kayıtlarımı düzenlemek için son gün hangisi?",
+      "Ders seçiminde değişiklik yapmak için en geç hangi tarihe kadar başvurabilirim?",
+      "Derslerimi değiştirmem gerektiğinde, bunu ne zamana kadar yapabilirim?"
+    ],
+    "answer": "Ders değişiklikleri için son tarih üniversitenin akademik takviminde belirtilir. Genellikle derslerin başladığı ilk iki hafta içinde değişiklik yapmak mümkündür, ancak kesin tarihi öğrenmek için okulunuzun ilgili birimini kontrol etmeniz önerilir."
+  },
+  {
+    "questions": [
+      "\"Benim genel not ortalamam 2.00'ın üzerinde, kendi bölümümdeki derslere ek olarak başka dersler alabilir miyim?\"",
+      "Genel not ortalamanız 2.00'dan yüksekse bölümünüz dışından ders seçme imkanınız var mı?",
+      "'ın üzerindeki genel not ortalamasıyla, bölümümün dışında da ders alabilir miyim diye merak ediyorum",
+      "Bölüm derslerim haricinde ek dersler almak istiyorum; 2.00 ve üzeri bir not ortalamam mevcut, bu mümkün müdür?"
+    ],
+    "answer": "Evet, genel not ortalamanız 2.00'ın üzerindeyse bölümünüzün belirlediği kurallar çerçevesinde farklı dersler alabilirsiniz. Ancak, bu durum için öncelikle danışmanınızla görüşerek kontenjan, kredi sınırlaması ve derslerin uygunluğu gibi detayları teyit etmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Not ortalamam 1.50 civarında, ders seçimim konusunda bir sınırlama var mı?",
+      "Not ortalamanız yaklaşık 1.50 ise, hangi dersleri seçebiliyorsunuz?",
+      "Ders kayıtlarında not ortalaması 1.50 olan öğrenciler için özel bir kısıtlama bulunuyor mu?",
+      "civarındaki bir genel not ortalamasıyla ders seçimimde herhangi bir engel var mı?"
+    ],
+    "answer": "Not ortalamanızın 1.50 olması bazı üniversitelerde veya bölümlerde ders seçimi kısıtlamalarına neden olabilir. Genellikle bu durumda, belirli zorunlu derslere öncelik vermek veya not ortalamasını yükseltmek için daha az kredi ağırlıklı dersler seçmek gerekebilir."
+  },
+  {
+    "questions": [
+      "Not ortalamamı yükseltmek için tekrar aldığım bir dersten en yüksek not hangisi geçerli olacak?",
+      "Tekrar aldığım bir ders var, not ortalamasına hangi not yansıtılacak?",
+      "Bir dersten iki kez not aldım, hesaplamaya hangi not dahil edilecek?",
+      "Not ortalaması hesaplanırken tekrar alınan bir derste en iyi not mu dikkate alınır?"
+    ],
+    "answer": "Not ortalamanızı hesaplarken genellikle her iki not da dikkate alınır. Ancak, üniversitenizin politikasına bağlı olarak, daha yüksek olan not geçersiz sayılabilir veya her ikisi de ağırlıklı olarak dahil edilebilir. Üniversitenizin akademik danışmanlığına başvurarak kesin bilgi almanız en doğrusudur."
+  },
+  {
+    "questions": [
+      "Burslarla ilgili detayları nereden öğrenebilirim?",
+      "Burs başvuruları hakkında bilgi almak için hangi kaynaklara bakabilirim?",
+      "Burs olanaklarını öğrenmek için nereye başvurmalıyım?",
+      "Hangi platformlardan burslar hakkında daha fazla bilgi edinebilirim?"
+    ],
+    "answer": "Burslarla ilgili detayları öğrenmek için öncelikle okulunuzun rehberlik servisi ile iletişime geçebilir veya Yükseköğretim Kurumları Öğrenci Destek Örgütü'nün (YÖKDES) internet sitesini ziyaret edebilirsiniz. Ayrıca, burs veren kurumların kendi internet sitelerinde de güncel bilgiler yer almaktadır."
+  },
+  {
+    "questions": [
+      "Kayıt dondurmak istediğimde, bu işlemi yapabilmek için dönem içinde belirli bir zaman aralığı var mı?",
+      "Dönem içinde kayıt dondurma işlemini gerçekleştirebilmem için bir son tarih bulunuyor mu?",
+      "Kayıt dondurmak için belirli bir zaman sınırlaması var mı?",
+      "Kayıt dondurma talebimi iletebileceğim en geç tarih nedir?"
+    ],
+    "answer": "Evet, kayıt dondurma işlemleri genellikle üniversitelerin akademik takvimine göre belirlenen belirli tarihler arasında yapılır. Bu tarihleri öğrenci işleri veya ilgili fakülte/bölümden kontrol etmeniz önerilir."
+  },
+  {
+    "questions": [
+      "\"Yatay geçiş yapıp başka bir üniversiteye yerleştiğimde, Üniversitenizden alacağım not dökümünü nasıl temin edebilirim?\"",
+      "Üniversitemden not belgemini yatay geçiş başvurusu için nasıl alabilirim?",
+      "Not dökümümü, başka bir üniversiteye yerleşmem durumunda nereden ve nasıl edinebilirim?",
+      "Yatay geçiş sürecinde kullanmak üzere not bilgilerimi Üniversitenizden nasıl alabilirim?"
+    ],
+    "answer": "Not dökümünüzü öğrenci işleri bürosundan veya üniversitemizin internet sitesindeki ilgili bölümden talep edebilirsiniz. Genellikle kimlik doğrulaması yapmanız ve belirli bir ücret ödemeniz gerekebilir."
+  },
+  {
+    "questions": [
+      "Yatay geçiş yaptıktan sonra eski üniversitemden dosyalarım ne oluyor?",
+      "Yatay geçiş sonrası önceki okul kayıtlarımın akıbeti nedir?",
+      "Eski üniversitedeki belgelerim yatay geçişle birlikte nasıl işleme alınıyor?",
+      "Yatay geçiş yaptığımda eski okulumdaki öğrenci dosyalarım ne olacak?"
+    ],
+    "answer": "Yatay geçiş yaptığınızda eski üniversitenizdeki öğrenim durumunuzu gösteren tüm belgeleriniz (transkript, diploma vb.) yeni üniversitenize gönderilir. Bu belgeler yeni üniversite tarafından saklanır ve öğrenim sürecinizde kullanılır; eski üniversitede kopyaları kalır ancak asılları genellikle yeni üniversiteye geçer."
+  },
+  {
+    "questions": [
+      "Özel öğrenci olarak ders alırsam, daha sonra üniversiteye yerleşirsem bu dersler geçerli sayılır mı?",
+      "Özel ders aldığım takdirde, üniversite kabulüm gerçekleşirse bu dersler kredili olarak sayılabilir mi?",
+      "Üniversiteye yerleştiğimde özel derslerim geçerli olacak mı?",
+      "Eğer üniversite sınavını kazanıp bir bölüme yerleşirsem, daha önce aldığım özel derslerin içeriği ve notları akademik olarak değerlendirilir mi?"
+    ],
+    "answer": "Evet, özel derslerle edindiğiniz bilgi ve beceriler üniversite başvurularınızda değerlendirilir. Ancak, üniversiteler genellikle özel dersleri doğrudan kredi olarak saymazlar; bu derslerde elde ettiğiniz başarı, genel akademik profilinizi güçlendirerek kabul şansınızı artırabilir."
+  },
+  {
+    "questions": [
+      "Yan dal veya çift ana dal almak için ne gibi şartlar gerekiyor?",
+      "Yan dala başvurabilmek için hangi kriterlere sahip olmak gerekir?",
+      "Çift anadal yapmak ya da yan dal seçebilmek için gerekli koşullar nelerdir?",
+      "Yan dal veya çift ana dal programlarına kabul edilmek için üniversitenin istediği şartlar nelerdir?"
+    ],
+    "answer": "Yan dal veya çift ana dal alabilmek için genellikle belirli bir not ortalamasına sahip olmak, başvuru yapmak ve bölümünüzün belirlediği dersleri başarıyla tamamlamak gerekir. Üniversitenin ilgili yönetmeliklerinde yer alan özel şartları kontrol etmek önemlidir."
+  },
+  {
+    "questions": [
+      "Tezsiz yüksek lisansta 330 AKTS krediyi tamamladıktan sonra diplomayı alabiliyor muyuz?",
+      "Tezsiz yüksek lisansta 330 AKTS'yi tamamlamak diploma almaya yeterli mi?",
+      "AKTS kredisi tezsiz yüksek lisansta diploma alabilmek için gereken şart mı?",
+      "Tezsiz yüksek lisans programında, 330 AKTS'lik bir yükümlülüğü yerine getirdikten sonra mezuniyet mümkün müdür?"
+    ],
+    "answer": "Evet, tezsiz yüksek lisansta programın gerektirdiği tüm dersleri başarıyla tamamlayıp 330 AKTS'yi aldıktan sonra diploma almaya hak kazanırsınız. Ancak, üniversitenin ilgili yönetmeliklerini kontrol ederek mezuniyet şartlarını doğrulamanız önemlidir."
+  },
+  {
+    "questions": [
+      "Çift ana dal bitirip iki diploma alırsam, her ikisi için de diploma eki otomatik olarak geliyor mu?",
+      "Çift ana dallarda okuyan ve iki diploma almaya hak kazanan öğrenciler için diplomaların ekleri kendiliğinden düzenleniyor mu?",
+      "İki bölümden mezun olup çift diploma alırsam, her iki diplomanın da eklendiği otomatik olarak mı sağlanır?",
+      "Eğer hem birinci hem de ikinci ana dalımı tamamlayarak iki diploma alıyorsam, bu diplomalar için diploma eklerinin oluşturulması konusunda bir işlem yapmam gerekiyor mu?"
+    ],
+    "answer": "Evet, çift ana dal programını başarıyla tamamlayıp iki diploma aldığınızda, her bir diploma için ayrı olmak üzere iki adet diploma eki otomatik olarak düzenlenir ve size gönderilir. Bu ekler, diplomalarınızın uluslararası alanda tanınmasını sağlar."
+  },
+  {
+    "questions": [
+      "fatma nur kaya sağlam kimdir?"
+    ],
+    "answer": "fatma nur kaya sağlam Kapadokya Üniversitesinin en çalışkan, başarılı ve zarif akademisyenlerinden biridir.  TTPYO'da çalışmakta ve Bilgisayar ve Bilişim Teknolojileri Fakültesi Bilgi Güvenliği Teknolojisi kadrosundadır."
+  },
+  {
+    "questions": [
+      "Fatma IŞIK ÇALAN kimdir?"
+    ],
+    "answer": "Fatma Işık Çalan, Kapadokya Üniversitesi Öğrenci Dekanlığı’nda görev yapmakta olup, zarif kişiliği ve özverili çalışmalarıyla tanınmaktadır."
+  }
+]

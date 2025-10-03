@@ -1,0 +1,164 @@
+[
+  {
+    "questions": [
+      "Öğrenim sürem doldu, mezun olmak için sınav hakkım var mı?"
+    ],
+    "answer": "Kapadokya Üniversitesi'nin yönergesine göre, azami öğrenim süresini dolduran önlisans ve lisans öğrencilerine mezun olabilmeleri için ek sınav hakkı tanınmaktadır. Bu sınavda amaç, başarısız ders sayısını beş derse indirmektir."
+  },
+  {
+    "questions": [
+      "Ek sınavda geçmem gereken ders sayısı ne kadar olmalı ki bu ek süreden faydalanabileyim?"
+    ],
+    "answer": "Ek sınavda geçmeniz gereken ders sayısı, azami öğrenim süresini doldurmuş olmanıza rağmen başarısız ders sayınızın beş veya daha az olmasıdır. Başarısız ders sayınız beşin altında ise ek süre hakkından yararlanabilirsiniz."
+  },
+  {
+    "questions": [
+      "Azami öğrenim süresi derken tam olarak neyi kastediyorsunuz?"
+    ],
+    "answer": "Azami öğrenim süresi, bir önlisans veya lisans programında öğrenciye tanınan en uzun eğitim süresidir. Bu süre dolduğunda, öğrencinin mezun olabilmesi için ek sınav hakkı gibi belirli koşullar altında ek süreler tanımlanabilir."
+  },
+  {
+    "questions": [
+      "Bu ek süre dediğiniz şey tam olarak ne anlama geliyor?"
+    ],
+    "answer": "Ek Süre, azami öğrenim süresini dolduran son sınıf öğrencilerine başarısız oldukları derslerin sınavlarına girebilmeleri için tanınan üç veya dört yarıyıllık ek bir süredir. Bu süre, öğrencilerin mezun olabilmek için başarısız ders sayısını azaltmalarına olanak tanır."
+  },
+  {
+    "questions": [
+      "Eğer ben normal süremde beş dersten fazla başarısız olursam ne olur?"
+    ],
+    "answer": "Normal öğrenim sürenizi aşarsanız ve beşten fazla dersiniz kalırsa, kayıt hakkınız silinebilir. Ancak, azami süre sonunda beş veya daha az başarısız dersiniz varsa ek sınavlara girme hakkı kazanabilirsiniz."
+  },
+  {
+    "questions": [
+      "Azami öğrenim süresi benim için kaç yıl olacak, bunu nasıl öğrenebilirim?"
+    ],
+    "answer": "Azami öğrenim süreniz, kayıt olduğunuz programın türüne göre değişir. Ön lisans için 4 yıl, lisans için 7 veya 8 yıl azami süre olarak belirlenmiştir."
+  },
+  {
+    "questions": [
+      "Benim programım normalde 6 yıl sürecek, ben bu programı en geç kaç yıla kadar bitirmeliyim?"
+    ],
+    "answer": "Programınızın azami öğrenim süresi 9 yıldır. Yükseköğretim Yürütme Kurulu'nun kararı uyarınca, bu süre 2014-2015 güz yarıyılından itibaren başlar."
+  },
+  {
+    "questions": [
+      "Hazırlık sınıfını geçemezsem ne olur?"
+    ],
+    "answer": "Hazırlık eğitim süresi azami iki yıldır. Bu süreyi tamamlayamayan öğrencinin üniversite ile ilişiği kesilir."
+  },
+  {
+    "questions": [
+      "Yatay geçiş yaparsam azami öğrenim sürem nasıl hesaplanır?"
+    ],
+    "answer": "Yatay geçiş yapan öğrencilerin azami süreleri, kabul edildiği sınıf çıkartılarak programın normal azami süresinden hesaplanır. Bu durumda, önceki eğitiminde geçen süreler dikkate alınarak kalan öğrenim süresi belirlenir."
+  },
+  {
+    "questions": [
+      "Öğrenim ücretini ödeyemediğimde ilişik kesme durumu oluyor mu?"
+    ],
+    "answer": "Öğrenim ücretinin ödenmemesi tek başına ilişik kesmeye neden olmaz. Ancak dört yıl üst üste öğrenim ücreti ödenmezse ve kayıt yenilenmezse üniversite yetkili kurullarının kararı ve Yükseköğretim Kurulunun onayı ile ilişik kesilebilir."
+  },
+  {
+    "questions": [
+      "Hazırlık sınıfını geçemezsem ne olur?"
+    ],
+    "answer": "Hazırlık sınıfını iki yıl içinde başarıyla tamamlayamazsanız programdan ilişiğiniz kesilir. Ancak üniversitede eşdeğer Türkçe bir program varsa kayıt yaptırabilir veya ÖSYM aracılığıyla başka bir programa yatay geçiş yapabilirsiniz."
+  },
+  {
+    "questions": [
+      "Azami süreyi doldurursam sınav tekrarı yapabilir miyim?"
+    ],
+    "answer": "Evet, azami öğrenim süresini dolduran öğrencilere başarısız oldukları dersler için iki ek sınav hakkı verilir. Bu sınavlar akademik takvimde belirlenen tarihlerde yapılır."
+  },
+  {
+    "questions": [
+      "Merhaba, yatay geçiş yapmak istiyorum, şartlar nelerdir?"
+    ],
+    "answer": "Yatay geçiş için, öğretim dili Türkçe olan bir programa başvurabilirsin. Başvurunun kabulü için not ortalamanın yeterli olması ve geçmek istediğin bölümün kontenjanı dahilinde yer açılması gerekiyor."
+  },
+  {
+    "questions": [
+      "Ek sınav hakkım varsa devam zorunluluğu olan derslere kayıt yaptırmam gerekiyor mu?"
+    ],
+    "answer": "Evet, uygulama ağırlıklı dersler için ek sınav hakkını kullanabilmek için dersin açıldığı yarıyılda ders/kredi öğrenim ücretini ödeyerek derse kayıt yaptırmak ve ara sınavlara katılmak zorunludur. Devam koşullarını yerine getirerek sınava girme hakkı elde etmeniz gerekir."
+  },
+  {
+    "questions": [
+      "Eğer başarısız ders sayım çok yüksek olursa ne olur?"
+    ],
+    "answer": "Başarısız ders sayısı beş derse indirilemezse üniversite ile ilişki kesilir. Başarısız ders sayısı beş veya daha az ise öğrenciye ek süre tanınır."
+  },
+  {
+    "questions": [
+      "Ek sınavlarla başarısız ders sayısını beş derse indirenlere kaç yarıyıl ek süre tanınıyor?"
+    ],
+    "answer": "Ek sınavlarla başarısız ders sayısını beş derse indirenlere üç yarıyıl ek süre tanınır. Ek sınavları almadan beş derse kadar başarısız olan öğrencilere ise dört yarıyıl ek süre verilir."
+  },
+  {
+    "questions": [
+      "Bir dersten başarısız olan öğrenciler bu haktan nasıl yararlanabiliyor?"
+    ],
+    "answer": "Bir dersten başarısız olan öğrencilere, öğrencilik hakkından yararlanmaksızın sınırsız sınav girme hakkı tanınır. Bu öğrenciler sınava girdiği her ders için ders/kredi öğrenim ücretini ödemeye devam ederler."
+  },
+  {
+    "questions": [
+      "Üç eğitim öğretim yılı üst üste sınava girmeyen bir öğrencinin durumu ne olur?"
+    ],
+    "answer": "Üç eğitim öğretim yılı üst üste sınava girmeyen öğrenci, sınırsız sınav hakkından vazgeçmiş sayılır ve ilişiği kesilir. Bu durumda tekrar bu haklardan yararlanamaz."
+  },
+  {
+    "questions": [
+      "Sınav hakkım sınırsız olursa ders ücretini ödemeye devam edecek miyim?"
+    ],
+    "answer": "Evet, sınav hakkı sınırsız olsa bile sınava girdiği her ders için ders/kredi öğrenim ücretini ödemeye devam edecektir. Ancak bu öğrenciler, sınav hakkı dışındaki diğer öğrencilik haklarından yararlanamazlar."
+  },
+  {
+    "questions": [
+      "Eğer programımın müfredatında değişiklik olursa sınavlarıma girebilir miyim?"
+    ],
+    "answer": "Evet, programınızın öğretim planında bir değişiklik olması durumunda yönetim kurulu kararı ile uygun görülen derslerden sınav hakkınızı kullanabilirsiniz. Bu hak, azami süreyi aşan veya sınırsız sınav hakkı olan öğrenciler için geçerlidir."
+  },
+  {
+    "questions": [
+      "Mazeret sınavı diye bir şey var mı, yoksa sınava girme hakkı verilen derslerin ek sınavları için özel bir durum mu geçerli?"
+    ],
+    "answer": "Mazeret sınavı düzenlenmez. Devam zorunluluğu olmayan ve sınava girme hakkı verilen derslerin ek sınavları veya sınırsız sınav hakları için mazeret sınavı uygulanmaz."
+  },
+  {
+    "questions": [
+      "Final sınavında ek sınav hakkı kullanabilir miyim?"
+    ],
+    "answer": "Evet, yönetim kurulu kararı ile final sınavında ek sınav veya sınırsız sınav haklarını kullanabilirsiniz. Ancak başvuru süresi içinde başvurunuzu yapmanız ve ders/kredi öğrenim ücretini ödemeniz gerekmektedir."
+  },
+  {
+    "questions": [
+      "Ek sınav ücreti ödedikten sonra ders kapanırsa ne olur?"
+    ],
+    "answer": "Ek sınav ücreti geri ödenir veya öğrenci açılan bir başka derse kayıt yaptırabilir. Dersin kapanması durumunda ek sınav hakkı için ödenen ücret iade edilir ya da öğrenci bu hakkını farklı bir ders için kullanabilir."
+  },
+  {
+    "questions": [
+      "Devam zorunluluğu olmayan bir dersten geçer not almak için kaç puan almam gerekiyor?"
+    ],
+    "answer": "Devam zorunluluğu olmayan derslerden ek sınav veya sınırsız sınav hakkını kullanan öğrencilerin sınavlarda 100 tam puan üzerinden en az 60 puan almaları zorunludur. Bu puan, harf notu ile değerlendirilir."
+  },
+  {
+    "questions": [
+      "Bu metinde bahsedilen yönetmelik ve kanunlara nereden ulaşabilirim?"
+    ],
+    "answer": "Metinde belirtilen 2547 sayılı Yükseköğretim Kanunu ve Kapadokya Üniversitesi Ön Lisans ve Lisans Eğitim-Öğretim Yönetmeliği'ne resmi gazete veya üniversitenin internet sitesi üzerinden ulaşabilirsiniz. Ayrıca, Senato kararlarına da Kapadokya Üniversitesi'nin ilgili birimlerinden bilgi alarak erişebilirsiniz."
+  },
+  {
+    "questions": [
+      "Eğer bir sorun yaşarsam bu yönergede çözümü olmayan bir konuyla ilgili kime danışmalıyım?"
+    ],
+    "answer": "Bu yönergede çözümü bulunmayan konularda öncelikle Kapadokya Üniversitesi Ön Lisans ve Lisans Eğitim-Öğretim Yönetmeliği'ne bakmalı veya Senato kararlarını incelemelisiniz. Bu kaynaklarda da çözüm bulamazsanız, Rektörlük ile iletişime geçebilirsiniz."
+  },
+  {
+    "questions": [
+      "Bu yönerge ne zaman geçerli olmaya başladı?"
+    ],
+    "answer": "Bu yönerge, Kapadokya Üniversitesi Senatosu tarafından kabul edildiği tarihte yürürlüğe girmiştir. Kabul tarihi belirtilmediğinden kesin bir başlangıç tarihi tespit edilemez."
+  }
+]

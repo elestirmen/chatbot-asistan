@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Sohbet Geçmişi (Yerel Dosya)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f0f0; }
+    .history-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { margin-top: 0; }
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+    select, button, input { padding: 8px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+    button { background: #2196f3; color: white; cursor: pointer; }
+    button:hover { background: #1976d2; }
+    .log-entry { margin-bottom: 16px; }
+    .log-entry .timestamp { font-size: 0.8em; color: #666; margin-bottom: 4px; }
+    .log-entry .user { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-left: 20%; }
+    .log-entry .bot { background: #f5f5f5; padding: 10px; border-radius: 4px; margin-right: 20%; position: relative; }
+    .log-entry .bot .feedback-tag { position: absolute; top: 8px; right: 8px; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <div class="history-container">
+    <h1>Sohbet Geçmişi (Yerel Dosya)</h1>
+    <p>Lütfen <strong>chat_logs</strong> klasörünü seçin:</p>
+    <input type="file" id="dir-input" webkitdirectory directory multiple />
+    <div class="controls" style="display:none;">
+      <label for="session-select">Oturum:</label>
+      <select id="session-select"></select>
+      <button id="load-btn">Yükle</button>
+    </div>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    const dirInput = document.getElementById('dir-input');
+    const sessionSelect = document.getElementById('session-select');
+    const controls = document.querySelector('.controls');
+    const loadBtn = document.getElementById('load-btn');
+    const logsContainer = document.getElementById('logs');
+    let fileMap = {};
+
+    dirInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      fileMap = {};
+      files.forEach(file => {
+        const rel = file.webkitRelativePath; // e.g. "chat_logs/sess_20250428_101010/chat_log_user.json"
+        const parts = rel.split('/');
+        if (parts.length < 3) return;
+        const session = parts[1];
+        if (!fileMap[session]) fileMap[session] = [];
+        fileMap[session].push(file);
+      });
+      // Oturum listesini oluştur
+      sessionSelect.innerHTML = Object.keys(fileMap)
+        .map(s => `<option value="${s}">${s}</option>`)
+        .join('');
+      controls.style.display = Object.keys(fileMap).length ? 'flex' : 'none';
+    });
+
+    loadBtn.addEventListener('click', async () => {
+      logsContainer.innerHTML = '';
+      const sess = sessionSelect.value;
+      const files = fileMap[sess] || [];
+      const logFile = files.find(f => f.name.endsWith('.json'));
+      if (!logFile) {
+        logsContainer.innerHTML = '<p style="color:red;">Log dosyası bulunamadı.</p>';
+        return;
+      }
+      try {
+        const text = await logFile.text();
+        const logs = JSON.parse(text);
+        renderLogs(logs);
+      } catch (err) {
+        logsContainer.innerHTML = '<p style="color:red;">Log okunurken hata.</p>';
+        console.error(err);
+      }
+    });
+
+    function renderLogs(logs) {
+      logs.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = `
+          <div class="timestamp">${entry.timestamp}</div>
+          <div class="user">${entry.user_message}</div>
+          <div class="bot">${entry.assistant_response || ''}
+            ${entry.feedback ? `<span class="feedback-tag">${entry.feedback==='like'?'👍':'👎'}</span>` : ''}
+          </div>
+        `;
+        logsContainer.appendChild(div);
+      });
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+  </script>
+</body>
+</html>
