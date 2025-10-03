@@ -147,11 +147,41 @@ AVATAR_UPLOAD_DIR.mkdir(exist_ok=True)
 ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
 MAX_AVATAR_FILE_SIZE = int(os.getenv("AVATAR_MAX_BYTES", str(2 * 1024 * 1024)))
 
+# Config dosyaları için yeni konum: static/config
+CONFIG_DIR = STATIC_DIR / "config"
+CONFIG_DIR.mkdir(exist_ok=True)
+
 #MODEL_NAME = "Alibaba-NLP/gte-multilingual-base"
 #MODEL = SentenceTransformer(MODEL_NAME, trust_remote_code=True)
 
 
-PERSONALITIES_FILE = DATA_DIR / "personalities.json"
+# Eski/yeni yol tanımları (migrasyon için)
+OLD_PERSONALITIES_FILE = DATA_DIR / "personalities.json"
+OLD_SYSTEM_PROMPT_FILE = DATA_DIR / "system_prompt.json"
+
+# Yeni hedef dosyalar static/config altında tutulur
+PERSONALITIES_FILE = CONFIG_DIR / "personalities.json"
+SYSTEM_PROMPT_FILE = CONFIG_DIR / "system_prompt.json"
+
+def _migrate_config_file(old_path: Path, new_path: Path) -> None:
+    try:
+        # Eğer yeni dosya zaten varsa dokunma
+        if new_path.exists():
+            return
+        # Eski dosya varsa yeni konuma kopyala
+        if old_path.exists():
+            new_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(old_path, new_path)
+    except Exception:
+        # Migrasyon isteğe bağlı; hata olursa sadece loglayalım
+        try:
+            app.logger.exception("Config dosyası taşınamadı: %s -> %s", old_path, new_path)
+        except Exception:
+            pass
+
+# Uygulama başlarken tek seferlik migrasyon girişimi
+_migrate_config_file(OLD_PERSONALITIES_FILE, PERSONALITIES_FILE)
+_migrate_config_file(OLD_SYSTEM_PROMPT_FILE, SYSTEM_PROMPT_FILE)
 PERSONALITIES_DEFAULT_FALLBACK = "huysuz"
 
 THEME_PRESETS = {
@@ -403,7 +433,9 @@ DEFAULT_SYSTEM_PROMPT = (
     "Elindeki güvenilir kaynaklar dışında bilgi uydurma. Emin olmadığın veya kayıtta bulunmayan her durumda "
     "kullanıcıya net biçimde bilgi eksikliğini belirt ve gerekirse yönlendirme yap."
 )
-SYSTEM_PROMPT_FILE = DATA_DIR / "system_prompt.json"
+# Not: Yukarıda CONFIG_DIR altında SYSTEM_PROMPT_FILE zaten tanımlandı
+# Buradaki atama, yeni konumu teyit etmek için aynı değeri korur
+SYSTEM_PROMPT_FILE = CONFIG_DIR / "system_prompt.json"
 
 
 class SystemPromptManager:
@@ -421,14 +453,42 @@ class SystemPromptManager:
             try:
                 raw = json.loads(self.path.read_text("utf-8"))
             except Exception:
+                # Dosya bozuksa veya okunamazsa, varsayılanı yaz
                 self._write_unlocked(self.default_prompt)
                 raw = {"base_prompt": self.default_prompt}
 
-            prompt = str(raw.get("base_prompt") or "").strip()
+            prompt = ""
+            needs_migration = False
+            if isinstance(raw, dict):
+                prompt = str(raw.get("base_prompt") or "").strip()
+                # Eğer dict ama anahtar yoksa standart forma döndür
+                if "base_prompt" not in raw:
+                    needs_migration = True
+            elif isinstance(raw, list):
+                # Eski/yanlış format: liste. İlk öğeden kurtarmayı dene.
+                if raw:
+                    first = raw[0]
+                    if isinstance(first, str):
+                        prompt = first.strip()
+                    elif isinstance(first, dict):
+                        prompt = str(first.get("base_prompt") or "").strip()
+                needs_migration = True
+            elif isinstance(raw, str):
+                prompt = raw.strip()
+                needs_migration = True
+            else:
+                # Tanınmayan format
+                prompt = ""
+
             if not prompt:
                 prompt = self.default_prompt
+                needs_migration = True
+
+            if needs_migration:
+                # Dosyayı standart şekle (dict) migrate et
                 self._write_unlocked(prompt)
-            self._prompt = prompt
+            else:
+                self._prompt = prompt
 
     def _write_unlocked(self, prompt: str) -> None:
         payload = {"base_prompt": prompt}

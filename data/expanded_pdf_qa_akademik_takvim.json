@@ -58,5 +58,15 @@
       "Yaz okulunun bitirme sınavları hangi tarihlerde yapılacak?"
     ],
     "answer": "Yaz okulunun final sınavları 1-6 Eylül 2025 tarihleri arasında yapılacaktır. Sınav takvimi 15 Ağustos 2025 tarihinde ilan edilecektir."
+  },
+  {
+    "questions": [
+      "dersler ne zaman başlar?",
+      "ders döneminin başlangıç tarihi nedir?",
+      "güz dönemi ne zaman başlıyor?",
+      "vize tarihleri ne?",
+      "final tarihleri ne?"
+    ],
+    "answer": "Muafiyet Sınav Takvimi İlanı\t03.10.2025\t-\nMuafiyet Sınav Tarihleri\t07.10.2025\t11.10.2025\nMali Kayıt İşlemleri (Eski Kayıtlı Tüm Öğrenciler İçin) *Güncellendi\t10.09.2025\t30.09.2025\nGüz Dönemi Açılış Haftası\t13.10.2025\t18.10.2025\nDers Kayıt İşlemleri (Öğrenci İşleri Otomasyonu Üzerinden)\t13.10.2025\t18.10.2025\nMazeretli Kayıtlar, Ekle-Sil ve Danışman Onayı İşlemleri\t27.10.2025\t31.10.2025\nYarıyıl (Final) Takvim İlanı\t14.01.2026\t-\nAra Sınav Mazeret Sınavları\t19.01.2026\t23.01.2026\nGüz Dönemi Derslerin Bitiş Tarihi\t24.01.2026\t-\nYarıyıl (Final) Sınavları\t26.01.2026\t02.02.2026"
   }
 ]

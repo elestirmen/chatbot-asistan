@@ -1,15 +1,4 @@
-# local git backups
-.git.broken-*/
-
-# python caches
-__pycache__/
-*.pyc
-
-# envs
-venv/
-ENV/
+# Track everything except chat logs and environment file
+chat_logs/
+chatlog/
 .env
-
-# cache / models / locks
-model_cache/
-*.lock
