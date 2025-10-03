@@ -1654,15 +1654,6 @@ def _make_event(event_type: str, session_id: Optional[str], user_id: Optional[st
     }
     base.update(fields)
     return base
-    try:
-        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-    except Exception:
-        return None
-    year = ts.year
-    if ts.month >= 9:
-        return f"{year}-{year+1}"
-    else:
-        return f"{year-1}-{year}"
 
 
 @admin_bp.route('/api/chat/logs_advanced')
