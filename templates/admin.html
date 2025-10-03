@@ -1069,7 +1069,13 @@
               <div class="invalid-feedback">Bu alan boş olamaz.</div>
             </div>
             <div class="mb-3 position-relative">
-              <label class="form-label">Cevap:</label>
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-1">Cevap:</label>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="longAnswerToggle">
+                  <label class="form-check-label" for="longAnswerToggle">Uzun cevap (1200)</label>
+                </div>
+              </div>
               <textarea id="answerInput" class="form-control" rows="10" required maxlength="600" placeholder="En fazla 600 karakter…"></textarea>
               <div class="invalid-feedback">Bu alan boş olamaz.</div>
               <small id="answerCount" class="form-text text-muted">0/600</small>

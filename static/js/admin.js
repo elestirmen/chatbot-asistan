@@ -1902,12 +1902,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // EXISTING QA FUNCTIONALITY
   // ===============================
+  // Answer length controls
+  const ANSWER_MIN = 600;
+  const ANSWER_MAX = 1200;
+  let currentAnswerLimit = ANSWER_MAX;
+
+  function setAnswerLimit(limit) {
+    currentAnswerLimit = Number(limit) || ANSWER_MAX;
+    const $ans = $('#answerInput');
+    const val = ($ans.val() || '').toString();
+    $ans.attr('maxlength', currentAnswerLimit)
+        .attr('placeholder', `En fazla ${currentAnswerLimit} karakter…`);
+    $('#answerCount').text(`${val.length}/${currentAnswerLimit}`);
+  }
 
   function resetQaForm() {
     const form = document.getElementById('qaForm');
     form?.reset();
     $('#qaForm').removeClass('was-validated');
-    $('#answerCount').text('0/600');
+    // default to short answers (600)
+    const toggle = document.getElementById('longAnswerToggle');
+    if (toggle) toggle.checked = false;
+    setAnswerLimit(ANSWER_MIN);
     $('#editIdx').val('');
   }
 
@@ -1989,7 +2005,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#questionsInput').val((row.questions || []).join('\n'));
     $('#answerInput').val(row.answer || '');
     $('#editIdx').val(idx);
-    $('#answerCount').text(`${(row.answer || '').length}/600`);
+    // default to short limit on edit as well
+    const toggle = document.getElementById('longAnswerToggle');
+    if (toggle) toggle.checked = false;
+    setAnswerLimit(ANSWER_MIN);
     $('#qaForm').removeClass('was-validated');
     qaModal?.show();
   });
@@ -2048,7 +2067,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('#answerInput').on('input', function () {
     const val = $(this).val();
-    $('#answerCount').text(`${val.length}/600`);
+    $('#answerCount').text(`${val.length}/${currentAnswerLimit}`);
+  });
+
+  // Toggle between 600 and 1200
+  $(document).on('change', '#longAnswerToggle', function() {
+    if (this.checked) setAnswerLimit(ANSWER_MAX); else setAnswerLimit(ANSWER_MIN);
   });
 
   $('#qaModal').on('shown.bs.modal', () => $('#questionsInput').trigger('focus'));
