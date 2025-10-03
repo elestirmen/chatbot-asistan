@@ -22,3 +22,17 @@ venv/
 *.swp
 .DS_Store
 Thumbs.db
+# caches / logs / env / ide
+.env
+.env.*
+model_cache/
+chat_logs/
+__pycache__/
+*.log
+.vscode/
+*.pyc
+# büyük ikili dosyalar
+*.safetensors
+*.pt
+*.bin
+*.onnx
