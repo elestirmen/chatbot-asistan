@@ -27,13 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const qaModalEl = document.getElementById('qaModal');
   const loginModalEl = document.getElementById('loginModal');
   const messageDetailModalEl = document.getElementById('messageDetailModal');
+  const sessionConversationModalEl = document.getElementById('sessionConversationModal');
   const qaModal = qaModalEl ? new bootstrap.Modal(qaModalEl) : null;
   const loginModal = loginModalEl ? new bootstrap.Modal(loginModalEl) : null;
   const messageDetailModal = messageDetailModalEl ? new bootstrap.Modal(messageDetailModalEl) : null;
+  const sessionConversationModal = sessionConversationModalEl ? new bootstrap.Modal(sessionConversationModalEl) : null;
   const $fileSel = $('#fileSelect');
   let qaTable;
   let isAuthenticated = false;
   let lastAuthState = null;
+  let currentSessionForModal = null;
 
   // Personality management state
   const personalityModalEl = document.getElementById('personalityModal');
@@ -80,6 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
     neutral: 'Nötr',
     positive: 'Pozitif',
   };
+
+  // Treat backend timestamps (e.g., 'YYYY-MM-DD HH:MM:SS') as UTC
+  function parseUtcLike(ts) {
+    if (!ts) return null;
+    const s = String(ts).trim();
+    if (!s) return null;
+    // Convert 'YYYY-MM-DD HH:MM:SS' -> 'YYYY-MM-DDTHH:MM:SSZ'
+    return new Date(s.replace(' ', 'T') + 'Z');
+  }
 
   function resolveAvatarUrl(relativePath) {
     if (!relativePath) return null;
@@ -821,11 +833,12 @@ document.addEventListener('DOMContentLoaded', () => {
           orderable: false,
           render: () => '<input type="checkbox" class="form-check-input result-checkbox">'
         },
-        { 
-          data: 'timestamp', 
+        {
+          data: 'timestamp',
           render: (d) => {
             if (!d) return '';
-            const date = new Date(d);
+            const date = parseUtcLike(d);
+            if (!date || isNaN(date.getTime())) return esc(d);
             return `<small>${date.toLocaleDateString('tr-TR')}<br>${date.toLocaleTimeString('tr-TR')}</small>`;
           }
         },
@@ -835,7 +848,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         { 
           data: 'session_id', 
-          render: (d) => d ? `<code class="text-primary small">${esc(d.substring(0, 12))}...</code>` : '' 
+          render: (d) => {
+            if (!d) return '';
+            const label = `${d.substring(0, 12)}...`;
+            return `<a href="#" class="open-session" data-session="${esc(d)}" title="Oturumu konuşma görünümünde aç">`
+                 + `<code class="text-primary small">${esc(label)}</code></a>`;
+          }
         },
         { 
           data: 'user_id', 
@@ -957,7 +975,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       sessions.forEach(session => {
-        const label = `${session.session_id}${session.last_activity ? ' (' + session.last_activity + ')' : ''}`;
+        let last = session.last_activity || '';
+        if (last) {
+          const dt = parseUtcLike(last);
+          last = dt && !isNaN(dt) ? dt.toLocaleString('tr-TR') : last;
+        }
+        const label = `${session.session_id}${last ? ' (' + last + ')' : ''}`;
         $sessionSelect.append(`<option value="${session.session_id}">${esc(label)}</option>`);
       });
     }).fail((xhr) => {
@@ -982,7 +1005,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       users.forEach(user => {
         const successRate = user.total > 0 ? Math.round((user.like / user.total) * 100) : 0;
-        const lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleString('tr-TR') : 'Bilinmiyor';
+        const lastDt = parseUtcLike(user.last_activity);
+        const lastActivity = lastDt && !isNaN(lastDt) ? lastDt.toLocaleString('tr-TR') : 'Bilinmiyor';
         
         const row = `
           <tr>
@@ -994,6 +1018,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>
               <button class="btn btn-sm btn-outline-primary select-user" data-user-id="${esc(user.user_id)}">
                 <i class="bi bi-arrow-right"></i> Seç
+              </button>
+              <button class="btn btn-sm btn-outline-danger ms-1 delete-user-log" data-user-id="${esc(user.user_id)}">
+                <i class="bi bi-trash"></i> Sil
               </button>
             </td>
           </tr>
@@ -1007,6 +1034,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function performSearch(searchParams) {
     const url = buildSearchUrl(searchParams);
+    // Track current filter for follow-up actions
+    currentFilter = Object.assign({}, searchParams);
     
     showLoading();
     
@@ -1098,8 +1127,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentResults.length > 0) {
       const dates = currentResults.map(r => r.timestamp).filter(t => t).sort();
       if (dates.length > 0) {
-        const firstDate = new Date(dates[0]).toLocaleDateString('tr-TR');
-        const lastDate = new Date(dates[dates.length - 1]).toLocaleDateString('tr-TR');
+        const firstDt = parseUtcLike(dates[0]);
+        const lastDt = parseUtcLike(dates[dates.length - 1]);
+        const firstDate = firstDt && !isNaN(firstDt) ? firstDt.toLocaleDateString('tr-TR') : dates[0];
+        const lastDate = lastDt && !isNaN(lastDt) ? lastDt.toLocaleDateString('tr-TR') : dates[dates.length - 1];
         if (firstDate === lastDate) {
           dateInfo = ` (${firstDate})`;
         } else {
@@ -1175,7 +1206,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Populate modal with data
     $('#modalSessionId').text(rowData.session_id || '');
     $('#modalUserId').text(rowData.user_id || '');
-    $('#modalTimestamp').text(rowData.timestamp || '');
+    (function(){
+      const dt = parseUtcLike(rowData.timestamp);
+      $('#modalTimestamp').text(dt && !isNaN(dt) ? dt.toLocaleString('tr-TR') : (rowData.timestamp || ''));
+    })();
     $('#modalSeason').text(rowData.season || 'Bilinmiyor');
     $('#modalSessionBadge').text(`#${(rowData.idx || 0) + 1}`);
     
@@ -1396,6 +1430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sessionId) {
       // Enable the load button
       $('#loadSessionData').prop('disabled', false);
+      $('#openSessionViewerBtn').prop('disabled', false);
       
       // Load and display users for this session
       loadUsersForSession(sessionId);
@@ -1403,6 +1438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       // Disable the load button and hide user info
       $('#loadSessionData').prop('disabled', true);
+      $('#openSessionViewerBtn').prop('disabled', true);
       $('#sessionUsersInfo').hide();
     }
   });
@@ -1455,6 +1491,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Open conversation viewer for selected session
+  $('#openSessionViewerBtn').on('click', function() {
+    const sessionId = $('#sessionSelect').val();
+    if (!sessionId) {
+      alert('Lütfen önce bir oturum seçin.');
+      return;
+    }
+    openSessionViewer(sessionId);
+  });
+
   // Handle user selection from session users table
   $(document).on('click', '.select-user', function() {
     const sessionId = $('#sessionSelect').val();
@@ -1466,6 +1512,108 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load messages for this specific user
     loadSessionMessages(sessionId, userId);
+  });
+
+  // Delete a single user's log file within a session
+  $(document).on('click', '.delete-user-log', function() {
+    if (!isAuthenticated) {
+      loginModal?.show();
+      return;
+    }
+    const sessionId = $('#sessionSelect').val();
+    const userId = $(this).data('user-id');
+    if (!sessionId || !userId) return;
+    if (!confirm('Bu kullanıcının loglarını silmek istediğinize emin misiniz?')) return;
+    $.ajax({
+      url: `/admin/api/chat/log?session=${encodeURIComponent(sessionId)}&user_id=${encodeURIComponent(userId)}`,
+      method: 'DELETE',
+      success: () => {
+        loadUsersForSession(sessionId);
+        if (currentFilter && currentFilter.mode) performSearch(currentFilter);
+      },
+      error: (xhr) => {
+        let msg = xhr.responseJSON?.message || 'Silme işlemi sırasında bir hata oluştu.';
+        if (xhr.status === 401) msg += ' Lütfen tekrar giriş yapmayı deneyin.';
+        alert(msg);
+      },
+    });
+  });
+
+  function openSessionViewer(sessionId) {
+    if (!isAuthenticated) {
+      loginModal?.show();
+      return;
+    }
+    currentSessionForModal = sessionId;
+    $('#convSessionId').text(sessionId);
+    $('#conversationContainer').html('<div class="text-center text-muted py-4"><i class="bi bi-hourglass-split"></i> Yükleniyor...</div>');
+    sessionConversationModal?.show();
+    $.getJSON(`/admin/api/chat/session_messages?session=${encodeURIComponent(sessionId)}`, (resp) => {
+      const items = resp?.items || [];
+      renderConversation(items);
+    }).fail((xhr) => {
+      if (xhr.status === 401) {
+        sessionConversationModal?.hide();
+        loginModal?.show();
+      } else {
+        $('#conversationContainer').html('<div class="text-danger">Veriler yüklenemedi.</div>');
+      }
+    });
+  }
+
+  function renderConversation(items) {
+    const $c = $('#conversationContainer');
+    $c.empty();
+    if (!items.length) {
+      $c.html('<div class="text-center text-muted py-4"><i class="bi bi-inbox"></i> Bu oturumda mesaj bulunamadı</div>');
+      return;
+    }
+    items.forEach((e) => {
+      const ts = e.timestamp ? new Date(e.timestamp).toLocaleString('tr-TR') : '';
+      const userHtml = `
+        <div class="d-flex align-items-start mb-2">
+          <div class="me-2"><i class="bi bi-person-circle text-primary"></i></div>
+          <div class="flex-grow-1">
+            <div class="message-bubble user">${esc(e.user_message || '')}</div>
+            <div class="small text-muted">${ts}</div>
+          </div>
+        </div>`;
+      const assistantHtml = `
+        <div class="d-flex align-items-start mb-4">
+          <div class="me-2"><i class="bi bi-robot text-success"></i></div>
+          <div class="flex-grow-1">
+            <div class="message-bubble assistant">${esc(e.assistant_response || '')}</div>
+            <div class="small text-muted">${e.assistant_personality ? getPersonalityBadge(e.assistant_personality) : ''}</div>
+          </div>
+        </div>`;
+      $c.append(userHtml).append(assistantHtml);
+    });
+  }
+
+  // Delete entire session from conversation modal
+  $('#deleteSessionBtn').on('click', function() {
+    if (!isAuthenticated) {
+      loginModal?.show();
+      return;
+    }
+    const sess = currentSessionForModal;
+    if (!sess) return;
+    if (!confirm('Bu oturumu ve tüm loglarını silmek istediğinize emin misiniz?')) return;
+    $.ajax({
+      url: `/admin/api/chat/sessions/${encodeURIComponent(sess)}`,
+      method: 'DELETE',
+      success: () => {
+        sessionConversationModal?.hide();
+        loadSessions();
+        $('#sessionUsersInfo').hide();
+        if (currentFilter && currentFilter.mode) performSearch(currentFilter);
+      },
+      error: (xhr) => {
+        let msg = xhr.responseJSON?.message || 'Oturum silinirken bir hata oluştu.';
+        if (xhr.status === 401) msg += ' Lütfen tekrar giriş yapmayı deneyin.';
+        alert(msg);
+      },
+    });
   });
 
   function loadSessionMessages(sessionId, userId) {
@@ -1616,8 +1764,8 @@ document.addEventListener('DOMContentLoaded', () => {
         '<span class="badge bg-danger"><i class="bi bi-hand-thumbs-down"></i> Dislike</span>' :
         '<span class="badge bg-secondary">Değerlendirmesiz</span>';
       
-      const date = item.timestamp ? new Date(item.timestamp) : null;
-      const dateStr = date ? date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR') : 'Bilinmiyor';
+    const date = item.timestamp ? parseUtcLike(item.timestamp) : null;
+    const dateStr = (date && !isNaN(date)) ? date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR') : 'Bilinmiyor';
       
       const cardHtml = `
         <div class="col-md-6 col-lg-4">
@@ -1672,6 +1820,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (item) {
       showMessageDetail(item);
     }
+  });
+
+  // Clicking a session code opens session conversation viewer
+  $(document).on('click', '.open-session', function(e) {
+    e.preventDefault();
+    const sessionId = $(this).data('session');
+    if (sessionId) openSessionViewer(sessionId);
   });
 
   // Export handlers

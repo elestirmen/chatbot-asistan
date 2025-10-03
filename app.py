@@ -24,6 +24,7 @@ import re
 import secrets
 import unicodedata
 from datetime import datetime, timedelta
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -1968,6 +1969,87 @@ def admin_api_chat_users():
         return jsonify({'error': 'Unauthorized'}), 401
     sess = request.args.get('session', '')
     return jsonify(_list_user_logs(sess))
+
+
+@admin_bp.route('/api/chat/session_messages')
+def admin_api_chat_session_messages():
+    """Return all messages for a session (optionally for a specific user),
+    ordered chronologically from oldest to newest.
+    """
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    sess = (request.args.get('session') or '').strip()
+    user_id = (request.args.get('user_id') or '').strip()
+    if not sess:
+        return jsonify({'error': 'Bad Request', 'message': 'session param gerekli'}), 400
+
+    def _safe_parse(ts: Optional[str]) -> Tuple[int, str]:
+        if not ts:
+            return (0, '')
+        try:
+            dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
+            return (int(dt.timestamp()), ts)
+        except Exception:
+            return (0, ts)
+
+    items: List[Dict[str, Any]] = []
+    users = [user_id] if user_id else [u['user_id'] for u in _list_user_logs(sess)]
+    for uid in users:
+        entries = _load_logs(sess, uid)
+        for idx, e in enumerate(entries):
+            items.append({
+                'session_id': sess,
+                'user_id': uid,
+                'idx': idx,
+                'timestamp': e.get('timestamp'),
+                'feedback': e.get('feedback'),
+                'user_message': e.get('user_message'),
+                'assistant_response': e.get('assistant_response'),
+                'assistant_personality': e.get('assistant_personality'),
+            })
+
+    # Oldest -> newest
+    items.sort(key=lambda x: _safe_parse(x.get('timestamp'))[0])
+    return jsonify({'items': items, 'total': len(items)})
+
+
+@admin_bp.route('/api/chat/log', methods=['DELETE'])
+def admin_api_chat_delete_user_log():
+    """Delete a single user's log file for a given session."""
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    sess = (request.args.get('session') or '').strip()
+    user_id = (request.args.get('user_id') or '').strip()
+    if not sess or not user_id:
+        return jsonify({'error': 'Bad Request', 'message': 'session ve user_id gerekli'}), 400
+    path = LOGS_DIR / sess / f"chat_log_{user_id}.json"
+    lock = FileLock(str(path) + '.lock')
+    try:
+        with lock:
+            if path.exists():
+                path.unlink()
+        return jsonify({'deleted': True, 'session': sess, 'user_id': user_id})
+    except Exception:
+        app.logger.exception('Kullanıcı logu silinirken hata')
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
+@admin_bp.route('/api/chat/sessions/<session_id>', methods=['DELETE'])
+def admin_api_chat_delete_session(session_id: str):
+    """Delete an entire session directory and all logs within it."""
+    if not session.get('admin_authenticated'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    session_id = (session_id or '').strip()
+    if not session_id:
+        return jsonify({'error': 'Bad Request', 'message': 'session_id gerekli'}), 400
+    sess_dir = LOGS_DIR / session_id
+    try:
+        if sess_dir.exists() and sess_dir.is_dir():
+            shutil.rmtree(sess_dir)
+        return jsonify({'deleted': True, 'session': session_id})
+    except Exception:
+        app.logger.exception('Oturum klasörü silinirken hata')
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 
 @admin_bp.route('/api/chat/logs')

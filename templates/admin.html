@@ -644,6 +644,11 @@
                     <i class="bi bi-search"></i> Oturum Mesajlarını Getir
                   </button>
                 </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <button class="btn btn-outline-secondary w-100" id="openSessionViewerBtn" disabled>
+                    <i class="bi bi-chat-dots"></i> Oturumu Konuşma Görünümünde Aç
+                  </button>
+                </div>
               </div>
               
               <!-- Session Users Info (only shown when session selected) -->
@@ -1218,6 +1223,34 @@
               <i class="bi bi-x-circle"></i> Temizle
             </button>
           </div>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Conversation Modal -->
+  <div class="modal fade" id="sessionConversationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-collection text-primary"></i>
+            Oturum Konuşması
+            <small class="ms-2">ID: <code id="convSessionId"></code></small>
+          </h5>
+          <div class="ms-auto me-2">
+            <button type="button" class="btn btn-outline-danger btn-sm" id="deleteSessionBtn">
+              <i class="bi bi-trash"></i> Oturumu Sil
+            </button>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+        </div>
+        <div class="modal-body">
+          <div id="conversationMeta" class="mb-3 small text-muted"></div>
+          <div id="conversationContainer" class="p-2" style="max-height: 65vh; overflow-y: auto; background: #f8f9fa; border-radius: 8px;"></div>
+        </div>
+        <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
         </div>
       </div>

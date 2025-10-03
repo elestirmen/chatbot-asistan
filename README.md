@@ -1,142 +1,147 @@
 # Kapadokya Üniversitesi Chatbot (Stabil RAG v3.3)
 
-Flask tabanlı, RAG destekli, SSE (Server‑Sent Events) ile akışlı cevaplar veren bir sohbet uygulaması. Sunucu tarafı oturum yönetimi Redis ile yapılır, vektör arama için SentenceTransformers kullanılır ve OpenAI üzerinden yanıt üretilir.
+Flask tabanlı, RAG destekli ve SSE (Server‑Sent Events) ile akışlı cevaplar veren bir sohbet uygulaması. Sunucu tarafı oturum yönetimi Redis ile yapılır; vektör arama için SentenceTransformers, yanıt üretimi için OpenAI kullanılır.
 
-Bu doküman, kodun gerçek davranışıyla uyumludur.
+Bu doküman kurulum, kullanım ve çalışma mantığını kapsayan teknik bir rehberdir.
 
-**Öne Çıkanlar**
-- RAG: Soruya en benzer 3 kayıt çekilir; eşik dinamik hesaplanır.
-- Embedding: Soru + cevap birleştirilerek gömülür (tek metin olarak).
-- Akışlı yanıt: SSE ile parça parça iletilir, frontend anlık günceller.
-- Özetleme: Tarihçe sınırı aşınca geçmiş tek bir [Özet] mesajına indirgenir.
-- Kişilikler: `/huysuz`, `/notr`, `/pozitif` komutlarıyla değiştirilebilir.
+## Özellikler
+- RAG: Soruya en benzer 3 kayıt alınır; eşik dinamik formülle hesaplanır.
+- Embedding: Soru + cevap birleştirilerek tek metin şeklinde gömülür.
+- Akışlı yanıt: SSE ile token bazlı akış, frontend anlık günceller.
+- Özetleme: Geçmiş belirli eşiği aştığında tek bir [Özet] mesajına indirgenir.
+- Kişilikler: Sohbet içinde `/huysuz`, `/notr`, `/pozitif` komutlarıyla değiştirilebilir.
 - Oturum: Redis tabanlı server‑side session.
 
----
-
-**Mimari**
-- Backend: `Flask` + `flask-session` (Redis) + `flask-cors`
-- LLM İstemcisi: `openai` (Chat Completions, model: `gpt-4.1-mini`, stream)
+## Mimari
+- Backend: `Flask` + `Flask-Session` (Redis) + `flask-cors`
+- LLM İstemcisi: `openai` Chat Completions (model: `gpt-4.1-mini`, stream)
 - RAG: `sentence-transformers` + `scikit-learn` (cosine similarity)
-- Önbellek: `embeddings.pkl.bz2` (bz2 sıkıştırmalı JSON), `filelock` ile korumalı
+- Önbellek: `embeddings.pkl.bz2` (bz2 sıkıştırmalı JSON), `filelock` ile kilitli
 - Frontend: Statik HTML/JS (`static/index.html`) + SSE
 
----
-
-**Kurulum**
-- Python 3.10+ önerilir.
-- Gerekli paketler: `requirements.txt`
+## Hızlı Başlangıç (Yerel)
+Önkoşullar:
+- Python 3.10+
+- Çalışan bir Redis örneği (örn. `redis://localhost:6379/0`)
 
 Adımlar:
 1) Sanal ortam ve bağımlılıklar
    - `python -m venv .venv && source .venv/bin/activate`
    - `pip install -r requirements.txt`
-2) Çevre değişkenleri
+2) Çevre değişkenleri (`.env` önerilir)
    - Zorunlu: `OPENAI_API_KEY`, `REDIS_URL`
-   - İsteğe bağlı: `FLASK_SECRET_KEY`, `OPENAI_REQUEST_TIMEOUT`, `OPENAI_MAX_RETRIES`, `MODEL_NAME`, `MODEL_PATH`
-3) Redis
-   - Örnek: `redis://localhost:6379/0` (Docker veya yerel Redis)
-4) Çalıştırma
+   - İsteğe bağlı: `FLASK_SECRET_KEY`, `OPENAI_REQUEST_TIMEOUT`, `OPENAI_MAX_RETRIES`, `MODEL_NAME`, `MODEL_PATH`, `DEFAULT_PERSONALITY`, `ADMIN_PASSWORD`/`APP_PASSWORD`
+3) Çalıştırma (geliştirme)
    - `python app.py`
-   - Tarayıcıdan `http://localhost:5000` adresine gidin.
+   - Tarayıcı: `http://localhost:5000`
 
-Not: Üretimde `gunicorn` kullanabilirsiniz (örn. `gunicorn -w 2 -b 0.0.0.0:5000 app:app`).
+Üretimde `gunicorn` önerilir: `gunicorn -w 2 -k gthread --threads 8 -b 0.0.0.0:5000 app:app`
 
----
+## Sunucuya Kurulum (Nginx + systemd)
+Ubuntu 22.04+ üzerinde otomatik kurulum için `deploy/install_on_server.sh` kullanılabilir.
 
-**Çevre Değişkenleri**
+Önkoşullar:
+- Alan adı DNS’i sunucunuza yönlendirilmeli (A/AAAA kayıtları)
+- 80/443 portları açık olmalı
+- OpenAI API anahtarınız hazır olmalı
+
+Değiştirmeniz gerekenler:
+- `deploy/install_on_server.sh` içinde `DOMAIN` ve `EMAIL` değerlerini güncelleyin.
+- Kodun bulunduğu dizin varsayılan olarak `/opt/chatbot` (script bunu bekler). Gerekirse `APP_DIR` değiştirin.
+
+Kurulum (root ile):
+```bash
+bash deploy/install_on_server.sh
+```
+Script’in yaptığı başlıca işlemler:
+- Redis servisinin etkinleştirilmesi ve güvenli bağlanma (requirepass/bind/protected‑mode)
+- Sanal ortam, `pip install -r requirements.txt` ve `gunicorn` kurulumu
+- `.env` şablonunun `/opt/chatbot/.env` olarak oluşturulması (yoksa)
+- `systemd` servisi: `kun-chatbot.service` (127.0.0.1:5000 üzerinde gunicorn)
+- Nginx site konfigürasyonu (SSE için `/chat` konumunda `proxy_buffering off`)
+- İsteğe bağlı Let’s Encrypt TLS kurulumu (certbot varsa)
+
+Notlar:
+- Script içinde `apt-get` adımları yorum satırına alınmış durumda. Gerekirse açıp paketleri (nginx, certbot, redis, venv) kurabilirsiniz.
+- `.env` içine en az `OPENAI_API_KEY`, `REDIS_URL`, `FLASK_SECRET_KEY` değerlerini girin. `ADMIN_PASSWORD` de eklemeniz tavsiye edilir.
+- Servis logları: `journalctl -u kun-chatbot.service -e` ve Nginx için `/var/log/nginx/`.
+
+Güncelleme / Yeniden başlatma:
+- `sudo systemctl restart kun-chatbot.service`
+- `sudo nginx -t && sudo systemctl reload nginx`
+
+## Çevre Değişkenleri
 - `OPENAI_API_KEY`: OpenAI API anahtarı (zorunlu)
+- `REDIS_URL`: Redis bağlantısı, örn. `redis://[:parola]@127.0.0.1:6379/0` (zorunlu)
+- `FLASK_SECRET_KEY`: Flask gizli anahtar (sağlanmazsa rastgele üretilir)
 - `OPENAI_REQUEST_TIMEOUT`: OpenAI istek zaman aşımı (varsayılan: 30)
 - `OPENAI_MAX_RETRIES`: OpenAI tekrar deneme sayısı (varsayılan: 2)
-- `REDIS_URL`: Redis bağlantı adresi, örn. `redis://localhost:6379/0` (zorunlu)
-- `FLASK_SECRET_KEY`: Flask gizli anahtar (sağlanmazsa rastgele üretilir)
 - `MODEL_NAME`: SentenceTransformer model adı (varsayılan: `intfloat/multilingual-e5-base`)
 - `MODEL_PATH`: Yerel model dizini (varsa `MODEL_NAME` yerine kullanılır)
+- `DEFAULT_PERSONALITY`: Varsayılan kişilik (`huysuz` | `notr` | `pozitif`)
+- `ADMIN_PASSWORD` veya `APP_PASSWORD`: Admin panel giriş şifresi (aksi halde varsayılan `Kun2025` kabul edilir)
+- `AVATAR_MAX_BYTES`: Admin panelden yüklenen avatar dosyaları için maksimum byte
+- `OPENAI_MODEL`: Sadece log metadatası için kullanılır; model çağrısı kodda `gpt-4.1-mini` ile yapılır
 
----
-
-**Çalışma Mantığı**
-- Başlangıç: `app.py` başında embedding önbelleği yüklenir/oluşturulur. İlk çalıştırma uzun sürebilir.
-- RAG Eşiği: `dynamic_threshold(n) = max(0.75, 0.90 - 0.1 * log10(n+1))` (app.py:187). Alt limit 0.75’tir.
-- Üstü örtülü detaylar: 
-  - Sistem mesajları: Genel yönerge + kişilik (app.py:160, app.py:166)
-  - Kişilikler: `ASSISTANT_PERSONALITIES` (app.py:132)
-  - Özetleme: Mesaj sayısı `MAX_HISTORY_MESSAGES` sınırını aşınca tek bir `[Özet]` mesajı eklenir.
-  - SSE: `/chat` uç noktası parçalı veri döner; frontend akış halinde işler.
-
----
-
-**Veri ve Embedding**
-- Veri klasörü: `data/` içindeki `*.json` dosyaları toplanır.
-- Beklenen şema (liste):
-  - `{"question": "...", "answer": "..."}` veya
-  - `{"questions": ["...", "..."], "answer": "..."}`
-- Embedding: Soru(lar) + cevap tek metne birleştirilip gömülür (app.py:202–214). Varsayılan model çok dilli desteklidir.
-- Önbellek: `embeddings.pkl.bz2` içine hem veri hem embedding vektörleri kaydedilir.
-  - Model adı veya veri dosyaları değişirse önbellek otomatik yenilenir.
-
----
-
-**Kişilikler ve Komutlar**
-- Kişilikler: `huysuz`, `notr`, `pozitif`.
-- Sohbet içinde `/<kişilik>` yazarak değiştirin, örn. `/notr`.
-
----
-
-**Uç Noktalar**
+## Kullanım ve Uç Noktalar
 - `GET /` → Arayüz (statik)
-- `POST /chat` → SSE ile akışlı yanıt (girdi: `{message: string}`)
+- `POST /chat` → SSE ile akışlı yanıt (girdi: `{"message": "metin"}`)
 - `GET /chat_history` → Mevcut oturumun geçmiş logları
 - `GET /all_sessions` → Kullanıcının tüm oturumları ve logları
 - `POST /new_chat` → Yeni sohbet başlatır
-- `POST /set_personality` → `{personality: "huysuz|notr|pozitif"}`
-- `POST /feedback` → `{messageIndex: number, feedback: "like"|"dislike"}`
+- `POST /set_personality` → `{"personality": "huysuz|notr|pozitif"}`
+- `POST /feedback` → `{"messageIndex": number, "feedback": "like"|"dislike"}`
 
----
+Admin Panel (`/admin`):
+- Giriş: `POST /admin/api/login` (body: `{ "password": "..." }`)
+- Sistem promptu: `GET/PUT /admin/api/system_prompt`
+- Kişilikler: `GET/POST /admin/api/personalities`, `PUT/DELETE /admin/api/personalities/<slug>`
+- Varsayılan kişilik: `POST /admin/api/personalities/<slug>/default`
+- Avatar yükleme/silme: `POST/DELETE /admin/api/personalities/<slug>/avatar`
+- Veri dosyaları: `GET /admin/api/files`
+- Soru‑cevap maddeleri: `GET/POST /admin/api/items?file=...`, `PUT/DELETE /admin/api/items/<idx>?file=...`
+- Log listeleri/filtreleme: `GET /admin/api/chat/sessions`, `GET /admin/api/chat/users?session=...`, `GET /admin/api/chat/logs?...`
+- Log arama/özetler: `GET /admin/api/chat/search_by_feedback`, `GET /admin/api/chat/global_search`, `GET /admin/api/analytics/summary`, `GET /admin/api/chat/stats_summary`
 
-**Admin Panel (/admin)**
-- Giriş: `GET /admin` (UI), şifre: `ADMIN_PASSWORD` (env) veya `APP_PASSWORD` (env) veya varsayılan `Kun2025`.
-- Veri yönetimi:
-  - `GET /admin/api/files` → `data/*.json` listesini döner
-  - `GET /admin/api/items?file=...`
-  - `POST /admin/api/items?file=...` (auth gerekir)
-  - `PUT /admin/api/items/<idx>?file=...` (auth gerekir)
-  - `DELETE /admin/api/items/<idx>?file=...` (auth gerekir)
-- Log inceleme (auth gerekir):
-  - `GET /admin/api/chat/sessions` → oturum klasörleri
-  - `GET /admin/api/chat/users?session=...` → seçili oturumdaki log dosyaları
-  - `GET /admin/api/chat/logs?session=...&user_id=...&feedback=any|like|dislike|unrated`
-  - `GET /admin/api/chat/search_by_feedback?feedback=like|dislike&limit=200`
+SSE kullanım notu: Proxy arkasında `/chat` konumu için `proxy_buffering off` ve uzun `read_timeout` ayarlanmıştır.
 
-Not: `feedback` uç noktası, istemcinin gönderdiği indeks ile log dizinindeki sırayı eşler. Farklı oturumlar/önceki loglar varsa indeks eşleşmesi değişebilir.
+## RAG ve Nasıl Çalışır
+- Ön‑işleme: Unicode NFC + `lower()` + boşluk sıkıştırma.
+- Gömme: Her kayıt için (sorular birleştirilip + cevap) tek metin üretilir ve vectorize edilir.
+- Benzerlik: Kullanıcı sorusu encode edilir, cosine similarity ile en benzer k kayıt seçilir (k=3).
+- Dinamik eşik: `max(0.75, 0.90 - 0.1 * log10(kelime_sayısı + 1))`; eşik aşılırsa tek bir `[RAG]` sistem mesajı olarak bağlama eklenir.
+- Özetleme: Tarihçe sınırı aşınca önceki konuşmalar kısa bir `[Özet]` sistem mesajına indirgenir.
+- Kişilik: Sistem mesajları her istekte güncellenir; `/huysuz`, `/notr`, `/pozitif` ile değiştirilebilir.
+- Yanıt üretimi: OpenAI Chat Completions akış (stream) ile kullanılır; hatalarda kullanıcıya uygun mesaj ve analitik kaydı yazılır.
 
----
+## Veri ve Embedding
+- Veri klasörü: `data/*.json`
+- Şema:
+  - `{ "question": "...", "answer": "..." }` veya
+  - `{ "questions": ["...", "..."], "answer": "..." }`
+- Önbellek: `embeddings.pkl.bz2` içinde hem veri hem vektörler saklanır.
+- Geçersiz bırakma: Veri dosyaları veya model adı değişirse önbellek otomatik yeniden oluşturulur.
 
-**Güncel Frontend Davranışları**
-- XSS koruması: Metin önce `escapeHTML` ile kaçırılır, ardından `linkify` uygulanır.
-- Linkify düzeltmesi: Cümlenin sonundaki `.` `,` `;` `:` `!` `?` `…` ve fazla `)` link dışına alınır; yanlış tıklama engellenir (static/index.html:1073 civarı).
+## Loglama ve Analitik
+- Sohbet logları: `chat_logs/<session_id>/chat_log_<user_id>.json`
+- Analitik NDJSON: `analytics/events_YYYYMMDD.ndjson` (gün bazlı)
+- Admin API’leri üzerinden oturum/listeler/filtreleme/özetleme yapılabilir.
 
----
+## Güvenlik ve Üretim Notları
+- Çerezler: Üretimde `SESSION_COOKIE_SECURE=True` ve uygun `SameSite` politikası önerilir.
+- CORS: Gerekli origin’lere daraltın; cookie kullanacaksanız `supports_credentials=True` değerlendirin.
+- Nginx: `/chat` için buffer kapalı, SSE’ye uygun timeout’lar ayarlı.
+- Redis: Script, `REDIS_URL` içindeki parolayı tespit edip `requirepass` olarak uygular; bağlama `127.0.0.1` ve `protected-mode yes` kullanılır.
 
-**Güvenlik ve Üretim Notları**
-- Çerezler: Üretimde `SESSION_COOKIE_SECURE=True` ve uygun `SESSION_COOKIE_SAMESITE` ayarlarını kullanın.
-- CORS: Varsayılan açık ayarları ihtiyaçlarınıza göre daraltın; farklı origin ve cookie kullanılacaksa `supports_credentials=True` düşünün.
-- SSE ve proxy: Uzun yanıtlar/proxy arkasında `Cache-Control: no-cache` ve buffer’ı kapatma ayarlarına ihtiyaç duyabilirsiniz (Nginx `X-Accel-Buffering: no`).
-
----
-
-**Sorun Giderme**
-- `OPENAI_API_KEY env değişkeni tanımlı değil!` → `.env` veya ortam değişkeni ekleyin.
+## Sorun Giderme
+- `OPENAI_API_KEY env değişkeni tanımlı değil!` → `.env`/ortam değişkeni ekleyin.
 - `REDIS_URL env değişkeni tanımlı değil!` → Çalışan Redis ve doğru URL gerekli.
-- Model hatası: `gpt-4.1-mini` Chat Completions ile kullanılır. Erişim sorunu yaşıyorsanız proje kodunu değiştirmeden önce hesabınızın model erişimini doğrulayın; gerekirse `gpt-4o-mini` gibi alternatif deneyin.
-- İlk çalıştırma çok yavaş: Embedding önbelleği oluşturuluyor; bir sonraki çalıştırmada hızlanır.
+- Model erişimi: `gpt-4.1-mini` erişiminizi doğrulayın; sorun varsa hesabınızın model erişim durumunu kontrol edin.
+- İlk çalıştırma yavaş: Embedding önbelleği oluşturuluyor; sonraki çalıştırmalarda hızlanır.
+- Servis ayakta mı? → `systemctl status kun-chatbot.service` ve Nginx test: `nginx -t`.
 
----
+## Lisans
+Bu proje ile birlikte gelen `LICENSE` dosyasına bakın.
 
-**Lisans**
-- Bu proje ile birlikte gelen `LICENSE` dosyasına bakın.
-
----
-
-**Teşekkürler**
-- SentenceTransformers ve OpenAI topluluğuna teşekkürler.
+## Teşekkürler
+SentenceTransformers ve OpenAI topluluğuna teşekkürler.
