@@ -63,7 +63,7 @@ Script’in yaptığı başlıca işlemler:
 
 Notlar:
 - Script içinde `apt-get` adımları yorum satırına alınmış durumda. Gerekirse açıp paketleri (nginx, certbot, redis, venv) kurabilirsiniz.
-- `.env` içine en az `OPENAI_API_KEY`, `REDIS_URL`, `FLASK_SECRET_KEY` değerlerini girin. `ADMIN_PASSWORD` de eklemeniz tavsiye edilir.
+- `.env` içine en az `OPENAI_API_KEY`, `REDIS_URL`, `FLASK_SECRET_KEY`, `ADMIN_PASSWORD` değerlerini girin.
 - Servis logları: `journalctl -u kun-chatbot.service -e` ve Nginx için `/var/log/nginx/`.
 
 Güncelleme / Yeniden başlatma:
@@ -79,9 +79,10 @@ Güncelleme / Yeniden başlatma:
 - `MODEL_NAME`: SentenceTransformer model adı (varsayılan: `intfloat/multilingual-e5-base`)
 - `MODEL_PATH`: Yerel model dizini (varsa `MODEL_NAME` yerine kullanılır)
 - `DEFAULT_PERSONALITY`: Varsayılan kişilik (`huysuz` | `notr` | `pozitif`)
-- `ADMIN_PASSWORD` veya `APP_PASSWORD`: Admin panel giriş şifresi (aksi halde varsayılan `Kun2025` kabul edilir)
+- `ADMIN_PASSWORD` veya `APP_PASSWORD`: Admin panel giriş şifresi (zorunlu; biri tanımlanmazsa uygulama başlatılmaz)
 - `AVATAR_MAX_BYTES`: Admin panelden yüklenen avatar dosyaları için maksimum byte
-- `OPENAI_MODEL`: Sadece log metadatası için kullanılır; model çağrısı kodda `gpt-4.1-mini` ile yapılır
+- `OPENAI_MODEL`: OpenAI chat completion modeli (varsayılan: `gpt-4.1-mini`)
+- `OPENAI_SUMMARY_MODEL`: Opsiyonel; sohbet özetleri için farklı model kullanmak isterseniz belirtin (varsayılan: `OPENAI_MODEL`)
 
 ## Kullanım ve Uç Noktalar
 - `GET /` → Arayüz (statik)

@@ -63,6 +63,15 @@ try:
     OPENAI_MAX_RETRIES = int(os.getenv("OPENAI_MAX_RETRIES", "2"))
 except ValueError:
     OPENAI_MAX_RETRIES = 2
+
+OPENAI_COMPLETION_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+OPENAI_SUMMARY_MODEL = os.getenv("OPENAI_SUMMARY_MODEL", OPENAI_COMPLETION_MODEL)
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+ADMIN_AUTH_PASSWORD = ADMIN_PASSWORD or APP_PASSWORD
+if not ADMIN_AUTH_PASSWORD:
+    raise RuntimeError("ADMIN_PASSWORD veya APP_PASSWORD env değişkenlerinden biri tanımlı olmalıdır")
 client = OpenAI(
     api_key=OPENAI_API_KEY,
     timeout=OPENAI_TIMEOUT,
@@ -824,6 +833,7 @@ def chat():
         # Turn timing and indexing
         _turn_started_at = time.perf_counter()
         turn_index = int(session.get("turn_index", 0))
+        word_count = len(message.split())
 
         if message.startswith("/"):
             cmd = message[1:].strip().lower()
@@ -842,18 +852,34 @@ def chat():
                 {"role": "system", "content": "Lütfen aşağıdaki sohbeti 2-3 cümleyle özetle:"},
                 *summary_source
             ]
-            summary_resp = client.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=summary_prompt
-            ).choices[0].message.content
-            session["messages"] = (
-                session["messages"][:SYSTEM_PREFIX_LENGTH]
-                + [{"role": "system", "content": "[Özet] " + summary_resp}]
-                + history[-MAX_HISTORY_MESSAGES:]
-            )
-            session["messages"] = strip_old_summary(session["messages"])
-            session["messages"] = trim_history(session["messages"])
-            session.modified = True
+            summary_resp: Optional[str] = None
+            try:
+                summary_completion = client.chat.completions.create(
+                    model=OPENAI_SUMMARY_MODEL,
+                    messages=summary_prompt,
+                )
+                summary_resp = summary_completion.choices[0].message.content if summary_completion.choices else None
+            except (APITimeoutError, RateLimitError) as err:
+                app.logger.warning("Sohbet özeti alınamadı: %s", err)
+            except APIError as err:
+                app.logger.warning("Sohbet özeti oluşturulurken API hatası: %s", err)
+            except Exception:
+                app.logger.exception("Sohbet özeti oluşturulurken beklenmeyen hata")
+
+            if summary_resp:
+                summary_text = summary_resp.strip()
+            else:
+                summary_text = ""
+
+            if summary_text:
+                session["messages"] = (
+                    session["messages"][:SYSTEM_PREFIX_LENGTH]
+                    + [{"role": "system", "content": "[Özet] " + summary_text}]
+                    + history[-MAX_HISTORY_MESSAGES:]
+                )
+                session["messages"] = strip_old_summary(session["messages"])
+                session["messages"] = trim_history(session["messages"])
+                session.modified = True
 
         try:
             top_sims = find_most_similar(message, k=3)
@@ -862,27 +888,31 @@ def chat():
             top_sims = []
         rag_hits: List[Dict[str, Any]] = []
         rag_applied = False
-        if top_sims and top_sims[0]["similarity"] >= dynamic_threshold(len(message.split())):
-            rag_hits = [
+        similarity_threshold = dynamic_threshold(word_count)
+        if top_sims:
+            filtered_hits = [
                 {
                     "question": sim_item["question"],
                     "answer": sim_item["answer"],
                     "similarity": sim_item["similarity"],
                 }
                 for sim_item in top_sims
+                if float(sim_item.get("similarity", 0.0)) >= similarity_threshold
             ]
-            rag_applied = True
-            rag_parts = []
-            for i, sim_item in enumerate(top_sims):
-                rag_parts.append(
-                    f"Benzer Soru {i+1} (Benzerlik: {sim_item['similarity']:.3f}): {sim_item['question']}\n"
-                    f"Örnek Cevap {i+1}: {sim_item['answer']}"
+            if filtered_hits:
+                rag_hits = filtered_hits
+                rag_applied = True
+                rag_parts = []
+                for i, sim_item in enumerate(rag_hits):
+                    rag_parts.append(
+                        f"Benzer Soru {i+1} (Benzerlik: {sim_item['similarity']:.3f}): {sim_item['question']}\n"
+                        f"Örnek Cevap {i+1}: {sim_item['answer']}"
+                    )
+                rag_content = (
+                    "[RAG] İşte soruna benzeyen bazı önceki soru-cevap çiftleri:\n\n"
+                    + "\n\n".join(rag_parts)
                 )
-            rag_content = (
-                "[RAG] İşte soruna benzeyen bazı önceki soru-cevap çiftleri:\n\n"
-                + "\n\n".join(rag_parts)
-            )
-            session["messages"].append({"role": "system", "content": rag_content})
+                session["messages"].append({"role": "system", "content": rag_content})
 
         session["messages"].append({"role": "user", "content": message})
         if len(session["messages"]) > MAX_CONTEXT_MESSAGES:
@@ -912,7 +942,7 @@ def chat():
             collected: list[str] = []
             try:
                 completion = client.chat.completions.create(
-                    model="gpt-4.1-mini",
+                    model=OPENAI_COMPLETION_MODEL,
                     messages=session["messages"],
                     temperature=0.75,
                     top_p=0.9,
@@ -1248,8 +1278,7 @@ def admin_auth_status():
 @admin_bp.route('/api/login', methods=['POST'])
 def admin_login_route():
     payload = request.get_json(silent=True) or {}
-    expected = os.getenv('ADMIN_PASSWORD') or os.getenv('APP_PASSWORD') or 'Kun2025'
-    if payload.get('password') == expected:
+    if payload.get('password') == ADMIN_AUTH_PASSWORD:
         session['admin_authenticated'] = True
         session.modified = True
         return jsonify({'authenticated': True})
@@ -1650,7 +1679,7 @@ def _make_event(event_type: str, session_id: Optional[str], user_id: Optional[st
         "user_id": user_id,
         "season": _season_from_dt(now),
         "app_version": APP_VERSION,
-        "model": os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+        "model": OPENAI_COMPLETION_MODEL,
     }
     base.update(fields)
     return base

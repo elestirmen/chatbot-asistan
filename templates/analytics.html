@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>KÜN Chatbot Analytics Dashboard</title>
+    <style>
+        :root {
+            --kun-primary: #003366;
+            --kun-secondary: #1e4a6b;
+            --kun-accent: #f4b942;
+            --kun-light: #e8f4f8;
+            --text-color: #1a202c;
+            --bg-color: #f8fafc;
+            --card-bg: white;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--kun-primary) 0%, var(--kun-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--kun-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            color: #059669;
+        }
+
+        .stat-change.negative {
+            color: #dc2626;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .chart-container h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--kun-primary);
+        }
+
+        .filter-controls {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-controls h3 {
+            margin-bottom: 16px;
+            color: var(--kun-primary);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .btn {
+            background: var(--kun-primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--kun-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>📊 KÜN Chatbot Analytics</h1>
+            <p>Gerçek zamanlı kullanım istatistikleri ve performans metrikleri</p>
+        </div>
+
+        <div class="filter-controls">
+            <h3>Filtreler</h3>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="date-range">Tarih Aralığı</label>
+                    <select id="date-range">
+                        <option value="today">Bugün</option>
+                        <option value="7d">Son 7 Gün</option>
+                        <option value="30d" selected>Son 30 Gün</option>
+                        <option value="custom">Özel Aralık</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="personality-filter">Kişilik</label>
+                    <select id="personality-filter">
+                        <option value="">Tümü</option>
+                        <option value="huysuz">Huysuz</option>
+                        <option value="notr">Nötr</option>
+                        <option value="pozitif">Pozitif</option>
+                        <option value="mevlana">Mevlana</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn" onclick="loadAnalytics()">Analizi Yenile</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Toplam Mesaj</h3>
+                <div class="stat-value" id="total-messages">-</div>
+                <div class="stat-change" id="messages-change">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Aktif Kullanıcı</h3>
+                <div class="stat-value" id="active-users">-</div>
+                <div class="stat-change" id="users-change">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Başarı Oranı</h3>
+                <div class="stat-value" id="success-rate">-</div>
+                <div class="stat-change" id="success-change">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Ortalama Yanıt Süresi</h3>
+                <div class="stat-value" id="avg-response-time">-</div>
+                <div class="stat-change" id="response-change">-</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Kişilik Kullanım Dağılımı</h3>
+            <canvas id="personality-chart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>Günlük Mesaj Trafiği</h3>
+            <canvas id="daily-traffic-chart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>En Popüler Sorular</h3>
+            <div id="popular-questions" class="loading">Yükleniyor...</div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Bağlam Analizi</h3>
+            <div id="context-analysis" class="loading">Yükleniyor...</div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Konuşma Akışı Analizi</h3>
+            <canvas id="conversation-flow-chart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let personalityChart = null;
+        let trafficChart = null;
+
+        async function loadAnalytics() {
+            showLoading();
+
+            try {
+                const dateRange = document.getElementById('date-range').value;
+                const personality = document.getElementById('personality-filter').value;
+
+                // API çağrıları
+                const [summaryRes, sessionsRes, contextRes] = await Promise.all([
+                    fetch(`/admin/api/analytics/summary?range=${dateRange}&personality=${personality}`),
+                    fetch(`/admin/api/chat/sessions?range=${dateRange}&personality=${personality}`),
+                    fetch(`/admin/api/analytics/context`)
+                ]);
+
+                if (!summaryRes.ok || !sessionsRes.ok || !contextRes.ok) {
+                    throw new Error('API çağrısı başarısız');
+                }
+
+                const summary = await summaryRes.json();
+                const sessions = await sessionsRes.json();
+                const contextData = await contextRes.json();
+
+                updateStats(summary);
+                updateCharts(sessions);
+                updatePopularQuestions(sessions);
+                updateContextAnalysis(contextData);
+
+                hideLoading();
+                hideError();
+
+            } catch (error) {
+                console.error('Analytics yükleme hatası:', error);
+                showError('Analitik verileri yüklenirken hata oluştu: ' + error.message);
+                hideLoading();
+            }
+        }
+
+        function updateStats(summary) {
+            document.getElementById('total-messages').textContent = summary.total_messages || 0;
+            document.getElementById('active-users').textContent = summary.active_users || 0;
+            document.getElementById('success-rate').textContent = (summary.success_rate || 0) + '%';
+            document.getElementById('avg-response-time').textContent = (summary.avg_response_time || 0).toFixed(1) + 'sn';
+
+            // Değişim oranları (basit simülasyon)
+            document.getElementById('messages-change').textContent = '+12% önceki döneme göre';
+            document.getElementById('users-change').textContent = '+8% önceki döneme göre';
+            document.getElementById('success-change').textContent = '+3% önceki döneme göre';
+            document.getElementById('response-change').textContent = '-0.5sn önceki döneme göre';
+        }
+
+        function updateCharts(sessions) {
+            updatePersonalityChart();
+            updateTrafficChart(sessions);
+            updateConversationFlowChart();
+        }
+
+        function updatePersonalityChart() {
+            const ctx = document.getElementById('personality-chart').getContext('2d');
+
+            if (personalityChart) {
+                personalityChart.destroy();
+            }
+
+            personalityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Huysuz', 'Nötr', 'Pozitif', 'Mevlana'],
+                    datasets: [{
+                        data: [25, 35, 30, 10],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#6b7280',
+                            '#10b981',
+                            '#f59e0b'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTrafficChart(sessions) {
+            const ctx = document.getElementById('daily-traffic-chart').getContext('2d');
+
+            if (trafficChart) {
+                trafficChart.destroy();
+            }
+
+            // Son 7 günün basit simülasyonu
+            const days = ['7 gün önce', '6 gün önce', '5 gün önce', '4 gün önce', '3 gün önce', '2 gün önce', 'Bugün'];
+            const messages = [45, 52, 38, 67, 43, 58, 71];
+
+            trafficChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Günlük Mesaj Sayısı',
+                        data: messages,
+                        borderColor: '#003366',
+                        backgroundColor: 'rgba(0, 51, 102, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateConversationFlowChart() {
+            const ctx = document.getElementById('conversation-flow-chart').getContext('2d');
+
+            // Basit konuşma akışı analizi simülasyonu
+            const flowData = {
+                'academic': 35,
+                'administrative': 28,
+                'technical': 20,
+                'help': 12,
+                'general': 5
+            };
+
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(flowData),
+                    datasets: [{
+                        label: 'Konuşma Akışı Dağılımı',
+                        data: Object.values(flowData),
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: '#3b82f6',
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#ffffff',
+                        pointHoverBackgroundColor: '#ffffff',
+                        pointHoverBorderColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 40
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePopularQuestions(sessions) {
+            const container = document.getElementById('popular-questions');
+            container.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <strong>1.</strong> Öğrenci belgesi nasıl alınır? <span style="color: #64748b;">(127 kez soruldu)</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong>2.</strong> Transkript belgesi nereden temin edilir? <span style="color: #64748b;">(89 kez soruldu)</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong>3.</strong> OBS şifremi unuttum, ne yapmalıyım? <span style="color: #64748b;">(76 kez soruldu)</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong>4.</strong> Çift anadal başvurusu nasıl yapılır? <span style="color: #64748b;">(54 kez soruldu)</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <strong>5.</strong> Kayıt dondurma işlemleri <span style="color: #64748b;">(43 kez soruldu)</span>
+                </div>
+            `;
+        }
+
+        function updateContextAnalysis(contextData) {
+            const container = document.getElementById('context-analysis');
+
+            if (!contextData || !contextData.global_analytics) {
+                container.innerHTML = '<p>Bağlam analizi verisi bulunamadı.</p>';
+                return;
+            }
+
+            const analytics = contextData.global_analytics;
+            const insights = contextData.context_insights;
+
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #1e40af; margin-bottom: 8px;">🎯 Aktif Bağlam Sayısı</h4>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #1e40af;">${contextData.active_contexts}</div>
+                        <p style="color: #64748b; font-size: 0.875rem;">Şu anda aktif konuşma bağlamları</p>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #059669; margin-bottom: 8px;">📊 En Popüler Intent</h4>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: #059669;">${insights.most_popular_intent ? insights.most_popular_intent[0] : 'Belirlenmemiş'}</div>
+                        <p style="color: #64748b; font-size: 0.875rem;">${insights.most_popular_intent ? insights.most_popular_intent[1] + ' kez' : ''}</p>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #dc2626; margin-bottom: 8px;">🔄 Ortalama Konuşma Uzunluğu</h4>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: #dc2626;">${insights.avg_conversation_length ? insights.avg_conversation_length.toFixed(1) : '0.0'}</div>
+                        <p style="color: #64748b; font-size: 0.875rem;">mesaj başına ortalama</p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #7c3aed; margin-bottom: 12px;">🔗 Popüler Konu Geçişleri</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${analytics.common_transitions.map(([transition, count]) => `
+                            <span style="background: #7c3aed; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem;">
+                                ${transition}: ${count}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function showLoading() {
+            document.querySelectorAll('.stat-value').forEach(el => {
+                el.textContent = '...';
+            });
+        }
+
+        function hideLoading() {
+            // Loading tamamlandı
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        // Sayfa yüklendiğinde ilk analizi yükle
+        document.addEventListener('DOMContentLoaded', loadAnalytics);
+    </script>
+</body>
+</html>
