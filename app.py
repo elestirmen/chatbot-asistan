@@ -23,8 +23,10 @@ import os
 import re
 import secrets
 import unicodedata
+import threading
 from datetime import datetime, timedelta
 import shutil
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -51,7 +53,16 @@ from werkzeug.utils import secure_filename
 # Ortam Değişkenleri ve OpenAI Client
 # -----------------------------------------------------------------------------
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+def _getenv_strip(key: str, default: Optional[str] = None) -> Optional[str]:
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.strip()
+
+
+OPENAI_API_KEY = _getenv_strip("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY env değişkeni tanımlı değil!")
 try:
@@ -67,11 +78,14 @@ except ValueError:
 OPENAI_COMPLETION_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 OPENAI_SUMMARY_MODEL = os.getenv("OPENAI_SUMMARY_MODEL", OPENAI_COMPLETION_MODEL)
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-APP_PASSWORD = os.getenv("APP_PASSWORD")
+ADMIN_PASSWORD = _getenv_strip("ADMIN_PASSWORD")
+APP_PASSWORD = _getenv_strip("APP_PASSWORD")
 ADMIN_AUTH_PASSWORD = ADMIN_PASSWORD or APP_PASSWORD
+EDITOR_PASSWORD = _getenv_strip("EDITOR_PASSWORD") or _getenv_strip("DUZENLEYICI_PASSWORD")
 if not ADMIN_AUTH_PASSWORD:
     raise RuntimeError("ADMIN_PASSWORD veya APP_PASSWORD env değişkenlerinden biri tanımlı olmalıdır")
+ROLE_ADMIN = "admin"
+ROLE_EDITOR = "editor"
 client = OpenAI(
     api_key=OPENAI_API_KEY,
     timeout=OPENAI_TIMEOUT,
@@ -688,6 +702,16 @@ class EmbeddingManager:
         mtimes = [fp.stat().st_mtime for fp in self.data_dir.glob("*.json")]
         return max(mtimes) if mtimes else 0.0
 
+    def rebuild_cache(self) -> Tuple[List[Dict[str, Any]], np.ndarray]:
+        with self.lock:
+            print("[Embedding] manuel rebuild tetiklendi")
+            data = self._load_data()
+            embeddings = self._create_embeddings(data)
+            self._save_cache(data, embeddings)
+            self._memory_cache = (data, embeddings)
+            self._memory_cache_mtime = self._dir_modified_time()
+            return self._memory_cache
+
 embedding_manager = EmbeddingManager(DATA_DIR, EMBEDDING_CACHE, MODEL)
 embedding_manager.load_or_create()
 
@@ -1186,6 +1210,22 @@ def feedback():
 admin_bp = Blueprint("admin", __name__)
 
 
+def _current_admin_role() -> Optional[str]:
+    return session.get("admin_role")
+
+
+def _has_qna_access() -> bool:
+    return _current_admin_role() in {ROLE_ADMIN, ROLE_EDITOR}
+
+
+def _is_admin() -> bool:
+    return _current_admin_role() == ROLE_ADMIN
+
+
+def _unauthorized(message: str = "Bu işlem için giriş yapmalısınız."):
+    return jsonify({'error': 'Unauthorized', 'message': message}), 401
+
+
 def _list_json_files() -> List[str]:
     return sorted(f.name for f in DATA_DIR.glob('*.json'))
 
@@ -1272,31 +1312,47 @@ def admin_files_route():
 
 @admin_bp.route('/api/auth_status')
 def admin_auth_status():
-    return jsonify({'authenticated': bool(session.get('admin_authenticated', False))})
+    role = _current_admin_role()
+    return jsonify({
+        'authenticated': role in {ROLE_ADMIN, ROLE_EDITOR},
+        'role': role,
+    })
 
 
 @admin_bp.route('/api/login', methods=['POST'])
 def admin_login_route():
     payload = request.get_json(silent=True) or {}
-    if payload.get('password') == ADMIN_AUTH_PASSWORD:
+    password = str(payload.get('password') or '').strip()
+    role: Optional[str] = None
+    if password == ADMIN_AUTH_PASSWORD:
+        role = ROLE_ADMIN
+    elif EDITOR_PASSWORD and password == EDITOR_PASSWORD:
+        role = ROLE_EDITOR
+
+    if role:
+        session['admin_role'] = role
         session['admin_authenticated'] = True
         session.modified = True
-        return jsonify({'authenticated': True})
+        return jsonify({'authenticated': True, 'role': role})
+
+    session.pop('admin_role', None)
     session.pop('admin_authenticated', None)
+    session.modified = True
     return jsonify({'authenticated': False, 'message': 'Şifre yanlış.'}), 401
 
 
 @admin_bp.route('/api/logout', methods=['POST'])
 def admin_logout_route():
     session.pop('admin_authenticated', None)
+    session.pop('admin_role', None)
     session.modified = True
     return jsonify({'logged_out': True})
 
 
 @admin_bp.route('/api/system_prompt', methods=['GET', 'PUT'])
 def admin_system_prompt():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    if not _is_admin():
+        return _unauthorized()
 
     if request.method == 'GET':
         return jsonify(system_prompt_manager.to_payload())
@@ -1318,13 +1374,14 @@ def admin_system_prompt():
 @admin_bp.route('/api/personalities', methods=['GET', 'POST'])
 def admin_personality_collection():
     global DEFAULT_PERSONALITY
-    include_prompt = bool(session.get('admin_authenticated'))
+    if not _is_admin():
+        return _unauthorized()
+    include_prompt = True
     if request.method == 'GET':
         items = [_serialize_personality(p, include_prompt=include_prompt) for p in personality_manager.all()]
         return jsonify({'items': items, 'default': personality_manager.default})
 
-    if not include_prompt:
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    # Only admins can modify personalities
 
     payload = request.get_json(force=True) or {}
     set_default = bool(payload.pop('set_default', False))
@@ -1351,9 +1408,9 @@ def admin_personality_collection():
 @admin_bp.route('/api/personalities/<slug>', methods=['PUT', 'DELETE'])
 def admin_personality_item(slug: str):
     global DEFAULT_PERSONALITY
-    include_prompt = bool(session.get('admin_authenticated'))
-    if not include_prompt:
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    if not _is_admin():
+        return _unauthorized()
+    include_prompt = True
 
     slug = str(slug or '').strip().lower()
     if request.method == 'DELETE':
@@ -1399,8 +1456,8 @@ def admin_personality_item(slug: str):
 
 @admin_bp.route('/api/personalities/<slug>/avatar', methods=['POST', 'DELETE'])
 def admin_personality_avatar(slug: str):
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    if not _is_admin():
+        return _unauthorized()
 
     slug = str(slug or '').strip().lower()
     entry = personality_manager.get(slug)
@@ -1472,8 +1529,8 @@ def admin_personality_avatar(slug: str):
 @admin_bp.route('/api/personalities/<slug>/default', methods=['POST'])
 def admin_personality_set_default(slug: str):
     global DEFAULT_PERSONALITY
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    if not _is_admin():
+        return _unauthorized()
     slug = str(slug or '').strip().lower()
     try:
         personality_manager.set_default(slug)
@@ -1493,8 +1550,8 @@ def admin_items_collection_route():
     fname = request.args.get('file', DEFAULT_QA_FILE)
     if request.method == 'GET':
         return jsonify(_load_data(fname))
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    if not _has_qna_access():
+        return _unauthorized()
     payload = request.get_json(force=True)
     if 'questions' not in payload or 'answer' not in payload:
         return jsonify({'error': 'Bad Request', 'message': 'Eksik "questions" veya "answer" alanı.'}), 400
@@ -1509,8 +1566,8 @@ def admin_items_collection_route():
 
 @admin_bp.route('/api/items/<int:idx>', methods=['PUT', 'DELETE'])
 def admin_item_singular_route(idx: int):
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized', 'message': 'Bu işlem için giriş yapmalısınız.'}), 401
+    if not _has_qna_access():
+        return _unauthorized()
     fname = request.args.get('file', DEFAULT_QA_FILE)
     data = _load_data(fname)
     if not (0 <= idx < len(data)):
@@ -1687,8 +1744,8 @@ def _make_event(event_type: str, session_id: Optional[str], user_id: Optional[st
 
 @admin_bp.route('/api/chat/logs_advanced')
 def admin_api_chat_logs_advanced():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     sess = request.args.get('session', '')
     user_id = request.args.get('user_id', '')
     fb = (request.args.get('feedback') or 'any').lower()
@@ -1838,8 +1895,8 @@ def _parse_iso_z(s: Optional[str]) -> Optional[datetime]:
 
 @admin_bp.route('/api/analytics/summary')
 def admin_api_analytics_summary():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
 
     from_s = request.args.get('from')
     to_s = request.args.get('to')
@@ -1936,8 +1993,8 @@ def admin_api_analytics_summary():
 @admin_bp.route('/api/chat/stats_summary')
 def admin_api_chat_stats_summary():
     """Get statistics directly from chat log files for accurate counts"""
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     
     stats = {
         'total_messages': 0,
@@ -2038,15 +2095,15 @@ def admin_api_chat_stats_summary():
 
 @admin_bp.route('/api/chat/sessions')
 def admin_api_chat_sessions():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     return jsonify(_list_sessions())
 
 
 @admin_bp.route('/api/chat/users')
 def admin_api_chat_users():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     sess = request.args.get('session', '')
     return jsonify(_list_user_logs(sess))
 
@@ -2056,8 +2113,8 @@ def admin_api_chat_session_messages():
     """Return all messages for a session (optionally for a specific user),
     ordered chronologically from oldest to newest.
     """
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     sess = (request.args.get('session') or '').strip()
     user_id = (request.args.get('user_id') or '').strip()
     if not sess:
@@ -2096,8 +2153,8 @@ def admin_api_chat_session_messages():
 @admin_bp.route('/api/chat/log', methods=['DELETE'])
 def admin_api_chat_delete_user_log():
     """Delete a single user's log file for a given session."""
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     sess = (request.args.get('session') or '').strip()
     user_id = (request.args.get('user_id') or '').strip()
     if not sess or not user_id:
@@ -2117,8 +2174,8 @@ def admin_api_chat_delete_user_log():
 @admin_bp.route('/api/chat/sessions/<session_id>', methods=['DELETE'])
 def admin_api_chat_delete_session(session_id: str):
     """Delete an entire session directory and all logs within it."""
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     session_id = (session_id or '').strip()
     if not session_id:
         return jsonify({'error': 'Bad Request', 'message': 'session_id gerekli'}), 400
@@ -2134,8 +2191,8 @@ def admin_api_chat_delete_session(session_id: str):
 
 @admin_bp.route('/api/chat/logs')
 def admin_api_chat_logs():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     sess = request.args.get('session', '')
     user_id = request.args.get('user_id', '')
     fb = (request.args.get('feedback') or 'any').lower()
@@ -2158,8 +2215,8 @@ def admin_api_chat_logs():
 
 @admin_bp.route('/api/chat/search_by_feedback')
 def admin_api_chat_search_by_feedback():
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     fb = (request.args.get('feedback') or 'like').lower()
     season_filter = (request.args.get('season') or '').strip()
     sort_order = request.args.get('sort', 'desc').lower()
@@ -2209,8 +2266,8 @@ def admin_api_chat_search_by_feedback():
 @admin_bp.route('/api/chat/global_search')
 def admin_api_chat_global_search():
     """Global search across all chat logs with enhanced filtering"""
-    if not session.get('admin_authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin():
+        return _unauthorized()
     
     q = (request.args.get('q') or '').strip().lower()
     season_filter = (request.args.get('season') or '').strip()
@@ -2363,8 +2420,58 @@ def admin_api_chat_global_search():
 
 # Register blueprint
 app.register_blueprint(admin_bp, url_prefix='/admin')
+
+
+def _seconds_until(hour: int, minute: int) -> float:
+    now = datetime.now()
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return (target - now).total_seconds()
+
+
+def _restart_process() -> None:
+    python = sys.executable
+    args = [python] + sys.argv
+    print("[Maintenance] Uygulama yeniden başlatılıyor…", flush=True)
+    os.execv(python, args)
+
+
+def _schedule_nightly_restart(hour: int = 3, minute: int = 0) -> None:
+    flag = os.getenv("ENABLE_NIGHTLY_RESTART", "1").strip().lower()
+    if flag in {"0", "false", "off", "no"}:
+        print("[Maintenance] Nightly restart devre dışı bırakıldı.", flush=True)
+        return
+
+    def runner() -> None:
+        while True:
+            seconds = _seconds_until(hour, minute)
+            print(
+                f"[Maintenance] Sonraki nightly bakım {seconds / 3600:.2f} saat sonra.",
+                flush=True,
+            )
+            try:
+                time.sleep(seconds)
+            except Exception as exc:
+                print("[Maintenance] Zamanlayıcı bekleme hatası:", exc, flush=True)
+                continue
+            try:
+                print("[Maintenance] Embedding cache yeniden oluşturuluyor…", flush=True)
+                embedding_manager.rebuild_cache()
+                print("[Maintenance] Embedding cache güncellendi.", flush=True)
+            except Exception as exc:
+                print("[Maintenance] Embedding rebuild başarısız:", exc, flush=True)
+                continue
+            _restart_process()
+
+    threading.Thread(
+        target=runner,
+        daemon=True,
+        name="NightlyRestartScheduler",
+    ).start()
 # -----------------------------------------------------------------------------
 # Uygulamayı başlatma
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
+    _schedule_nightly_restart()
     app.run(host="0.0.0.0", port=5000, debug=False)

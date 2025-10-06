@@ -33,9 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const messageDetailModal = messageDetailModalEl ? new bootstrap.Modal(messageDetailModalEl) : null;
   const sessionConversationModal = sessionConversationModalEl ? new bootstrap.Modal(sessionConversationModalEl) : null;
   const $fileSel = $('#fileSelect');
+  const qaTabEl = document.getElementById('qa-tab');
+  const qaPaneEl = document.getElementById('qa-pane');
+  const logsTabEl = document.getElementById('logs-tab');
+  const logsPaneEl = document.getElementById('logs-pane');
+  const personalitiesTabEl = document.getElementById('personalities-tab');
+  const personalitiesPaneEl = document.getElementById('personalities-pane');
   let qaTable;
+  const ROLE_ADMIN = 'admin';
+  const ROLE_EDITOR = 'editor';
+  let adminRole = null;
   let isAuthenticated = false;
-  let lastAuthState = null;
+  let lastKnownRole = null;
   let currentSessionForModal = null;
 
   // Personality management state
@@ -73,6 +82,50 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentAvatarPreviewUrl = null;
   let existingAvatarRelative = null;
   const personalityEmojiInput = null;
+
+  function hasQaAccess() {
+    return adminRole === ROLE_ADMIN || adminRole === ROLE_EDITOR;
+  }
+
+  function hasAdminAccess() {
+    return adminRole === ROLE_ADMIN;
+  }
+
+  function requireAdmin(message = 'Bu işlem için admin yetkisi gerekir.') {
+    if (hasAdminAccess()) return true;
+    if (hasQaAccess()) {
+      alert(message);
+    } else {
+      loginModal?.show();
+    }
+    return false;
+  }
+
+  function toggleAdminTabs(visible) {
+    const entries = [
+      { tab: logsTabEl, pane: logsPaneEl },
+      { tab: personalitiesTabEl, pane: personalitiesPaneEl },
+    ];
+
+    entries.forEach(({ tab, pane }) => {
+      if (!tab || !pane) return;
+      tab.classList.toggle('d-none', !visible);
+      if (tab.parentElement) {
+        tab.parentElement.classList.toggle('d-none', !visible);
+      }
+      if (!visible) {
+        if (tab.classList.contains('active')) {
+          if (qaPaneEl) {
+            qaPaneEl.classList.add('show', 'active');
+          }
+          if (qaTabEl) {
+            bootstrap.Tab.getOrCreateInstance(qaTabEl).show();
+          }
+        }
+        pane.classList.remove('show', 'active');
+      }
+    });
+  }
   const themePresets = {
     angry: { badge_color: 'danger', badge_icon: 'emoji-frown' },
     neutral: { badge_color: 'secondary', badge_icon: 'emoji-neutral' },
@@ -215,6 +268,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPersonalities() {
     if (!personalitiesTableBody) return;
     personalitiesTableBody.innerHTML = '';
+
+    if (!hasAdminAccess()) {
+      if (personalitiesErrorEl) {
+        const message = hasQaAccess()
+          ? 'Bu bölüme yalnızca admin erişebilir.'
+          : 'Giriş yaptıktan sonra düzenleyebilirsiniz.';
+        personalitiesErrorEl.textContent = message;
+        personalitiesErrorEl.classList.remove('d-none');
+      }
+      personalitiesTableWrapper?.classList.add('d-none');
+      personalitiesEmptyState?.classList.add('d-none');
+      return;
+    }
     if (!Array.isArray(personalityList) || personalityList.length === 0) {
       personalitiesTableWrapper?.classList.add('d-none');
       personalitiesEmptyState?.classList.remove('d-none');
@@ -240,20 +306,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const isDefault = slug === defaultPersonalityId;
       const defaultHtml = isDefault
         ? '<span class="badge bg-primary"><i class="bi bi-star-fill"></i> Varsayılan</span>'
-        : (isAuthenticated
-            ? `<button type="button" class="btn btn-outline-primary btn-sm set-default-personality" data-personality="${slug}"><i class="bi bi-star"></i> Varsayılan Yap</button>`
-            : '<span class="text-muted small">-</span>');
+        : `<button type="button" class="btn btn-outline-primary btn-sm set-default-personality" data-personality="${slug}"><i class="bi bi-star"></i> Varsayılan Yap</button>`;
       const themeLabel = esc(themeNameMap[item.theme] || item.theme || '-');
       const avatarResolved = item.avatar_resolved || resolveAvatarUrl(item.avatar_url);
       const avatarHtml = avatarResolved
         ? `<img src="${esc(avatarResolved)}" alt="${displayName} avatar" class="rounded-circle border" style="width:48px;height:48px;object-fit:cover;">`
         : '<span class="text-muted small">-</span>';
-      const actionsHtml = isAuthenticated
-        ? `<div class="btn-group btn-group-sm" role="group">
-             <button type="button" class="btn btn-warning edit-personality" data-personality="${slug}"><i class="bi bi-pencil"></i></button>
-             <button type="button" class="btn btn-outline-danger delete-personality" data-personality="${slug}"><i class="bi bi-trash"></i></button>
-           </div>`
-        : '<small class="text-muted">Giriş gerekli</small>';
+      const actionsHtml = `<div class="btn-group btn-group-sm" role="group">
+           <button type="button" class="btn btn-warning edit-personality" data-personality="${slug}"><i class="bi bi-pencil"></i></button>
+           <button type="button" class="btn btn-outline-danger delete-personality" data-personality="${slug}"><i class="bi bi-trash"></i></button>
+         </div>`;
 
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -304,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openPersonalityModal(slug = null) {
     if (!personalityModal || !personalityForm) return;
+    if (!requireAdmin()) return;
     resetPersonalityForm();
     editingPersonalityId = slug || null;
     const isEdit = Boolean(editingPersonalityId);
@@ -365,10 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (!isAuthenticated) {
-      loginModal?.show();
-      return;
-    }
+    if (!requireAdmin()) return;
 
     const idValue = personalityIdInput?.value.trim().toLowerCase();
     const payload = {
@@ -450,10 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleDeletePersonality(slug) {
-    if (!slug || !isAuthenticated) {
-      if (!isAuthenticated) loginModal?.show();
-      return;
-    }
+    if (!slug) return;
+    if (!requireAdmin()) return;
     if (!window.confirm('Bu kişiliği silmek istediğinize emin misiniz?')) {
       return;
     }
@@ -486,10 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleSetDefaultPersonality(slug) {
-    if (!slug || !isAuthenticated) {
-      if (!isAuthenticated) loginModal?.show();
-      return;
-    }
+    if (!slug) return;
+    if (!requireAdmin()) return;
 
     fetch(`/admin/api/personalities/${encodeURIComponent(slug)}/default`, {
       method: 'POST',
@@ -571,6 +627,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setPersonalityLoading(true);
     clearPersonalityError();
 
+    if (!hasAdminAccess()) {
+      personalityList = [];
+      defaultPersonalityId = null;
+      setPersonalityLoading(false);
+      renderPersonalities();
+      return;
+    }
+
     fetch('/admin/api/personalities')
       .then((resp) => {
         if (!resp.ok) {
@@ -617,6 +681,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadSystemPrompt() {
     if (!systemPromptInput) return Promise.resolve();
+    if (!hasAdminAccess()) {
+      const message = hasQaAccess()
+        ? 'Bu bölüme yalnızca admin erişebilir.'
+        : 'Giriş yaptıktan sonra düzenleyebilirsiniz.';
+      showSystemPromptStatus(message, 'muted');
+      return Promise.resolve();
+    }
     setSystemPromptControlsEnabled(false);
     showSystemPromptStatus('Yükleniyor...', 'muted');
     return fetch('/admin/api/system_prompt')
@@ -635,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (systemPromptInput) {
           systemPromptInput.value = currentSystemPrompt;
         }
-        if (isAuthenticated) {
+        if (hasAdminAccess()) {
           setSystemPromptControlsEnabled(true);
         }
         handleSystemPromptInput();
@@ -643,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch((err) => {
         showSystemPromptStatus(err.message || 'Sistem promptu alınamadı.', 'danger');
-        if (isAuthenticated) {
+        if (hasAdminAccess()) {
           setSystemPromptControlsEnabled(true);
         }
         throw err;
@@ -651,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveSystemPrompt() {
-    if (!systemPromptInput || !isAuthenticated) return;
+    if (!systemPromptInput || !hasAdminAccess()) return;
     const value = systemPromptInput.value.trim();
     if (!value) {
       showSystemPromptStatus('Prompt boş olamaz.', 'danger');
@@ -689,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showSystemPromptStatus(err.message || 'Sistem promptu kaydedilemedi.', 'danger');
       })
       .finally(() => {
-        if (isAuthenticated) {
+        if (hasAdminAccess()) {
           setSystemPromptControlsEnabled(true);
           handleSystemPromptInput();
         } else {
@@ -700,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleSystemPromptInput() {
     if (!systemPromptInput || !saveSystemPromptBtn) return;
-    if (!isAuthenticated) {
+    if (!hasAdminAccess()) {
       saveSystemPromptBtn.disabled = true;
       return;
     }
@@ -722,56 +793,66 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateAuthUI() {
-    if (isAuthenticated) {
-      $('#loginBtn').hide();
-      $('#logoutBtn').show();
-      $('#addBtn').prop('disabled', false);
-      if (qaTable) qaTable.draw();
+    const qaAccess = hasQaAccess();
+    const adminAccess = hasAdminAccess();
+    isAuthenticated = qaAccess;
+
+    $('#loginBtn').toggle(!qaAccess);
+    $('#logoutBtn').toggle(qaAccess);
+    $('#addBtn').prop('disabled', !qaAccess);
+    if (qaTable) qaTable.draw();
+
+    if (qaAccess) {
       $('#loginPasswordInput').val('');
       $('#loginError').hide();
       $('#loginForm').removeClass('was-validated');
-      
+    } else {
+      $('#loginError').hide();
+      $('#loginForm').removeClass('was-validated');
+      loginModal?.show();
+    }
+
+    toggleAdminTabs(adminAccess);
+
+    if (adminAccess) {
       if (addPersonalityBtn) addPersonalityBtn.disabled = false;
       setSystemPromptControlsEnabled(true);
       handleSystemPromptInput();
-      // Update overview stats after login
-      updateOverviewStats();
     } else {
-      $('#loginBtn').show();
-      $('#logoutBtn').hide();
-      $('#addBtn').prop('disabled', true);
-      if (qaTable) qaTable.draw();
-      
-      // Show placeholders when not authenticated
-      $('#totalChats, #totalLikes, #totalDislikes').text('-');
-      $('#currentSeason').text('-');
-      
       if (addPersonalityBtn) addPersonalityBtn.disabled = true;
       currentSystemPrompt = '';
       if (systemPromptInput) systemPromptInput.value = '';
       setSystemPromptControlsEnabled(false);
-      showSystemPromptStatus('Giriş yaptıktan sonra düzenleyebilirsiniz.', 'muted');
-      loginModal?.show();
+      const statusMessage = qaAccess
+        ? 'Bu bölüme yalnızca admin erişebilir.'
+        : 'Giriş yaptıktan sonra düzenleyebilirsiniz.';
+      showSystemPromptStatus(statusMessage, 'muted');
+      $('#totalChats, #totalLikes, #totalDislikes').text('-');
+      $('#currentSeason').text('-');
     }
 
-    if (lastAuthState !== isAuthenticated) {
-      lastAuthState = isAuthenticated;
-      loadPersonalities();
-      if (isAuthenticated) {
+    if (lastKnownRole !== adminRole) {
+      lastKnownRole = adminRole;
+      if (adminAccess) {
+        loadPersonalities();
         loadSystemPrompt().catch(() => {});
+        updateOverviewStats();
+      } else {
+        personalityList = [];
+        renderPersonalities();
       }
-    } else {
+    } else if (adminAccess) {
       renderPersonalities();
-      if (isAuthenticated) {
-        handleSystemPromptInput();
-      }
+      handleSystemPromptInput();
     }
   }
 
   $.getJSON('/admin/api/auth_status', (data) => {
+    adminRole = data?.role || null;
     isAuthenticated = Boolean(data?.authenticated);
     updateAuthUI();
   }).fail(() => {
+    adminRole = null;
     isAuthenticated = false;
     updateAuthUI();
   });
@@ -914,8 +995,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateOverviewStats() {
-    // Only load stats if authenticated
-    if (!isAuthenticated) {
+    // Only load stats if admin
+    if (!hasAdminAccess()) {
       $('#totalChats, #totalLikes, #totalDislikes').text('-');
       $('#currentSeason').text('-');
       return;
@@ -965,6 +1046,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadSessions() {
+    if (!hasAdminAccess()) {
+      requireAdmin();
+      return;
+    }
     $.getJSON('/admin/api/chat/sessions', (sessions) => {
       const $sessionSelect = $('#sessionSelect');
       $sessionSelect.empty().append('<option value="">Oturum seçin...</option>');
@@ -989,6 +1074,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function loadUsersForSession(sessionId) {
+    if (!hasAdminAccess()) {
+      requireAdmin();
+      return;
+    }
     if (!sessionId) {
       $('#sessionUsersInfo').hide();
       return;
@@ -1033,6 +1122,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function performSearch(searchParams) {
+    if (!hasAdminAccess()) {
+      requireAdmin();
+      return;
+    }
     const url = buildSearchUrl(searchParams);
     // Track current filter for follow-up actions
     currentFilter = Object.assign({}, searchParams);
@@ -1346,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (refreshPersonalitiesBtn) {
     refreshPersonalitiesBtn.addEventListener('click', () => {
       loadPersonalities();
-      if (isAuthenticated) {
+      if (hasAdminAccess()) {
         loadSystemPrompt().catch(() => {});
       }
     });
@@ -1416,11 +1509,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tab change handler - initialize chat log interface
   $('#logs-tab').on('shown.bs.tab', () => {
-    initChatResultsTable();
-    if (isAuthenticated) {
-      updateOverviewStats();
-      loadSessions();
+    if (!hasAdminAccess()) {
+      requireAdmin();
+      if (qaTabEl) {
+        bootstrap.Tab.getOrCreateInstance(qaTabEl).show();
+      }
+      return;
     }
+    initChatResultsTable();
+    updateOverviewStats();
+    loadSessions();
   });
 
   // Session selection change
@@ -1516,10 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Delete a single user's log file within a session
   $(document).on('click', '.delete-user-log', function() {
-    if (!isAuthenticated) {
-      loginModal?.show();
-      return;
-    }
+    if (!requireAdmin()) return;
     const sessionId = $('#sessionSelect').val();
     const userId = $(this).data('user-id');
     if (!sessionId || !userId) return;
@@ -1540,10 +1635,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function openSessionViewer(sessionId) {
-    if (!isAuthenticated) {
-      loginModal?.show();
-      return;
-    }
+    if (!requireAdmin()) return;
     currentSessionForModal = sessionId;
     $('#convSessionId').text(sessionId);
     $('#conversationContainer').html('<div class="text-center text-muted py-4"><i class="bi bi-hourglass-split"></i> Yükleniyor...</div>');
@@ -1592,10 +1684,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Delete entire session from conversation modal
   $('#deleteSessionBtn').on('click', function() {
-    if (!isAuthenticated) {
-      loginModal?.show();
-      return;
-    }
+    if (!requireAdmin()) return;
     const sess = currentSessionForModal;
     if (!sess) return;
     if (!confirm('Bu oturumu ve tüm loglarını silmek istediğinize emin misiniz?')) return;
@@ -1648,10 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('#loadAllLikes').on('click', function() {
-    if (!isAuthenticated) {
-      loginModal?.show();
-      return;
-    }
+    if (!requireAdmin()) return;
     
     $('#likeLoadStatus').text('Yükleniyor...');
     
@@ -1667,10 +1753,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('#loadAllDislikes').on('click', function() {
-    if (!isAuthenticated) {
-      loginModal?.show();
-      return;
-    }
+    if (!requireAdmin()) return;
     
     $('#dislikeLoadStatus').text('Yükleniyor...');
     
@@ -1931,6 +2014,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#logoutBtn').on('click', () => {
     $.post('/admin/api/logout', (res) => {
       if (res?.logged_out) {
+        adminRole = null;
         isAuthenticated = false;
         updateAuthUI();
       }
@@ -1952,6 +2036,7 @@ document.addEventListener('DOMContentLoaded', () => {
       data: JSON.stringify({ password }),
       success: (data) => {
         if (data?.authenticated) {
+          adminRole = data?.role || null;
           isAuthenticated = true;
           $('#loginError').hide();
           loginModal?.hide();
@@ -1972,12 +2057,14 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAuthUI();
           }
         } else {
+          adminRole = null;
           isAuthenticated = false;
           $('#loginError').text(data?.message || 'Giriş başarısız.').show();
           $('#loginPasswordInput').focus();
         }
       },
       error: (xhr) => {
+        adminRole = null;
         isAuthenticated = false;
         $('#loginError').text(xhr.responseJSON?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.').show();
       },
