@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Fabrika Yerleşkesi AR Önizleme</title>
+    <meta name="description" content="Kapadokya Üniversitesi fabrika yerleşkesinin artırılmış gerçeklik önizlemesi">
+    <link rel="icon" href="/static/favicon.ico">
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+        body {
+            margin: 0;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #eef2ff, #c7d2fe 58%, #bfdbfe);
+            color: #0f172a;
+        }
+        header {
+            padding: 1.2rem 1.2rem 0.8rem;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            letter-spacing: 0.015em;
+        }
+        p.lead {
+            margin: 0.6rem 0 0;
+            font-size: 1rem;
+            color: #334155;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem 1.25rem 2.5rem;
+        }
+        .viewer-wrapper {
+            width: min(100%, 1024px);
+            position: relative;
+        }
+        model-viewer {
+            width: 100%;
+            height: min(75vh, 680px);
+            border-radius: 1.6rem;
+            background: linear-gradient(135deg, #f8fafc, #dee9ff);
+            box-shadow:
+                0 32px 64px -36px rgba(15, 23, 42, 0.4),
+                0 22px 48px -28px rgba(37, 99, 235, 0.28);
+        }
+        .status-chip {
+            position: absolute;
+            top: 1.1rem;
+            left: 1.2rem;
+            background: rgba(15, 23, 42, 0.65);
+            color: #e2e8f0;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            letter-spacing: 0.01em;
+            backdrop-filter: blur(10px);
+        }
+        .status-chip[data-state="presenting"] {
+            background: rgba(5, 150, 105, 0.78);
+        }
+        .info-toggle {
+            position: absolute;
+            top: 1.1rem;
+            right: 1.2rem;
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 50%;
+            border: none;
+            background: rgba(37, 99, 235, 0.86);
+            color: #f8fafc;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        .info-toggle:hover,
+        .info-toggle:focus-visible {
+            transform: translateY(-1px);
+            background: rgba(59, 130, 246, 0.94);
+        }
+        .floating-controls {
+            position: absolute;
+            right: 1.2rem;
+            bottom: 1.1rem;
+            display: flex;
+            gap: 0.75rem;
+            background: rgba(15, 23, 42, 0.62);
+            padding: 0.65rem 0.85rem;
+            border-radius: 999px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 16px 38px -22px rgba(15, 23, 42, 0.6);
+        }
+        .floating-controls button {
+            appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 0.5rem 1.1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.16);
+            color: #f8fafc;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .floating-controls button:hover,
+        .floating-controls button:focus-visible {
+            background: rgba(255, 255, 255, 0.28);
+            transform: translateY(-1px);
+        }
+        .info-sheet {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.74);
+            border-radius: 1.6rem;
+            backdrop-filter: blur(12px);
+            color: #f8fafc;
+            text-align: center;
+            padding: 1.8rem 2rem;
+        }
+        .info-sheet.active {
+            display: flex;
+        }
+        .info-sheet ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .info-sheet li {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .info-sheet li + li {
+            margin-top: 0.8rem;
+        }
+        .info-sheet button {
+            margin-top: 1.8rem;
+            padding: 0.5rem 1.4rem;
+            border-radius: 999px;
+            border: none;
+            background: rgba(255, 255, 255, 0.18);
+            color: #f8fafc;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        footer {
+            padding: 1rem 1rem 1.4rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: radial-gradient(circle at top, #0f172a, #111827 55%, #1e293b);
+                color: #e2e8f0;
+            }
+            p.lead {
+                color: #cbd5f5;
+            }
+            model-viewer {
+                background: linear-gradient(135deg, #0f172a, #1e40af);
+                box-shadow:
+                    0 30px 60px -36px rgba(59, 130, 246, 0.36),
+                    0 20px 48px -28px rgba(14, 165, 233, 0.28);
+            }
+            .floating-controls {
+                background: rgba(15, 23, 42, 0.8);
+            }
+        }
+        @media (max-width: 768px) {
+            p.lead {
+                display: none;
+            }
+            main {
+                padding-bottom: 1.8rem;
+            }
+            model-viewer {
+                height: min(70vh, 520px);
+            }
+            .floating-controls {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+            }
+        }
+        @media (max-width: 520px) {
+            .floating-controls {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.6rem 0.75rem;
+            }
+            .floating-controls button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script nomodule src="https://unpkg.com/@google/model-viewer/dist/model-viewer-legacy.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Fabrika Yerleşkesi AR Deneyimi</h1>
+        <p class="lead">Modeli döndürerek inceleyin, uyumlu cihazlarda AR simgesiyle gerçek dünyaya taşıyın.</p>
+    </header>
+    <main>
+        <div class="viewer-wrapper">
+            <model-viewer
+                id="campus-viewer"
+                src="/ar/assets/fabrika_yerleskesi.gltf"
+                ar
+                camera-controls
+                tone-mapping="neutral"
+                shadow-intensity="0.32"
+                shadow-softness="0.85"
+                exposure="0.88"
+                loading="eager"
+                auto-rotate
+                ar-modes="webxr scene-viewer quick-look"
+                camera-orbit="-30deg 60deg 115%"
+                min-field-of-view="30deg"
+                max-field-of-view="80deg"
+                environment-image="neutral"
+            >
+                <div slot="poster">Model yükleniyor…</div>
+            </model-viewer>
+            <div class="status-chip" data-role="ar-status" data-state="checking">AR uyumluluğu kontrol ediliyor…</div>
+            <button type="button" class="info-toggle" aria-label="AR ipuçlarını aç">i</button>
+            <div class="floating-controls" aria-label="Model kontrol düğmeleri">
+                <button type="button" data-action="toggle-autorotate">Oto Dönüş</button>
+                <button type="button" data-action="reset-view">Sıfırla</button>
+            </div>
+            <div class="info-sheet" role="dialog" aria-modal="true" aria-label="AR kullanım ipuçları">
+                <div>
+                    <ul>
+                        <li>Yakınlaştırmak ve döndürmek için iki parmağınızı kullanın.</li>
+                        <li>AR simgesiyle modeli bulunduğunuz ortama yerleştirebilirsiniz.</li>
+                        <li>Daha iyi sonuç için aydınlık ve düz bir yüzey seçin.</li>
+                    </ul>
+                    <button type="button" data-action="close-info">Anladım</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        Kapadokya Üniversitesi · Dijital Kampüs Deneyimleri
+    </footer>
+    <noscript>
+        <p style="text-align:center; color:#b91c1c; margin:0 1rem 1.5rem;">Modeli görüntüleyebilmek için tarayıcınızda JavaScript'i etkinleştirin.</p>
+    </noscript>
+    <script>
+        const modelViewer = document.getElementById("campus-viewer");
+        const autoRotateToggle = document.querySelector('[data-action="toggle-autorotate"]');
+        const resetButton = document.querySelector('[data-action="reset-view"]');
+        const statusChip = document.querySelector('[data-role="ar-status"]');
+        const infoToggle = document.querySelector(".info-toggle");
+        const infoSheet = document.querySelector(".info-sheet");
+        const closeInfo = document.querySelector('[data-action="close-info"]');
+        const initialOrbit = modelViewer.getAttribute("camera-orbit") || "auto auto auto";
+
+        const updateStatus = (state, text) => {
+            statusChip.dataset.state = state;
+            statusChip.textContent = text;
+        };
+
+        const checkARSupport = async () => {
+            if (!("xr" in navigator) || !navigator.xr?.isSessionSupported) {
+                updateStatus("unsupported", "AR desteklenmiyor · 3B inceleme aktif");
+                return;
+            }
+            try {
+                const supported = await navigator.xr.isSessionSupported("immersive-ar");
+                if (supported) {
+                    updateStatus("supported", "AR hazır · Simge ile başlatın");
+                } else {
+                    updateStatus("unsupported", "AR desteklenmiyor · 3B inceleme aktif");
+                }
+            } catch (error) {
+                updateStatus("unsupported", "AR kontrolü başarısız · 3B inceleme aktif");
+                console.error("AR support check failed:", error);
+            }
+        };
+
+        checkARSupport();
+
+        modelViewer.addEventListener("ar-status", (event) => {
+            if (event.detail.status === "session-started") {
+                updateStatus("presenting", "AR modunda · Konumlandırın");
+            } else if (event.detail.status === "not-presenting" && statusChip.dataset.state !== "unsupported") {
+                updateStatus("supported", "AR hazır · Simge ile başlatın");
+            }
+        });
+
+        autoRotateToggle.addEventListener("click", () => {
+            const isActive = modelViewer.hasAttribute("auto-rotate");
+            if (isActive) {
+                modelViewer.removeAttribute("auto-rotate");
+                autoRotateToggle.textContent = "Oto Dönüş";
+            } else {
+                modelViewer.setAttribute("auto-rotate", "");
+                autoRotateToggle.textContent = "Oto Dönüş ✦";
+            }
+        });
+
+        resetButton.addEventListener("click", () => {
+            modelViewer.cameraOrbit = initialOrbit;
+            modelViewer.turntableRotation = 0;
+            modelViewer.jumpCameraToGoal();
+        });
+
+        const toggleInfo = (show) => {
+            infoSheet.classList.toggle("active", show);
+            infoToggle.setAttribute("aria-expanded", String(show));
+        };
+
+        infoToggle.addEventListener("click", () => {
+            toggleInfo(!infoSheet.classList.contains("active"));
+        });
+
+        closeInfo.addEventListener("click", () => toggleInfo(false));
+
+        infoSheet.addEventListener("click", (event) => {
+            if (event.target === infoSheet) {
+                toggleInfo(false);
+            }
+        });
+    </script>
+</body>
+</html>

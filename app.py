@@ -41,7 +41,7 @@ from filelock import FileLock
 from flask import (
     Flask, Response, jsonify, request,
     send_from_directory, session,
-    stream_with_context, render_template, Blueprint,
+    stream_with_context, render_template, Blueprint, abort,
 )
 from flask_cors import CORS
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
@@ -840,6 +840,22 @@ def index():
         except Exception:
             app.logger.exception("analytics session_start could not be logged")
     return send_from_directory("static", "index.html")
+
+
+@app.route("/ar")
+@app.route("/ar/")
+def ar_view():
+    return send_from_directory("static/ar", "index.html")
+
+
+@app.route("/ar/assets/<path:filename>")
+def ar_assets(filename: str):
+    allowed_extensions = {".gltf", ".bin", ".jpg", ".jpeg", ".png"}
+    requested_path = Path(filename)
+    if requested_path.suffix.lower() not in allowed_extensions or requested_path.name.startswith("."):
+        abort(404)
+    return send_from_directory("fabrika", filename)
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
