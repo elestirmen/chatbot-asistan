@@ -778,6 +778,11 @@
             .chat-identity {
                 gap: 12px;
             }
+
+            .chat-panel {
+                flex: 1 1 auto;
+                min-height: 0;
+            }
         }
 
         @media (max-width: 768px) {
@@ -854,7 +859,9 @@
             }
 
             .chat-messages {
-                max-height: min(55vh, 320px);
+                flex: 1 1 auto;
+                max-height: none;
+                min-height: 0;
                 padding: 0;
                 background: transparent;
                 border-radius: 0;
@@ -949,10 +956,6 @@
                 width: 42px;
                 height: 42px;
                 display: block;
-            }
-
-            .chat-messages {
-                max-height: min(50vh, 260px);
             }
 
             .message {
