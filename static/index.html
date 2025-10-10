@@ -796,8 +796,9 @@
             }
 
             .chat-identity img {
-                width: 56px;
-                height: 56px;
+                width: 48px;
+                height: 48px;
+                display: block;
             }
 
             .chat-header {
@@ -828,6 +829,7 @@
             .persona-controls {
                 width: 100%;
                 align-items: center;
+                justify-content: space-between;
                 gap: 10px;
             }
 
@@ -838,8 +840,8 @@
             .persona-dd-btn {
                 width: 100%;
                 justify-content: center;
-                padding: 8px 14px;
-                font-size: 13px;
+                padding: 6px 12px;
+                font-size: 12px;
             }
 
             .persona-hint,
@@ -931,10 +933,13 @@
             .chat-identity {
                 flex-direction: row;
                 align-items: center;
+                gap: 10px;
             }
 
             .chat-identity img {
-                display: none;
+                width: 42px;
+                height: 42px;
+                display: block;
             }
 
             .chat-messages {
@@ -981,12 +986,16 @@
                 background: rgba(15, 23, 42, 0.86);
             }
 
-            .asistan-combobox,
             .persona-hint,
-            .warning-banner,
-            .asistan-input-cont {
+            .warning-banner {
                 background: rgba(30, 41, 59, 0.9);
                 border-color: rgba(148, 163, 184, 0.35);
+            }
+
+            .asistan-combobox,
+            .asistan-input-cont {
+                background: transparent;
+                border-color: transparent;
             }
 
             .chat-panel {
