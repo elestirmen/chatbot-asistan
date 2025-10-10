@@ -1757,7 +1757,7 @@
     "questions": [
       "Değişim programlarına başvurmak için son tarih ne zaman?"
     ],
-    "answer": "Değişim programları başvuru takvimine üniversitenin resmî internet sayfasının “uluslararası” linkinden ulaşılabilir. Bu linkte güncel başvuru tarihleri ve koşulları yer almaktadır."
+    "answer": "Değişim programları başvuru takvimine üniversitenin resmî internet sayfasının “uluslararası” linkinden ulaşılabilir. Bu linkte güncel başvuru tarihleri ve koşulları yer almaktadır. Üniversiteler genellikle bahar dönemi için Ekim–Kasım, güz dönemi için Şubat–Mart dönemlerinde başvuru alır. Kesin tarihler üniversitenin ilanında duyurulur."
   },
   {
     "questions": [
@@ -2348,5 +2348,197 @@
       "yapay zeka buluşması nerede yapılacaktır."
     ],
     "answer": "Ürgüp fabrika yerleşkesinde 16-17 ekim tarihinde yapılacaktır. İlgili bağlantıdan daha geniş bilgi alabilirsiniz.\n\nhttps://aikapadokya.com.tr/paneller/"
+  },
+  {
+    "questions": [
+      "Fatma IŞIK ÇALAN kimdir?"
+    ],
+    "answer": "Fatma Işık Çalan, Kapadokya Üniversitesi Öğrenci Dekanlığı’nda görev yapmakta olup, zarif kişiliği ve özverili çalışmalarıyla tanınmaktadır."
+  },
+  {
+    "questions": [
+      "fatma nur kaya sağlam kimdir?"
+    ],
+    "answer": "fatma nur kaya sağlam Kapadokya Üniversitesinin en çalışkan, başarılı ve zarif akademisyenlerinden biridir. TTPYO'da çalışmakta ve Bilgisayar ve Bilişim Teknolojileri Fakültesi Bilgi Güvenliği Teknolojisi kadrosundadır."
+  },
+  {
+    "questions": [
+      "OBS sistemine nasıl giriş yapabilirim?"
+    ],
+    "answer": "Öğrenci Bilgi Sistemine (OBS) Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz."
+  },
+  {
+    "questions": [
+      "Devamsızlık hakkım ne kadar?"
+    ],
+    "answer": "Kapadokya Üniversitesi’nde teorik derslerde en az %70, uygulamalı derslerde ise en az %80 devam zorunludur."
+  },
+  {
+    "questions": [
+      "Konaklama ücretini hangi hesap bilgilerine EFT/Havale yapabilirim?"
+    ],
+    "answer": "Öğrenci konaklama ücretini TR09 0006 2001 0410 0006 2988 02 hesap numarasına isim soy isim ve okul no/TC no bilgisi ile iletebilir"
+  },
+  {
+    "questions": [
+      "Üniversitedeki aktif öğrenci kulüpleri hangileri?"
+    ],
+    "answer": "Üniversitemiz web sitesinde bulunan “Öğrenci Toplulukları” sekmesinden öğrenci kulüpleri hakkında bilgi alınabilir."
+  },
+  {
+    "questions": [
+      "Tek-Üçders sınavına en fazla kez girebilirim?"
+    ],
+    "answer": "Tek-Üç Ders sınavına giriş hakkı sınırsızdır."
+  },
+  {
+    "questions": [
+      "Öğrenci işlerine telefonla veya e-posta ile hangi saatlerde ulaşabilirim?"
+    ],
+    "answer": "Öğrenci İşleri’ne haftanın 6 günü, 09:00 – 18:00 saatleri arasında telefon veya e-posta ile ulaşabilirsiniz."
+  },
+  {
+    "questions": [
+      "Erasmus için dil yeterliliği gerekiyor mu, dil sınavı nasıl yapılmakta?"
+    ],
+    "answer": "Evet, gidilecek ülke veya üniversiteye göre dil yeterliliği istenebilir. Genellikle TOEFL, IELTS, YDS gibi sınavlar veya üniversite tarafından yapılan dil sınavı kabul edilir."
+  },
+  {
+    "questions": [
+      "Erasmus başvurularında referans mektubu gerekiyor mu?"
+    ],
+    "answer": "Bazı üniversiteler veya programlar isteyebilir. Genellikle zorunlu değildir ama motivasyon ve başvurunuzu desteklemek için faydalıdır."
+  },
+  {
+    "questions": [
+      "Değişim programlarında derslerin sayılma süreci nasıl yürümekte?"
+    ],
+    "answer": "Öğrenci gitmeden önce “Learning Agreement” hazırlanır. Dönüşte alınan dersler transkript üzerinden denkliği yapılır."
+  },
+  {
+    "questions": [
+      "Değişim programlarına kaç kez başvuru yapabilirim?"
+    ],
+    "answer": "Her programın başvuru limiti farklıdır; Erasmus için genellikle lisans süresince birden fazla başvuru yapabilirsiniz ancak toplam değişim süresi 12 ayı geçemez."
+  },
+  {
+    "questions": [
+      "Uluslararası öğrenciyim üniversiteye kayıt için hangi evrakları getirmem gerekiyor?"
+    ],
+    "answer": "Üniversiteye kayıt için başvuru formu, ilgili sınav sonuç belgesinin aslı veya noter onaylı sureti, Türkçe düzeyini gösterir belge, lise diploması ve transkriptin aslı veya noter onaylı sureti (Türkçe veya İngilizce değilse onaylı tercümesi), lise diplomasının Türkiye’de denk olduğunu gösterir denklik belgesi, pasaportun fotokopisi veya aday statüsünü gösterir belge, 4.5 x 6 ebatlarında 2 adet vesikalık fotoğraf, başvuru ücretinin yatırıldığını gösteren belge ve onaylanmış ikamet izni belgesi gerekmektedir."
+  },
+  {
+    "questions": [
+      "Kapadokya Üniversitesi'nde okumak için belirli bir dil yeterlilik belgesi sunmam gerekiyor mu?"
+    ],
+    "answer": "Evet, Kapadokya Üniversitesi’nde kayıt hakkı kazanan uluslararası öğrencilerin, kesin kayıt işlemlerinin yapılabilmesi için başvuru yaptıkları yıldaki Türkçe dil düzeylerinin yeterli olması gerekmektedir. Türkçe düzeyi yetersiz olan adaylar, izinli sayılacakları bir yıl içinde dil seviyelerini yeterli hâle getirmekle yükümlüdür. İngilizce öğretim dili olan programlara kayıtlı öğrenciler ise, İngilizce hazırlık öğretiminden muaf olabilmek için üniversite tarafından kabul edilen yeterlilik sınavlarından yeterli puan aldıklarını belgelemek zorundadır."
+  },
+  {
+    "questions": [
+      "Uluslararası İlişkiler Ofisi ile nasıl iletişime geçebilirim?"
+    ],
+    "answer": "Uluslararası İlişkiler Ofisi’ne 0384 353 5009 numaralı üniversitemizin iletişim hattından ya da international@kapadokya.edu.tr mail adresinden ulaşabilirsiniz."
+  },
+  {
+    "questions": [
+      "Türkiye’de ikamet izni almam gerekiyor mu?"
+    ],
+    "answer": "Evet, kesin kayıt için ikamet izni (Oturma İzni Belgesi) gereklidir. İkamet izninin güncelliği eğitim süresince öğrenci tarafından takip edilir ve geçerli sağlık sigortası ile geçim durumu belgesi sunulmalıdır."
+  },
+  {
+    "questions": [
+      "Şu anda ödeme yapmak istiyorum."
+    ],
+    "answer": "odeme@kapadokya.edu.tr adresinden ödeme yapabilirsiniz."
+  },
+  {
+    "questions": [
+      "Ne kadar borcum var?"
+    ],
+    "answer": "odeme@kapadokya.edu.tr adresinden güncel borç tutarınızı öğrenebilirsiniz."
+  },
+  {
+    "questions": [
+      "Mali durum belgemi nasıl alabilirim?"
+    ],
+    "answer": "odeme@kapadokya.edu.tr adresinden öğrenebilirsiniz."
+  },
+  {
+    "questions": [
+      "Kredi kartım yok taksitli ödemeyi nasıl yapacağım?"
+    ],
+    "answer": "Kredi kartı olmayan öğrenciler, bankaların eğitim kredisi veya taksitlendirme kampanyaları üzerinden ödeme yapabilir."
+  },
+  {
+    "questions": [
+      "Çift anadal veya yandal programına kayıt olursam ek ücret öder miyim?"
+    ],
+    "answer": "Çift anadal veya yan dal programına kayıt olan öğrenciler, anadal programının süresi içerisinde ek ücret ödemezler."
+  },
+  {
+    "questions": [
+      "Ödememi geciktirirsem ne olur?"
+    ],
+    "answer": "Ödemeyi geciktirmeniz durumunda, ders kayıt işlemleriniz etkilenebilir."
+  },
+  {
+    "questions": [
+      "Kredi kartı bilgilerimi değiştirmek istiyorum."
+    ],
+    "answer": "odeme@kapadokya.edu.tr adresinden öğrenebilirsiniz.\ndeğişiklik yapabilirsiniz."
+  },
+  {
+    "questions": [
+      "Başarı bursu almak için hangi kriterler gerekiyor?"
+    ],
+    "answer": "Akademik Başarı Bursu alabilmek için öğrencinin hazırlık sınıfı hariç en az bir yıl öğrenim görmüş, genel not ortalaması en az 3.00 ve herhangi bir dersten başarısız olmamış olması ve programında en yüksek not ortalamasına sahip bulunması gerekir."
+  },
+  {
+    "questions": [
+      "Kardeş bursundan nasıl faydalanabilirim?"
+    ],
+    "answer": "Kardeş bursu, üniversite programlarına yerleşmiş kardeşlerle birlikte kayıtlı olunan süre boyunca verilmektedir. Burs oranı ve uygulanma usulleri, Mütevelli Heyeti ve Burs Komisyonu tarafından belirlenir."
+  },
+  {
+    "questions": [
+      "Akran desteği sistemine nasıl başvurabilirim?"
+    ],
+    "answer": "\"Akran Desteği Sistemi’ne başvurmak için, ön lisans programlarda 2. sınıf, lisans programlarında 2. veya 3. sınıf öğrencisi olmanız, ilgili derslerde en az BA notuna sahip olmanız ve disiplin cezası almamış olmanız gerekmektedir. Şartları sağlayan öğrenciler, başvuru formunu doldurarak pdr@kapadokya.edu.tr\n adresine e-posta göndererek başvuruda bulunabilirler.\""
+  },
+  {
+    "questions": [
+      "Bir Bilen Sistemi’ne nasıl başvurabilirim?"
+    ],
+    "answer": "pdr@kapadokya.edu.tr mail adresine bölüm okul numarası ve isim bilgisi ile başvuruda bulunabilir."
+  },
+  {
+    "questions": [
+      "Etkinlik puanlarım ne zaman tanımlanır?"
+    ],
+    "answer": "Etkinlik puanlarının yasal tanımlanma süresi 15 gündür."
+  },
+  {
+    "questions": [
+      "Eksik etkinlik puanlarımı nasıl tamamlayabilirim?"
+    ],
+    "answer": "Etkinlik telafisi doldurarak eksik etkinlik puanını tamamlayabilirler"
+  },
+  {
+    "questions": [
+      "Etkinlik puanlarının mezuniyet için gerekliliği nedir?"
+    ],
+    "answer": "Mezuniyet için gerekli etkinlik puanları, programın süresine göre belirlenmiştir: 4 yıllık program öğrencileri 200 puan, 5 yıllık program öğrencileri 150 puan, 2 yıllık program öğrencileri 100 puan, 3 yıllık program öğrencileri 150 puan toplamak zorundadır. Eğitim-öğretim süresi boyunca bu puanlar tamamlanamazsa mezuniyet gerçekleşmez."
+  },
+  {
+    "questions": [
+      "Etkinlik puanlarımı nasıl kontrol edebilirim?"
+    ],
+    "answer": "Etkinlik puanları ve kayıt durumu, Öğrenci Bilgi Sistemi (OBS) üzerinden kontrol edilebilir."
+  },
+  {
+    "questions": [
+      "Bir öğrenci kulübüne nasıl üye olabilirim?"
+    ],
+    "answer": "Öğrenciler, öğrenci kulüplerinin Microsoft Teams kanallarına katılarak üye olabilirler."
   }
 ]

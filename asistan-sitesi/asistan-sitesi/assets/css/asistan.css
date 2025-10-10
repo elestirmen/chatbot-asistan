@@ -1,0 +1,424 @@
+ body{
+        margin:0px;
+    }
+
+    .asistan-menu2{
+        position:absolute;
+        right:-900px;
+        transition:right 0.3s ease;
+        width:50%;
+        height:100vh;
+        z-index:4;
+    }
+    .asistan-menu2{
+        width:15%;
+        background-color:#f0f4fa ;
+        padding:20px 20px 0px 20px;
+    }
+
+    .asistan-menu{
+        width:15%;
+        background-color:#f0f4fa ;
+        padding:20px 20px 0px 20px;
+    }
+    .asistan-chat{
+        width:85%;
+        position:relative;
+    }
+
+    .asistan-combobox {
+        position: absolute;
+        right: 10px;
+        width: 200px;
+        text-align: center;
+        
+    }
+
+    .asistan-combobox img{
+        width:150px;
+    }
+
+    .combobox-kismi{
+        width:100%;
+        background-color: #F0F4FA;
+        border-color: #000000;
+        border-width: 0px 0px 0px 0px;
+        border-radius: 50px 50px 50px 50px;
+        width:70%;
+        text-align:center;
+        padding:10px;
+        margin-top:20px;
+    }
+
+    .yeni-sohbet svg{
+        width:30px;
+        fill:#707070;
+    }
+
+    .yeni-sohbet{
+        display:flex;
+        align-items: center;
+        gap:10px;
+        justify-content:end;
+        margin-top:50%;
+        margin-bottom:10%;
+    }
+
+    .yeni-sohbet p {
+        font-family:'roboto';
+        font-size:14px;
+        font-weight:300;
+        color:#707070;
+    }
+
+    .menuler ul{
+        list-style-type: none;
+        font-family:'roboto';
+        font-size:16px;
+        font-weight:500;
+        color:#707070;
+        padding:0px;
+
+    }
+    .menuler ul li{
+      margin-bottom:20px;
+
+    }
+
+    .menuler{
+        text-align:right;
+    }
+
+    .arama-menu{
+        width:100%;
+        height:50px;
+        display:flex;
+        justify-content:space-between;
+    }
+
+    .arama-menu-icon svg{
+        width:30px;
+        fill:#707070;
+    }
+    .arama-menu-icon{
+        width:100%;
+        height:100%;
+        align-content:center;
+       
+    }
+.arama-menu-icon2{
+    width:100%;
+    height:100%;
+    align-content:center;
+ 
+    text-align:right;
+}
+
+.arama-menu-icon2 svg{
+        width:30px;
+        fill:#707070;
+}
+
+    .asistan-cont{
+        width:100%;
+        height:100vh;
+        display:flex;
+
+    }
+
+    .asistan-input-cont{
+        position:absolute;
+        bottom:10px;
+        left:30%;
+        text-align:center;
+
+    }
+
+    .asistan-input-cont h4{
+        font-family:'roboto';
+        font-size:30px;
+        font-weight:500;
+    }
+
+    #asistan-chat{
+        background-color:white;
+        font-family: 'roboto';
+        font-size:14px;
+        border:1px solid black;
+        border-radius:20px;
+        padding:20px 50px 35px 30px;
+        width:650px;
+    }
+    .dikkat-iconu{
+        position:absolute;
+        bottom:80px;
+        right:15px;
+        font-size:25px;
+        color:#6a717d;
+    }
+    
+    .arti-ikonu{
+        position:absolute;
+        left:3%;
+        bottom:5%;
+        color:#6a717d;
+    }
+    .mikrofon-ikon{
+        position:absolute;
+        right:3%;
+        bottom:5%;
+        color:#6a717d;
+    }
+
+    .hamburger-butonum{
+        display:none;
+    }
+    
+    
+
+
+.tooltip-li::after {
+content: "Dikkat: Bu chatbot, öğrencilere hızlı ve öz bilgi sunmak için tasarlanmıştır. Ancak, büyük dil modellerinin doğası gereği sağlanan bilgilerin kesin doğruluğu garanti edilemez. Sistem hâlâ beta aşamasındadır; geri bildirimleriniz bizim için büyük önem taşımaktadır.";
+position: absolute;
+top: -127%;
+right: 10px;
+transform: translateY(-50%);
+background-color: #4c4c50;
+color: #fff;
+padding: 8px 10px;
+border-radius: 6px;
+white-space: normal; /* Uzun yazılar alt satıra geçebilsin */
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.3s ease;
+z-index: 10;
+font-size: 12px;
+line-height:16px;
+width: 900px;
+max-width: 600px;
+font-family:'roboto';
+font-weight:400;
+}
+
+
+.tooltip-li:hover::after,
+.tooltip-li:hover::before {
+opacity: 1;
+}
+
+
+
+
+
+.dropdown {
+    margin-top:20px;
+    position: relative;
+    width: 100%;
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Seçili görünen buton */
+  .dropdown-btn {
+    background-color: #f0f4fa;
+    color: #707070;
+    padding: 10px;
+    padding-left:20px;
+    padding-right:20px;
+    border-radius: 40px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Açılır liste */
+  .dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #f0f4fa;
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.4s ease;
+    z-index: 10;
+  }
+  
+  /* Açılınca */
+  .dropdown.open .dropdown-content {
+    max-height: 200px; /* gösterilecek yükseklik */
+    opacity: 1;
+    text-align: left;
+  }
+  
+  /* Liste elemanları */
+  .dropdown-content div {
+    padding: 10px;
+    padding-left:20px;
+    text-align: left;
+    cursor: pointer;
+    color: white;
+  }
+  
+  .dropdown-content div:hover {
+    background: rgb(206, 205, 205);
+  }
+.dropdown-btn svg{
+    width:17px;
+    fill:#707070;
+}
+
+  .dropdown-btn h6{
+    font-family:'roboto';
+    font-size:14px;
+    font-weight:400 !important;
+    color:#707070;
+    font-weight:600;
+    margin:5px;
+  }
+  .dropdown-content p{
+    font-family: 'roboto';
+    font-size:12px;
+    color:#707070;
+    font-weight:500;
+  }
+
+  .giris-input svg{
+    fill:#707070;
+    width:30px;
+
+  }
+
+  .giris-input{
+    display:flex;
+    gap:11px;
+  }
+ 
+ 
+  @media (min-width: 300px) and (max-width: 800px) {
+    
+    .asistan-combobox {
+        position: absolute;
+        left: 10px;
+        width: 150px;
+        text-align: center;
+        
+    }
+
+
+    .asistan-combobox img{
+        width:100px;
+    }
+
+    .dropdown-btn {
+        background-color: #f0f4fa;
+        color: #707070;
+        padding: 10px;
+        padding-left:15px;
+        padding-right:15px;
+        border-radius: 40px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .dropdown-btn h6{
+        font-family:'roboto';
+        font-size:12px;
+        font-weight:400 !important;
+        color:#707070;
+        font-weight:600;
+        margin:5px;
+      }
+
+
+    .asistan-input-cont{
+        position:absolute;
+        bottom:10px;
+        left:5%;
+        text-align:center;
+        width:90%;
+
+    }
+
+    #asistan-chat{
+        background-color:white;
+        font-family: 'roboto';
+        font-size:14px;
+        border:1px solid black;
+        border-radius:20px;
+        padding:10px 50px 35px 20px;
+        width:100%;
+    }
+
+    .asistan-menu{
+        display:none;
+    }
+    .asistan-menu2{
+  
+        position:absolute;
+        right:-400px;
+        transition:right 0.3s ease;
+        width:50%;
+        height:100vh;
+        z-index:4;
+    }
+
+    .menuler ul{
+        list-style-type: none;
+        font-family:'roboto';
+        font-size:14px;
+        font-weight:500;
+        color:#707070;
+        padding:0px;
+
+    }
+    .asistan-chat{
+        width:100%;
+        padding-top:20px;
+    }
+    .dikkat-iconu{
+        right:5px;
+    }
+
+    .tooltip-li::after {
+        width: 300px;
+        top:-200%;
+
+    }
+
+
+    .hamburger-butonum{
+        display:block;
+        width:100%;
+        position:absolute;
+        top:40px;
+        right:20px;
+        text-align:right;
+    }
+
+    .hamburger-butonum svg{
+        width:30px;
+    }
+    
+
+    .overlay{
+        display:block;
+        right:-400px;
+        position:absolute;
+        width:100%;
+        height:100%;   
+        background-color:rgba(0,0,0,0.5);
+        top:0px;
+        transition:right 0.5s ease;
+        z-index:3;
+
+    }
+  
+
+  }

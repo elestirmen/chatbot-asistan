@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "huysuz",
-      "name": "Müzeyyen Hanım",
+      "name": "Huysuz",
       "emoji": null,
       "theme": "angry",
       "css_class": "angry",
@@ -15,7 +15,7 @@
     },
     {
       "id": "notr",
-      "name": "Selim Bey",
+      "name": "Notr",
       "emoji": null,
       "theme": "neutral",
       "css_class": "neutral",
@@ -27,7 +27,7 @@
     },
     {
       "id": "pozitif",
-      "name": "Melek Hanım",
+      "name": "Pozitif",
       "emoji": null,
       "theme": "positive",
       "css_class": "positive",
@@ -39,7 +39,7 @@
     },
     {
       "id": "mevlana",
-      "name": "mevlana",
+      "name": "Mevlana",
       "emoji": null,
       "theme": "neutral",
       "css_class": "neutral",
