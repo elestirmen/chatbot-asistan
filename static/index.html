@@ -37,6 +37,7 @@
             font-family: 'Roboto', 'Urbanist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg-page);
             color: var(--text-primary);
+            font-size: 16px;
         }
 
         a {
@@ -51,7 +52,7 @@
         .asistan-cont {
             display: flex;
             height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
             align-items: stretch;
             justify-content: center;
             gap: 36px;
@@ -198,17 +199,11 @@
         .asistan-combobox {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             background: var(--bg-soft);
             border-radius: var(--radius-md);
             padding: 12px 16px;
             border: 1px solid var(--border-soft);
-        }
-
-        .combobox-logo {
-            width: 80px;
-            height: 40px;
-            object-fit: contain;
         }
 
         .persona-controls {
@@ -421,20 +416,24 @@
         }
 
         .chat-panel {
-            flex: 1;
-            border: 1px solid var(--border-soft);
-            border-radius: var(--radius-lg);
-            padding: 24px;
+            flex: 0 1 auto;
+            border: none;
+            border-radius: 18px;
+            padding: 0;
             background: #fbfdff;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-height: 180px;
         }
 
         .chat-messages {
-            flex: 1;
+            max-height: min(60vh, 440px);
             overflow-y: auto;
-            padding-right: 8px;
+            padding: 16px 12px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(248,250,252,0.9), rgba(226,232,240,0.9));
+            box-shadow: inset 0 1px 3px rgba(15,23,42,0.08);
         }
 
         .message {
@@ -522,17 +521,10 @@
         }
 
         .asistan-input-cont {
-            border: 1px solid var(--border-soft);
-            border-radius: var(--radius-lg);
-            background: var(--bg-soft);
-            padding: 20px 24px 24px;
-        }
-
-        .asistan-input-cont h4 {
-            margin: 0 0 12px;
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-primary);
+            border: none;
+            border-radius: 18px;
+            background: transparent;
+            padding: 12px 0 0;
         }
 
         .input-row {
@@ -546,6 +538,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            margin-left: 12px;
+            cursor: help;
         }
 
         .tooltip-li::after {
@@ -612,19 +606,6 @@
             background: #cbd5e0;
             cursor: not-allowed;
             box-shadow: none;
-        }
-
-        .input-icons {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #6a717d;
-            font-size: 16px;
-        }
-
-        .arti-ikonu,
-        .mikrofon-ikon {
-            display: inline-flex;
         }
 
         .overlay {
@@ -754,6 +735,8 @@
                 padding: 0;
                 gap: 0;
                 justify-content: flex-start;
+                height: auto;
+                min-height: 100vh;
             }
 
             .asistan-menu {
@@ -772,7 +755,7 @@
                 flex: 1 1 auto;
                 max-width: none;
                 margin: 0;
-                padding: 80px 20px 24px;
+                padding: 64px 18px 20px;
             }
 
             .chat-header {
@@ -788,37 +771,160 @@
             .persona-hint {
                 margin-left: 0;
             }
+
+            .chat-identity {
+                gap: 12px;
+            }
         }
 
         @media (max-width: 768px) {
             .asistan-chat {
-                padding: 80px 16px 20px;
+                padding: 54px 14px 16px;
             }
 
             .chat-panel {
-                padding: 18px;
+                padding: 0;
+                background: transparent;
+                border: none;
+                min-height: 140px;
+            }
+
+            .chat-identity {
+                width: 100%;
+                gap: 12px;
+            }
+
+            .chat-identity img {
+                width: 56px;
+                height: 56px;
+            }
+
+            .chat-header {
+                gap: 12px;
+            }
+
+            .chat-controls,
+            .asistan-combobox,
+            .persona-hint,
+            .warning-banner,
+            .feedback-section {
+                display: none !important;
+            }
+
+            .chat-messages {
+                max-height: min(55vh, 320px);
+                padding: 0;
+                background: transparent;
+                border-radius: 0;
+                box-shadow: none;
             }
 
             .message {
-                max-width: 95%;
+                max-width: 100%;
+                font-size: 15px;
+                padding: 12px 14px;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                border: 1px solid rgba(15, 23, 42, 0.08);
+                background: rgba(255, 255, 255, 0.95);
+            }
+
+            .bot-message {
+                background: rgba(240, 244, 250, 0.95);
+                border-color: rgba(15, 23, 42, 0.08);
+                color: inherit;
+            }
+
+            .user-message {
+                border-radius: 12px;
+                border-bottom-right-radius: 12px;
             }
 
             .input-row {
-                flex-wrap: wrap;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
             }
 
             #send-button {
                 width: 100%;
-            }
-
-            .input-icons {
-                width: 100%;
-                justify-content: flex-end;
+                border-radius: 12px;
             }
 
             .tooltip-li::after {
                 width: 220px;
                 top: -180%;
+            }
+
+            .input-row .tooltip-li {
+                display: none;
+            }
+
+            .chat-identity h1 {
+                font-size: 20px;
+            }
+
+            .chat-identity p {
+                font-size: 13px;
+            }
+
+            .personality-icon {
+                width: 50px;
+                height: 50px;
+            }
+
+            #message-input {
+                font-size: 16px;
+                border-radius: 12px;
+                border: 1px solid rgba(15, 23, 42, 0.12);
+                background: #ffffff;
+            }
+
+            .asistan-input-cont {
+                margin-top: 16px;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .asistan-chat {
+                padding: 52px 12px 14px;
+            }
+
+            .chat-identity {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            .chat-identity img {
+                display: none;
+            }
+
+            .chat-messages {
+                max-height: min(50vh, 260px);
+            }
+
+            .message {
+                font-size: 14px;
+                padding: 10px 12px;
+                border-radius: 10px;
+            }
+
+            #send-button {
+                width: 100%;
+                font-size: 15px;
+            }
+
+            #message-input {
+                font-size: 15px;
+            }
+
+            .input-row .tooltip-li {
+                display: none;
+            }
+
+            .asistan-input-cont {
+                margin-top: 14px;
             }
         }
 
@@ -872,6 +978,37 @@
                 color: #e2e8f0;
                 border-color: rgba(148, 163, 184, 0.35);
             }
+
+            @media (max-width: 768px) {
+                .asistan-combobox,
+                .persona-hint,
+                .warning-banner,
+                .asistan-input-cont,
+                .chat-panel {
+                    background: transparent;
+                    border-color: transparent;
+                }
+
+                .chat-messages {
+                    background: transparent;
+                }
+
+                .message {
+                    background: rgba(37, 45, 63, 0.9);
+                    border-color: rgba(148, 163, 184, 0.2);
+                }
+
+                .bot-message {
+                    background: rgba(48, 60, 85, 0.9);
+                    border-color: rgba(148, 163, 184, 0.25);
+                    color: #e2e8f0;
+                }
+
+                #message-input {
+                    background: rgba(37, 45, 63, 0.85);
+                    border-color: rgba(148, 163, 184, 0.3);
+                }
+            }
         }
     </style>
 </head>
@@ -919,7 +1056,6 @@
                 </div>
                 <div class="chat-controls">
                     <div class="asistan-combobox">
-                        <img src="/static/img/kun-logo.png" alt="KÜN logosu" class="combobox-logo" onerror="this.style.display='none';">
                         <div class="persona-controls">
                             <div class="personality-icon angry" id="personality-icon" data-initial="?" data-has-avatar="false" role="button" tabindex="0" title="Kişiliği değiştir — tek tık menü, çift tık sonraki"></div>
                             <div class="persona-dropdown" id="persona-dropdown">
@@ -957,18 +1093,13 @@
             </div>
 
             <div class="asistan-input-cont">
-                <h4 id="input-title">Yine mi geldin? Ne istiyorsun?</h4>
                 <div class="input-row">
-                    <span class="tooltip-li">
-                        <i aria-hidden="true" class="fas fa-exclamation-triangle dikkat-iconu"></i>
-                    </span>
                     <label for="message-input" class="sr-only">Mesajınızı yazın</label>
                     <input type="text" id="message-input" placeholder="Asistana sorun..." aria-label="Mesajınızı yazın">
                     <button id="send-button" type="button" aria-label="Mesajı gönder">Gönder</button>
-                    <div class="input-icons">
-                        <i aria-hidden="true" class="fas fa-plus arti-ikonu"></i>
-                        <i aria-hidden="true" class="fas fa-microphone mikrofon-ikon"></i>
-                    </div>
+                    <span class="tooltip-li" aria-hidden="true" title="Dikkat: Bu chatbot, öğrencilere hızlı ve öz bilgi sunmak için tasarlanmıştır. Ancak, büyük dil modellerinin doğası gereği sağlanan bilgilerin kesin doğruluğu garanti edilemez. Sistem hâlâ beta aşamasındadır; geri bildirimleriniz bizim için büyük önem taşımaktadır.">
+                        <i class="fas fa-exclamation-triangle dikkat-iconu"></i>
+                    </span>
                 </div>
             </div>
         </main>
@@ -1264,14 +1395,6 @@
             }
         }
 
-        function updateInputTitle(text) {
-            const titleEl = document.getElementById('input-title');
-            if (!titleEl) return;
-            if (typeof text === 'string' && text.trim()) {
-                titleEl.textContent = text.trim();
-            }
-        }
-
         window.onload = async function() {
             setupLayoutInteractions();
             await loadPersonalityCatalog();
@@ -1382,7 +1505,6 @@
                 const selectElement = document.getElementById('personality-select');
                 const currentPersonality = selectElement ? selectElement.value : defaultPersonalityId;
                 const welcomeText = getWelcomeMessage(currentPersonality);
-                updateInputTitle(welcomeText);
 
                 messagesContainer.innerHTML = `<div class="message bot-message" role="listitem">
                     ${escapeHTML(welcomeText)}
@@ -1445,7 +1567,6 @@
                     }
                 }
                 renderPersonaDropdownButton(pers);
-                updateInputTitle(getWelcomeMessage(pers));
 
                 const response = await fetch(SET_PERSONALITY_URL, {
                     method: 'POST',
