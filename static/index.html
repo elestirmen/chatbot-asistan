@@ -49,6 +49,38 @@
             font-family: inherit;
         }
 
+        .cursor-follower {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 51, 102, 0.75);
+            background: rgba(0, 51, 102, 0.28);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: top 0.25s ease-out, left 0.25s ease-out, opacity 0.2s ease-out, width 0.15s ease-out, height 0.15s ease-out, border-color 0.15s ease-out;
+            opacity: 0;
+            z-index: 999;
+        }
+
+        .cursor-follower.is-visible {
+            opacity: 1;
+        }
+
+        .cursor-follower.is-clicking {
+            width: 10px;
+            height: 10px;
+            border-color: rgba(0, 51, 102, 0.9);
+        }
+
+        @media (pointer: coarse) {
+            .cursor-follower {
+                display: none;
+            }
+        }
+
         .asistan-cont {
             display: flex;
             height: 100vh;
@@ -1190,6 +1222,79 @@
     </section>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.matchMedia('(pointer: fine)').matches) {
+                return;
+            }
+
+            const cursorFollower = document.createElement('div');
+            cursorFollower.className = 'cursor-follower';
+            document.body.appendChild(cursorFollower);
+
+            const showCursor = () => {
+                cursorFollower.classList.add('is-visible');
+            };
+
+            const hideCursor = () => {
+                cursorFollower.classList.remove('is-visible');
+                cursorFollower.classList.remove('is-clicking');
+            };
+
+            const isMouseLikeEvent = (event) => {
+                const pointerType = event.pointerType || 'mouse';
+                return pointerType === 'mouse';
+            };
+
+            const moveCursor = (event) => {
+                if (!isMouseLikeEvent(event)) {
+                    return;
+                }
+                cursorFollower.style.top = `${event.clientY}px`;
+                cursorFollower.style.left = `${event.clientX}px`;
+                showCursor();
+            };
+
+            const handlePointerDown = (event) => {
+                if (!isMouseLikeEvent(event)) {
+                    return;
+                }
+                moveCursor(event);
+                cursorFollower.classList.add('is-clicking');
+            };
+
+            const handlePointerUp = (event) => {
+                if (!isMouseLikeEvent(event)) {
+                    return;
+                }
+                cursorFollower.classList.remove('is-clicking');
+            };
+
+            if (window.PointerEvent) {
+                window.addEventListener('pointermove', moveCursor);
+                window.addEventListener('pointerdown', handlePointerDown);
+                window.addEventListener('pointerup', handlePointerUp);
+                document.body.addEventListener('pointerleave', hideCursor);
+                document.addEventListener('pointercancel', hideCursor);
+                window.addEventListener('pointerout', (event) => {
+                    if (!event.relatedTarget) {
+                        hideCursor();
+                    }
+                });
+            } else {
+                window.addEventListener('mousemove', moveCursor);
+                window.addEventListener('mousedown', handlePointerDown);
+                window.addEventListener('mouseup', handlePointerUp);
+                document.body.addEventListener('mouseleave', hideCursor);
+                window.addEventListener('mouseout', (event) => {
+                    if (!event.relatedTarget) {
+                        hideCursor();
+                    }
+                });
+            }
+
+            window.addEventListener('blur', hideCursor);
+        });
+
         const API_URL = '/chat';
         const SET_PERSONALITY_URL = '/set_personality';
         const FEEDBACK_URL = '/feedback';
