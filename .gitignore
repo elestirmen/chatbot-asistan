@@ -36,3 +36,6 @@ __pycache__/
 *.pt
 *.bin
 *.onnx
+#
+# local 3d assets
+fabrika/
