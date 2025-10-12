@@ -635,6 +635,9 @@
       <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs-pane" type="button" role="tab" aria-controls="logs-pane" aria-selected="false">Chat Logları</button>
     </li>
     <li class="nav-item" role="presentation">
+      <button class="nav-link" id="models-tab" data-bs-toggle="tab" data-bs-target="#models-pane" type="button" role="tab" aria-controls="models-pane" aria-selected="false">Dil Modelleri</button>
+    </li>
+    <li class="nav-item" role="presentation">
       <button class="nav-link" id="personalities-tab" data-bs-toggle="tab" data-bs-target="#personalities-pane" type="button" role="tab" aria-controls="personalities-pane" aria-selected="false">Kişilikler</button>
     </li>
   </ul>
@@ -1006,18 +1009,14 @@
       </div>
     </div>
 
-    <div class="tab-pane fade" id="personalities-pane" role="tabpanel" aria-labelledby="personalities-tab" tabindex="0">
+    <div class="tab-pane fade" id="models-pane" role="tabpanel" aria-labelledby="models-tab" tabindex="0">
       <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <div>
-          <h4 class="mb-1">Kişilik Yönetimi</h4>
-          <p class="text-muted small mb-0">Chatbot kişiliklerinin promptlarını güncelleyin, yeni kişilikler ekleyin ve varsayılan kişiliği seçin.</p>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-outline-secondary" id="refreshPersonalitiesBtn"><i class="bi bi-arrow-clockwise me-1"></i>Yenile</button>
-          <button class="btn btn-primary" id="addPersonalityBtn" disabled><i class="bi bi-plus-circle me-1"></i>Yeni Kişilik</button>
+          <h4 class="mb-1">Dil Modeli Yönetimi</h4>
+          <p class="text-muted small mb-0">Chatbot’un kullandığı OpenAI modelini ve örnekleme parametrelerini yönetin.</p>
         </div>
       </div>
-      <div class="card shadow-sm mb-3">
+      <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-cpu me-2 text-primary"></i>OpenAI Dil Modeli</span>
           <div class="btn-group btn-group-sm">
@@ -1045,6 +1044,22 @@
             </div>
           </div>
           <small id="modelStatus" class="small d-block mt-2 text-muted">-</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane fade" id="personalities-pane" role="tabpanel" aria-labelledby="personalities-tab" tabindex="0">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h4 class="mb-1">Kişilik Yönetimi</h4>
+          <p class="text-muted small mb-0">Chatbot kişiliklerinin promptlarını güncelleyin, yeni kişilikler ekleyin ve varsayılan kişiliği seçin.</p>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-danger" id="restartAppBtn" type="button" disabled>
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Uygulamayı Resetle
+          </button>
+          <button class="btn btn-outline-secondary" id="refreshPersonalitiesBtn"><i class="bi bi-arrow-clockwise me-1"></i>Yenile</button>
+          <button class="btn btn-primary" id="addPersonalityBtn" disabled><i class="bi bi-plus-circle me-1"></i>Yeni Kişilik</button>
         </div>
       </div>
       <div class="card shadow-sm mb-3">

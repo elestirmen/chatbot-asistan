@@ -60,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const qaPaneEl = document.getElementById('qa-pane');
   const logsTabEl = document.getElementById('logs-tab');
   const logsPaneEl = document.getElementById('logs-pane');
+  const modelsTabEl = document.getElementById('models-tab');
+  const modelsPaneEl = document.getElementById('models-pane');
   const personalitiesTabEl = document.getElementById('personalities-tab');
   const personalitiesPaneEl = document.getElementById('personalities-pane');
   let qaTable;
@@ -97,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const personalitiesErrorEl = document.getElementById('personalitiesError');
   const refreshPersonalitiesBtn = document.getElementById('refreshPersonalitiesBtn');
   const addPersonalityBtn = document.getElementById('addPersonalityBtn');
+  const restartAppBtn = document.getElementById('restartAppBtn');
   let editingPersonalityId = null;
   let personalityList = [];
   let defaultPersonalityId = null;
@@ -139,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleAdminTabs(visible) {
     const entries = [
       { tab: logsTabEl, pane: logsPaneEl },
+      { tab: modelsTabEl, pane: modelsPaneEl },
       { tab: personalitiesTabEl, pane: personalitiesPaneEl },
     ];
 
@@ -1129,6 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (adminAccess) {
       if (addPersonalityBtn) addPersonalityBtn.disabled = false;
+      if (restartAppBtn && !restartAppBtn.dataset.pending) restartAppBtn.disabled = false;
       setSystemPromptControlsEnabled(true);
       handleSystemPromptInput();
       if (!modelSelectInput?.disabled) {
@@ -1137,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSamplingControlsState(getSelectedModelValue());
     } else {
       if (addPersonalityBtn) addPersonalityBtn.disabled = true;
+      if (restartAppBtn) restartAppBtn.disabled = true;
       currentSystemPrompt = '';
       if (systemPromptInput) systemPromptInput.value = '';
       setSystemPromptControlsEnabled(false);
@@ -2584,6 +2590,51 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (addPersonalityBtn) {
     addPersonalityBtn.addEventListener('click', () => openPersonalityModal());
+  }
+
+  if (restartAppBtn) {
+    restartAppBtn.addEventListener('click', () => {
+      if (!requireAdmin('Uygulamayı yeniden başlatmak için admin yetkisi gerekir.')) {
+        return;
+      }
+      const warningMessage =
+        'Bu işlem uygulamayı yeniden başlatacak ve aktif sohbetleri kesecek.\n' +
+        'Devam etmek istediğinizden emin misiniz?';
+      if (!window.confirm(warningMessage)) {
+        return;
+      }
+      const originalHtml = restartAppBtn.innerHTML;
+      restartAppBtn.dataset.pending = 'true';
+      restartAppBtn.disabled = true;
+      restartAppBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Yeniden Başlatılıyor...';
+
+      fetch('/admin/api/system/restart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({ delay_seconds: 1.0 }),
+      })
+        .then((resp) => {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          return resp.json();
+        })
+        .then((data) => {
+          const message =
+            data?.message ||
+            'Uygulama kısa süre içinde yeniden başlatılacak. Sayfayı birkaç saniye sonra yenileyin.';
+          alert(message);
+          restartAppBtn.innerHTML = originalHtml;
+        })
+        .catch((err) => {
+          console.error('Restart request failed', err);
+          alert('Yeniden başlatma isteği gönderilemedi. Lütfen daha sonra tekrar deneyin.');
+          restartAppBtn.disabled = false;
+          restartAppBtn.innerHTML = originalHtml;
+          restartAppBtn.removeAttribute('data-pending');
+        });
+    });
   }
   if (personalityForm) {
     personalityForm.addEventListener('submit', handlePersonalitySubmit);

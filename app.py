@@ -1835,6 +1835,48 @@ def admin_openai_model():
     return jsonify(model_config_manager.to_payload())
 
 
+@admin_bp.route('/api/system/restart', methods=['POST'])
+def admin_system_restart():
+    if not _is_admin():
+        return _unauthorized()
+
+    payload = request.get_json(silent=True) or {}
+    delay = payload.get('delay_seconds')
+    try:
+        delay_val = float(delay)
+    except (TypeError, ValueError):
+        delay_val = 1.0
+
+    delay_val = max(0.0, min(delay_val, 10.0))
+
+    def _delayed_restart() -> None:
+        if delay_val:
+            time.sleep(delay_val)
+        try:
+            app.logger.info("Manual restart requested by admin; rebuilding embeddings before restart.")
+        except Exception:
+            pass
+        try:
+            embedding_manager.rebuild_cache()
+        except Exception as exc:
+            try:
+                app.logger.exception("Manual restart embedding rebuild failed")
+            except Exception:
+                print("[Maintenance] Manual embedding rebuild failed:", exc, flush=True)
+        try:
+            app.logger.info("Manual restart requested by admin; restarting application.")
+        except Exception:
+            pass
+        _restart_process()
+
+    threading.Thread(target=_delayed_restart, name="AdminManualRestart", daemon=True).start()
+    return jsonify({
+        'status': 'scheduled',
+        'delay_seconds': delay_val,
+        'message': 'Uygulama kısa süre içinde yeniden başlatılacak.'
+    }), 202
+
+
 @admin_bp.route('/api/personalities', methods=['GET', 'POST'])
 def admin_personality_collection():
     global DEFAULT_PERSONALITY
