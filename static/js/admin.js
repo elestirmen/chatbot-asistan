@@ -1200,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (currentFile) {
         if (qaTable) {
-          qaTable.ajax.reload();
+          qaTable.ajax.reload(null, false);
         } else {
           initQaTable();
         }
@@ -1623,7 +1623,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (createCopySelect) createCopySelect.value = '';
         return reloadFileList(createdName).then(() => {
           if (qaTable) {
-            qaTable.ajax.reload();
+            qaTable.ajax.reload(null, false);
           } else if (currentFile) {
             initQaTable();
           }
@@ -1705,7 +1705,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setInlineStatus(mergeFileStatus, message, 'success');
         return reloadFileList(targetFile).then(() => {
           if (qaTable) {
-            qaTable.ajax.reload();
+            qaTable.ajax.reload(null, false);
           } else if (currentFile) {
             initQaTable();
           }
@@ -3258,7 +3258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentFile = POST_LOGIN_DEFAULT_FILE;
             $fileSel.val(currentFile);
             if (qaTable) {
-              qaTable.ajax.reload(() => updateAuthUI());
+            qaTable.ajax.reload(() => updateAuthUI(), false);
             } else {
               initQaTable();
               updateAuthUI();
@@ -3390,7 +3390,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $.ajax({
       url: `/admin/api/items/${idx}?file=${currentFile}`,
       method: 'DELETE',
-      success: () => qaTable.ajax.reload(),
+      success: () => qaTable.ajax.reload(null, false),
       error: (xhr) => {
         let msg = xhr.responseJSON?.message || 'Silme işlemi sırasında bir hata oluştu.';
         if (xhr.status === 401) msg += ' Lütfen tekrar giriş yapmayı deneyin.';
@@ -3417,7 +3417,7 @@ document.addEventListener('DOMContentLoaded', () => {
       data: JSON.stringify(payload),
       success: () => {
         qaModal?.hide();
-        qaTable.ajax.reload();
+        qaTable.ajax.reload(null, false);
       },
       error: (xhr) => {
         let msg = xhr.responseJSON?.message || 'İşlem sırasında bir hata oluştu.';
@@ -3555,7 +3555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     alert(`${deleteCount} öğe silindi.`);
-    qaTable.ajax.reload();
+    qaTable.ajax.reload(null, false);
     updateBulkSelection();
   });
 
@@ -3733,7 +3733,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       alert(`${addedCount} kayıt eklendi!`);
       bulkAddModal.hide();
-      qaTable.ajax.reload();
+      qaTable.ajax.reload(null, false);
       
       // Clear inputs
       $('#bulkJsonInput, #bulkCsvInput, #bulkTextInput').val('');
@@ -3946,7 +3946,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reloadFileList(nextFile).then(() => {
           if (qaTable) {
             if (nextFile) {
-              qaTable.ajax.reload();
+              qaTable.ajax.reload(null, false);
             } else {
               qaTable.clear().draw();
             }

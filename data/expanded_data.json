@@ -696,10 +696,10 @@
   },
   {
     "questions": [
-      "\"Diploma Eki dediğiniz şey tam olarak ne işe yarıyor?\"",
-      "\"Diploma Ekleri'nin amacı nedir?\"",
-      "\"Diploma Ekinin görevi tam olarak nedir?\"",
-      "\"Diploma Eki ne gibi faydalar sağlıyor?\""
+      "Diploma Eki dediğiniz şey tam olarak ne işe yarıyor?",
+      "Diploma Ekleri'nin amacı nedir?",
+      "Diploma Ekinin görevi tam olarak nedir?",
+      "Diploma Eki ne gibi faydalar sağlıyor?"
     ],
     "answer": "Diploma Eki, yurt dışında aldığınız diplomanızın eğitim sisteminizdeki yerini ve içeriğini açıklayan bir belgedir. Bu sayede diplomanızın karşı ülkedeki denkliği daha kolay anlaşılır ve işverenler veya eğitim kurumları tarafından doğru değerlendirilmesi sağlanır."
   },
