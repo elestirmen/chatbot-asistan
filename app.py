@@ -191,9 +191,9 @@ OPENAI_MODEL_SUGGESTIONS: List[Dict[str, str]] = [
     {"id": "gpt-4.1", "label": "GPT-4.1"},
     {"id": "gpt-4.1-mini", "label": "GPT-4.1 Mini"},
     {"id": "gpt-4.1-nano", "label": "GPT-4.1 Nano"},
-    {"id": "gpt-5-nano", "label": "GPT-5 Nano (Streaming yok)"},
-    {"id": "gpt-5-mini", "label": "GPT-5 Mini (Streaming yok)"},
-    {"id": "gpt-5", "label": "GPT-5 (Streaming yok)"},
+    {"id": "gpt-5-nano", "label": "GPT-5 Nano"},
+    {"id": "gpt-5-mini", "label": "GPT-5 Mini"},
+    {"id": "gpt-5", "label": "GPT-5"},
 ]
 
 def _migrate_config_file(old_path: Path, new_path: Path) -> None:
@@ -854,10 +854,8 @@ event_logger = EventLogger(ANALYTICS_DIR)
 # Retrieval Fonksiyonu
 # -----------------------------------------------------------------------------
 def _use_non_streaming_mode(model_name: Optional[str]) -> bool:
-    """GPT-5 modelleri streaming desteklemiyor (org verification gerekli)"""
-    if not model_name:
-        return False
-    return model_name.strip().lower().startswith("gpt-5")
+    """Tüm modeller artık streaming destekliyor (org verified)"""
+    return False
 
 
 def _messages_to_response_input(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -1199,37 +1197,27 @@ def chat():
         def generate(current_session_id: str, current_user_id: str):
             collected: list[str] = []
             try:
-                if _use_non_streaming_mode(completion_model_name):
-                    # GPT-5 modelleri: streaming devre dışı, özel parametreler yok
-                    response = client.chat.completions.create(
-                        model=completion_model_name,
-                        messages=session["messages"],
-                        stream=False,
-                    )
-                    full_text = response.choices[0].message.content or ""
-                    if full_text:
-                        collected.append(full_text)
-                        yield f"data: {json.dumps({'content': full_text})}\n\n"
-                    else:
-                        app.logger.warning(
-                            "GPT-5 boş yanıt döndü: model=%s",
-                            completion_model_name,
-                        )
-                        raise RuntimeError("Boş yanıt döndü.")
-                else:
-                    # GPT-4 modelleri: streaming aktif
-                    completion = client.chat.completions.create(
-                        model=completion_model_name,
-                        messages=session["messages"],
-                        temperature=0.75,
-                        top_p=0.9,
-                        stream=True,
-                    )
-                    for chunk in completion:
-                        delta = chunk.choices[0].delta.content
-                        if delta:
-                            collected.append(delta)
-                            yield f"data: {json.dumps({'content': delta})}\n\n"
+                # GPT-5 için temperature/top_p parametrelerini kontrol et
+                is_gpt5 = completion_model_name.lower().startswith("gpt-5")
+                
+                params = {
+                    "model": completion_model_name,
+                    "messages": session["messages"],
+                    "stream": True,
+                }
+                
+                # GPT-4 için temperature ve top_p ekle
+                if not is_gpt5:
+                    params["temperature"] = 0.75
+                    params["top_p"] = 0.9
+                
+                completion = client.chat.completions.create(**params)
+                
+                for chunk in completion:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        collected.append(delta)
+                        yield f"data: {json.dumps({'content': delta})}\n\n"
             except APITimeoutError:
                 app.logger.warning(
                     "OpenAI zaman aşımı: session=%s user=%s", current_session_id, current_user_id
