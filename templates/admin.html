@@ -354,6 +354,10 @@
     <div class="tab-pane fade show active" id="qa-pane" role="tabpanel" aria-labelledby="qa-tab" tabindex="0">
       <div class="mb-3">
         <select id="fileSelect" class="form-select w-auto d-inline-block me-2"></select>
+        <div class="btn-group me-2" role="group" aria-label="JSON dosya işlemleri">
+          <button class="btn btn-outline-secondary" id="createFileBtn" disabled><i class="bi bi-file-earmark-plus me-1"></i>Yeni JSON</button>
+          <button class="btn btn-outline-secondary" id="mergeFileBtn" disabled><i class="bi bi-shuffle me-1"></i>Birleştir</button>
+        </div>
         <button class="btn btn-primary" id="addBtn" disabled>Yeni Ekle</button>
       </div>
       <table id="qaTable" class="table table-striped table-bordered w-100">
@@ -364,6 +368,94 @@
           <th style="width:120px">İşlemler</th>
         </tr></thead><tbody></tbody>
       </table>
+    </div>
+
+    <!-- Create JSON Modal -->
+    <div class="modal fade" id="createFileModal" tabindex="-1" aria-labelledby="createFileModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content needs-validation" id="createFileForm" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title" id="createFileModalLabel"><i class="bi bi-file-earmark-plus me-2 text-primary"></i>Yeni Soru‑Cevap Dosyası</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="createFilenameInput" class="form-label">Dosya adı</label>
+              <input type="text" class="form-control" id="createFilenameInput" name="filename" placeholder="ornek_dosya.json" pattern="^[A-Za-z0-9_.-]+(?:\\.json)?$" required>
+              <div class="invalid-feedback">Lütfen yalnızca harf, rakam, nokta, alt çizgi veya tire içeren bir ad girin.</div>
+              <div class="form-text">Uzantı otomatik olarak `.json` değilse eklenecek.</div>
+            </div>
+            <fieldset class="mb-3">
+              <legend class="form-label fs-6 mb-2">Başlangıç içeriği</legend>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="createInitialMode" id="createInitialEmpty" value="empty" checked>
+                <label class="form-check-label" for="createInitialEmpty">Boş dosya oluştur</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="createInitialMode" id="createInitialCopy" value="copy">
+                <label class="form-check-label" for="createInitialCopy">Var olan dosyadan kopyala</label>
+              </div>
+              <div class="mt-2">
+                <select id="createCopySelect" class="form-select" disabled>
+                  <option value="" selected>Kaynak dosya seçin</option>
+                </select>
+              </div>
+            </fieldset>
+            <small id="createFileStatus" class="form-text text-muted"></small>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+            <button type="submit" class="btn btn-primary" id="createFileSubmitBtn" disabled><i class="bi bi-check-lg me-1"></i>Oluştur</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Merge JSON Modal -->
+    <div class="modal fade" id="mergeFileModal" tabindex="-1" aria-labelledby="mergeFileModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content needs-validation" id="mergeFileForm" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title" id="mergeFileModalLabel"><i class="bi bi-shuffle me-2 text-primary"></i>JSON Dosyalarını Birleştir</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="mergeSourceSelect" class="form-label">Kaynak dosya</label>
+              <select id="mergeSourceSelect" class="form-select" required></select>
+              <div class="invalid-feedback">Lütfen bir kaynak dosya seçin.</div>
+            </div>
+            <fieldset class="mb-3">
+              <legend class="form-label fs-6 mb-2">Hedef</legend>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mergeTargetMode" id="mergeTargetExisting" value="existing" checked>
+                <label class="form-check-label" for="mergeTargetExisting">Var olan dosyaya ekle</label>
+              </div>
+              <div class="ps-3 mt-2" id="mergeTargetExistingGroup">
+                <select id="mergeTargetSelect" class="form-select"></select>
+                <div class="form-text">Mevcut içerik korunur, yeni kayıtlar sona eklenir.</div>
+              </div>
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="radio" name="mergeTargetMode" id="mergeTargetNew" value="new">
+                <label class="form-check-label" for="mergeTargetNew">Yeni dosya oluştur</label>
+              </div>
+              <div class="ps-3 mt-2 d-none" id="mergeTargetNewGroup">
+                <input type="text" class="form-control" id="mergeTargetNameInput" placeholder="birlesik.json" pattern="^[A-Za-z0-9_.-]+(?:\\.json)?$">
+                <div class="form-text">Uzantı `.json` değilse otomatik eklenir.</div>
+              </div>
+            </fieldset>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="mergeAllowDuplicatesInput">
+              <label class="form-check-label" for="mergeAllowDuplicatesInput">Aynı soru setleri tekrar eklensin</label>
+            </div>
+            <small id="mergeFileStatus" class="form-text text-muted"></small>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+            <button type="submit" class="btn btn-primary" id="mergeFileSubmitBtn" disabled><i class="bi bi-arrow-left-right me-1"></i>Birleştir</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <div class="tab-pane fade" id="personalities-pane" role="tabpanel" aria-labelledby="personalities-tab" tabindex="0">

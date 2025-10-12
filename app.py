@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # --- YENİ EKLENENLER BAŞLANGICI ---
 import redis
@@ -1471,6 +1471,53 @@ def _list_json_files() -> List[str]:
     return sorted(f.name for f in DATA_DIR.glob('*.json'))
 
 
+def _normalize_json_filename(name: str) -> str:
+    raw = str(name or '').strip()
+    if not raw:
+        raise ValueError('Dosya adı boş olamaz.')
+    # Prevent path traversal
+    raw = raw.replace('\\', '/').split('/')[-1]
+    if not raw:
+        raise ValueError('Dosya adı boş olamaz.')
+    if not raw.lower().endswith('.json'):
+        raw = f"{raw}.json"
+    candidate = secure_filename(raw)
+    if not candidate:
+        raise ValueError('Dosya adı izin verilmeyen karakterler içeriyor.')
+    if not candidate.lower().endswith('.json'):
+        candidate = f"{candidate}.json"
+    if not re.fullmatch(r'[A-Za-z0-9_.-]+\.json', candidate):
+        raise ValueError('Dosya adı izin verilmeyen karakterler içeriyor.')
+    return candidate
+
+
+def _resolve_data_file(filename: str) -> Path:
+    normalized = _normalize_json_filename(filename)
+    path = (DATA_DIR / normalized).resolve()
+    data_root = DATA_DIR.resolve()
+    if data_root not in path.parents and path != data_root:
+        raise ValueError('Dosya adı geçersiz.')
+    return path
+
+
+def _normalize_question_text(text: Any) -> str:
+    return re.sub(r'\s+', ' ', str(text or '').strip().lower())
+
+
+def _questions_signature(entry: Dict[str, Any]) -> Optional[Tuple[str, ...]]:
+    questions = entry.get('questions')
+    if not isinstance(questions, list):
+        return None
+    normalized: List[str] = []
+    for q in questions:
+        norm = _normalize_question_text(q)
+        if norm:
+            normalized.append(norm)
+    if not normalized:
+        return None
+    return tuple(sorted(normalized))
+
+
 def _canonical(items: List[dict]) -> List[dict]:
     out = []
     for it in items:
@@ -1486,7 +1533,7 @@ def _canonical(items: List[dict]) -> List[dict]:
 
 
 def _load_data(filename: str = DEFAULT_QA_FILE) -> List[dict]:
-    path = DATA_DIR / filename
+    path = _resolve_data_file(filename)
     if not path.exists():
         return []
     try:
@@ -1495,12 +1542,13 @@ def _load_data(filename: str = DEFAULT_QA_FILE) -> List[dict]:
         return []
     data = _canonical(raw)
     if data != raw:
-        _save_data(data, filename)
+        _save_data(data, path.name)
     return data
 
 
 def _save_data(data: List[dict], filename: str = DEFAULT_QA_FILE):
-    path = DATA_DIR / filename
+    path = _resolve_data_file(filename)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), 'utf-8')
 
 
@@ -1546,9 +1594,124 @@ def admin_home():
     return render_template('admin.html', PY_DEFAULT_F=DEFAULT_QA_FILE)
 
 
-@admin_bp.route('/api/files')
+@admin_bp.route('/api/files', methods=['GET', 'POST'])
 def admin_files_route():
-    return jsonify(_list_json_files())
+    if request.method == 'GET':
+        return jsonify(_list_json_files())
+
+    if not _has_qna_access():
+        return _unauthorized()
+
+    payload = request.get_json(force=True) or {}
+    filename = payload.get('filename')
+    copy_from = payload.get('copy_from')
+    initial_items = payload.get('items')
+
+    try:
+        target_path = _resolve_data_file(filename)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+
+    if target_path.exists():
+        return jsonify({'error': 'Bad Request', 'message': 'Bu dosya zaten mevcut.'}), 400
+
+    data: List[Dict[str, Any]] = []
+    if copy_from:
+        try:
+            source_path = _resolve_data_file(copy_from)
+        except ValueError as exc:
+            return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+        if not source_path.exists():
+            return jsonify({'error': 'Not Found', 'message': 'Kopyalanacak dosya bulunamadı.'}), 404
+        try:
+            data = _load_data(source_path.name)
+        except ValueError as exc:
+            return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+    elif isinstance(initial_items, list):
+        data = _canonical(initial_items)
+
+    try:
+        _save_data(data, target_path.name)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+
+    return jsonify({'filename': target_path.name, 'count': len(data)}), 201
+
+
+@admin_bp.route('/api/files/merge', methods=['POST'])
+def admin_files_merge():
+    if not _has_qna_access():
+        return _unauthorized()
+
+    payload = request.get_json(force=True) or {}
+    source = payload.get('source')
+    target = payload.get('target')
+    allow_duplicates = bool(payload.get('allow_duplicates'))
+    create_if_missing = bool(payload.get('create_if_missing'))
+
+    if not source or not target:
+        return jsonify({'error': 'Bad Request', 'message': 'Kaynak ve hedef dosya adları gerekli.'}), 400
+
+    try:
+        source_path = _resolve_data_file(source)
+        target_path = _resolve_data_file(target)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+
+    if source_path.name == target_path.name and not create_if_missing:
+        return jsonify({'error': 'Bad Request', 'message': 'Kaynak ve hedef dosya farklı olmalıdır.'}), 400
+
+    if not source_path.exists():
+        return jsonify({'error': 'Not Found', 'message': 'Kaynak dosya bulunamadı.'}), 404
+
+    created_target = False
+    if not target_path.exists():
+        if not create_if_missing:
+            return jsonify({'error': 'Not Found', 'message': 'Hedef dosya bulunamadı.'}), 404
+        created_target = True
+
+    try:
+        source_data = _load_data(source_path.name)
+        target_data = _load_data(target_path.name) if target_path.exists() else []
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+
+    added = 0
+    skipped = 0
+
+    if allow_duplicates:
+        target_data.extend(source_data)
+        added = len(source_data)
+    else:
+        seen: Set[Tuple[str, ...]] = set()
+        for entry in target_data:
+            sig = _questions_signature(entry)
+            if sig:
+                seen.add(sig)
+        for entry in source_data:
+            sig = _questions_signature(entry)
+            if sig and sig in seen:
+                skipped += 1
+                continue
+            if sig:
+                seen.add(sig)
+            target_data.append(entry)
+            added += 1
+
+    try:
+        _save_data(target_data, target_path.name)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+
+    return jsonify({
+        'source': source_path.name,
+        'target': target_path.name,
+        'added': added,
+        'skipped': skipped,
+        'total': len(target_data),
+        'created': created_target,
+        'allow_duplicates': allow_duplicates,
+    })
 
 
 @admin_bp.route('/api/auth_status')
@@ -1818,7 +1981,11 @@ def admin_personality_set_default(slug: str):
 def admin_items_collection_route():
     fname = request.args.get('file', DEFAULT_QA_FILE)
     if request.method == 'GET':
-        return jsonify(_load_data(fname))
+        try:
+            data = _load_data(fname)
+        except ValueError as exc:
+            return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+        return jsonify(data)
     if not _has_qna_access():
         return _unauthorized()
     payload = request.get_json(force=True)
@@ -1827,9 +1994,12 @@ def admin_items_collection_route():
     processed = _canonical([{'questions': payload.get('questions'), 'answer': payload.get('answer')}])
     if not processed:
         return jsonify({'error': 'Bad Request', 'message': 'Geçersiz soru/cevap formatı.'}), 400
-    data = _load_data(fname)
-    data.append(processed[0])
-    _save_data(data, fname)
+    try:
+        data = _load_data(fname)
+        data.append(processed[0])
+        _save_data(data, fname)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
     return jsonify({'ok': True}), 201
 
 
@@ -1838,7 +2008,10 @@ def admin_item_singular_route(idx: int):
     if not _has_qna_access():
         return _unauthorized()
     fname = request.args.get('file', DEFAULT_QA_FILE)
-    data = _load_data(fname)
+    try:
+        data = _load_data(fname)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
     if not (0 <= idx < len(data)):
         return jsonify({'error': 'Geçersiz index'}), 404
     if request.method == 'PUT':
@@ -1849,10 +2022,16 @@ def admin_item_singular_route(idx: int):
         if not processed:
             return jsonify({'error': 'Bad Request', 'message': 'Geçersiz soru/cevap formatı.'}), 400
         data[idx] = processed[0]
-        _save_data(data, fname)
+        try:
+            _save_data(data, fname)
+        except ValueError as exc:
+            return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
         return jsonify({'ok': True})
     removed = data.pop(idx)
-    _save_data(data, fname)
+    try:
+        _save_data(data, fname)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
     return jsonify(removed)
 
 

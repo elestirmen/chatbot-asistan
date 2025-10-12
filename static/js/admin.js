@@ -33,6 +33,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const messageDetailModal = messageDetailModalEl ? new bootstrap.Modal(messageDetailModalEl) : null;
   const sessionConversationModal = sessionConversationModalEl ? new bootstrap.Modal(sessionConversationModalEl) : null;
   const $fileSel = $('#fileSelect');
+  const createFileBtn = document.getElementById('createFileBtn');
+  const mergeFileBtn = document.getElementById('mergeFileBtn');
+  const createFileModalEl = document.getElementById('createFileModal');
+  const createFileModal = createFileModalEl ? new bootstrap.Modal(createFileModalEl) : null;
+  const createFileForm = document.getElementById('createFileForm');
+  const createFilenameInput = document.getElementById('createFilenameInput');
+  const createFileSubmitBtn = document.getElementById('createFileSubmitBtn');
+  const createCopySelect = document.getElementById('createCopySelect');
+  const createFileStatus = document.getElementById('createFileStatus');
+  const createInitialModeInputs = document.querySelectorAll('input[name="createInitialMode"]');
+  const mergeFileModalEl = document.getElementById('mergeFileModal');
+  const mergeFileModal = mergeFileModalEl ? new bootstrap.Modal(mergeFileModalEl) : null;
+  const mergeFileForm = document.getElementById('mergeFileForm');
+  const mergeFileSubmitBtn = document.getElementById('mergeFileSubmitBtn');
+  const mergeSourceSelect = document.getElementById('mergeSourceSelect');
+  const mergeTargetExistingRadio = document.getElementById('mergeTargetExisting');
+  const mergeTargetNewRadio = document.getElementById('mergeTargetNew');
+  const mergeTargetSelect = document.getElementById('mergeTargetSelect');
+  const mergeTargetExistingGroup = document.getElementById('mergeTargetExistingGroup');
+  const mergeTargetNewGroup = document.getElementById('mergeTargetNewGroup');
+  const mergeTargetNameInput = document.getElementById('mergeTargetNameInput');
+  const mergeAllowDuplicatesInput = document.getElementById('mergeAllowDuplicatesInput');
+  const mergeFileStatus = document.getElementById('mergeFileStatus');
   const qaTabEl = document.getElementById('qa-tab');
   const qaPaneEl = document.getElementById('qa-pane');
   const logsTabEl = document.getElementById('logs-tab');
@@ -1089,6 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#loginBtn').toggle(!qaAccess);
     $('#logoutBtn').toggle(qaAccess);
     $('#addBtn').prop('disabled', !qaAccess);
+    updateFileActionButtons();
     if (qaTable) qaTable.draw();
 
     if (qaAccess) {
@@ -1161,25 +1185,526 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAuthUI();
   });
 
-  $.getJSON('/admin/api/files', (files) => {
-    allFiles = Array.isArray(files) ? files : [];
-    if (!allFiles.length) {
-      alert('data/ klasöründe JSON dosyası bulunamadı.');
-      $('#addBtn').prop('disabled', true);
-      return;
-    }
-    allFiles.forEach((f) => $fileSel.append(`<option value="${f}">${f}</option>`));
-    currentFile = allFiles.includes(defaultFile) ? defaultFile : allFiles[0];
-    $fileSel.val(currentFile);
-    if (currentFile) {
-      initQaTable();
-    } else {
-      alert('Yüklenecek veri dosyası bulunamadı.');
-      $('#addBtn').prop('disabled', true);
-    }
-  });
+  reloadFileList(defaultFile)
+    .then(() => {
+      if (!allFiles.length) {
+        alert('data/ klasöründe JSON dosyası bulunamadı.');
+        $('#addBtn').prop('disabled', true);
+        return;
+      }
+      if (currentFile) {
+        if (qaTable) {
+          qaTable.ajax.reload();
+        } else {
+          initQaTable();
+        }
+      } else {
+        alert('Yüklenecek veri dosyası bulunamadı.');
+        $('#addBtn').prop('disabled', true);
+      }
+    })
+    .catch(() => {
+      alert('JSON dosyaları listelenemedi. Lütfen sayfayı yenileyin.');
+    });
 
   $.fn.dataTable.ext.errMode = 'none';
+
+  function updateFileActionButtons() {
+    const qaAccess = hasQaAccess();
+    const fileCount = Array.isArray(allFiles) ? allFiles.length : 0;
+    const canSelect = fileCount > 0;
+    const canMerge = qaAccess && fileCount > 1 && Boolean(currentFile);
+
+    if (createFileBtn) {
+      createFileBtn.disabled = !qaAccess;
+    }
+    if (mergeFileBtn) {
+      mergeFileBtn.disabled = !canMerge;
+    }
+    $fileSel.prop('disabled', !canSelect);
+    handleCreateFormChange();
+    handleMergeFormChange();
+  }
+
+  function setInlineStatus(element, message, tone = 'muted') {
+    if (!element) return;
+    element.textContent = message || '';
+    element.className = `form-text text-${tone}`;
+  }
+
+  function toggleVisibility(target, show) {
+    if (!target) return;
+    target.classList.toggle('d-none', !show);
+  }
+
+  function populateFileSelect(files, preferred) {
+    const safeFiles = Array.isArray(files)
+      ? files.filter((f) => typeof f === 'string' && f.toLowerCase().endsWith('.json'))
+      : [];
+    allFiles = safeFiles;
+    $fileSel.empty();
+    safeFiles.forEach((f) => {
+      $fileSel.append(`<option value="${f}">${f}</option>`);
+    });
+    if (!safeFiles.length) {
+      currentFile = '';
+      $fileSel.val('');
+      updateFileActionButtons();
+      return;
+    }
+    let next = preferred && safeFiles.includes(preferred)
+      ? preferred
+      : (currentFile && safeFiles.includes(currentFile) ? currentFile : safeFiles[0]);
+    currentFile = next;
+    $fileSel.val(currentFile);
+    updateFileActionButtons();
+  }
+
+  function reloadFileList(preferred) {
+    return new Promise((resolve, reject) => {
+      $.getJSON('/admin/api/files', (files) => {
+        populateFileSelect(files, preferred);
+        refreshCreateModalOptions();
+        refreshMergeModalOptions();
+        resolve(allFiles);
+      }).fail((xhr) => {
+        updateFileActionButtons();
+        reject(xhr);
+      });
+    });
+  }
+
+  function normalizeFilenameInput(value) {
+    if (typeof value !== 'string') return '';
+    let trimmed = value.trim();
+    if (!trimmed) return '';
+    if (!trimmed.toLowerCase().endsWith('.json')) {
+      trimmed += '.json';
+    }
+    return trimmed;
+  }
+
+  function matchExistingFile(value) {
+    const normalized = normalizeFilenameInput(value);
+    if (!normalized) return null;
+    return allFiles.find((f) => f.toLowerCase() === normalized.toLowerCase()) || null;
+  }
+
+  function refreshCreateModalOptions() {
+    if (!createCopySelect) return;
+    const files = Array.isArray(allFiles) ? allFiles : [];
+    createCopySelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = files.length ? 'Kaynak dosya seçin' : 'Kullanılabilir dosya yok';
+    placeholder.disabled = files.length === 0;
+    placeholder.selected = true;
+    createCopySelect.appendChild(placeholder);
+    files.forEach((file) => {
+      const opt = document.createElement('option');
+      opt.value = file;
+      opt.textContent = file;
+      createCopySelect.appendChild(opt);
+    });
+    const copyRadio = Array.from(createInitialModeInputs || []).find((input) => input.value === 'copy');
+    if (copyRadio) {
+      copyRadio.disabled = files.length === 0;
+      if (copyRadio.disabled && copyRadio.checked) {
+        const emptyRadio = Array.from(createInitialModeInputs || []).find((input) => input.value === 'empty');
+        if (emptyRadio) emptyRadio.checked = true;
+      }
+    }
+    const isCopyMode = Array.from(createInitialModeInputs || []).some((input) => input.checked && input.value === 'copy');
+    createCopySelect.disabled = !(isCopyMode && files.length);
+    handleCreateFormChange();
+  }
+
+  function refreshMergeModalOptions() {
+    if (!mergeSourceSelect || !mergeTargetSelect) return;
+    const files = Array.isArray(allFiles) ? allFiles : [];
+    mergeSourceSelect.innerHTML = '';
+    mergeTargetSelect.innerHTML = '';
+
+    if (!files.length) {
+      const emptyOpt = document.createElement('option');
+      emptyOpt.value = '';
+      emptyOpt.textContent = 'JSON dosyası bulunamadı';
+      emptyOpt.disabled = true;
+      emptyOpt.selected = true;
+      mergeSourceSelect.appendChild(emptyOpt);
+      mergeTargetSelect.appendChild(emptyOpt.cloneNode(true));
+      mergeSourceSelect.disabled = true;
+      mergeTargetSelect.disabled = true;
+      if (mergeTargetExistingRadio) mergeTargetExistingRadio.disabled = true;
+      if (mergeTargetNewRadio) mergeTargetNewRadio.checked = true;
+      toggleVisibility(mergeTargetExistingGroup, false);
+      toggleVisibility(mergeTargetNewGroup, true);
+      return;
+    }
+
+    files.forEach((file) => {
+      const optSource = document.createElement('option');
+      optSource.value = file;
+      optSource.textContent = file;
+      mergeSourceSelect.appendChild(optSource);
+      const optTarget = document.createElement('option');
+      optTarget.value = file;
+      optTarget.textContent = file;
+      mergeTargetSelect.appendChild(optTarget);
+    });
+
+    mergeSourceSelect.disabled = false;
+    mergeTargetSelect.disabled = false;
+
+    const defaultSource = files.find((file) => file !== currentFile) || files[0];
+    mergeSourceSelect.value = defaultSource;
+
+    const targetDefault = currentFile && files.includes(currentFile) ? currentFile : files[0];
+    mergeTargetSelect.value = targetDefault;
+
+    if (mergeTargetExistingRadio) {
+      mergeTargetExistingRadio.disabled = files.length === 0;
+      if (!mergeTargetExistingRadio.disabled && !mergeTargetExistingRadio.checked && !mergeTargetNewRadio?.checked) {
+        mergeTargetExistingRadio.checked = true;
+      }
+    }
+    handleMergeFormChange();
+  }
+
+  function prepareCreateFileModal() {
+    if (!createFileForm) return;
+    createFileForm.reset();
+    createFileForm.classList.remove('was-validated');
+    setInlineStatus(createFileStatus, '');
+    refreshCreateModalOptions();
+    const emptyRadio = Array.from(createInitialModeInputs || []).find((input) => input.value === 'empty');
+    if (emptyRadio) emptyRadio.checked = true;
+    if (createCopySelect) {
+      createCopySelect.disabled = !(Array.from(createInitialModeInputs || []).some((input) => input.checked && input.value === 'copy') && createCopySelect.options.length > 1);
+      createCopySelect.value = currentFile && Array.from(createCopySelect.options).some((opt) => opt.value === currentFile) ? currentFile : '';
+    }
+    if (createFileSubmitBtn) {
+      createFileSubmitBtn.disabled = true;
+    }
+    if (createFilenameInput) {
+      createFilenameInput.value = '';
+      setTimeout(() => createFilenameInput.focus(), 150);
+    }
+    handleCreateInitialModeChange();
+  }
+
+  function handleCreateInitialModeChange() {
+    const mode = Array.from(createInitialModeInputs || []).find((input) => input.checked)?.value || 'empty';
+    const hasCopies = createCopySelect && createCopySelect.options.length > 1;
+    if (createCopySelect) {
+      if (mode === 'copy' && hasCopies) {
+        createCopySelect.disabled = false;
+      } else {
+        createCopySelect.disabled = true;
+        createCopySelect.value = '';
+      }
+    }
+    handleCreateFormChange();
+  }
+
+  function handleCreateFormChange() {
+    if (!createFileSubmitBtn) return;
+    if (!hasQaAccess()) {
+      createFileSubmitBtn.disabled = true;
+      return;
+    }
+    const filenameRaw = (createFilenameInput?.value || '').trim();
+    const filenameValid = filenameRaw && (!createFilenameInput || createFilenameInput.checkValidity());
+    const normalized = filenameValid ? normalizeFilenameInput(filenameRaw) : '';
+    const existing = normalized ? matchExistingFile(normalized) : null;
+
+    const mode = Array.from(createInitialModeInputs || []).find((input) => input.checked)?.value || 'empty';
+    const requiresCopy = mode === 'copy';
+    const copyValue = createCopySelect?.value || '';
+
+    let valid = Boolean(filenameValid);
+    if (!valid) {
+      setInlineStatus(createFileStatus, '');
+    } else if (existing) {
+      setInlineStatus(createFileStatus, 'Bu isimde bir dosya zaten var.', 'warning');
+      valid = false;
+    } else if (requiresCopy && !copyValue) {
+      setInlineStatus(createFileStatus, 'Lütfen kaynak dosya seçin.', 'warning');
+      valid = false;
+    } else {
+      setInlineStatus(createFileStatus, '');
+    }
+
+    createFileSubmitBtn.disabled = !valid;
+  }
+
+  function prepareMergeFileModal() {
+    if (!mergeFileForm) return;
+    mergeFileForm.reset();
+    mergeFileForm.classList.remove('was-validated');
+    setInlineStatus(mergeFileStatus, '');
+    refreshMergeModalOptions();
+    if (mergeTargetExistingRadio) mergeTargetExistingRadio.checked = true;
+    if (mergeTargetNewRadio) mergeTargetNewRadio.checked = false;
+    if (mergeAllowDuplicatesInput) mergeAllowDuplicatesInput.checked = false;
+    handleMergeTargetModeChange();
+    handleMergeFormChange();
+    setTimeout(() => {
+      if (mergeSourceSelect && !mergeSourceSelect.disabled) mergeSourceSelect.focus();
+    }, 150);
+  }
+
+  function handleMergeTargetModeChange() {
+    const useExisting = Boolean(mergeTargetExistingRadio?.checked);
+    toggleVisibility(mergeTargetExistingGroup, useExisting);
+    toggleVisibility(mergeTargetNewGroup, !useExisting);
+    if (mergeTargetSelect) mergeTargetSelect.disabled = !useExisting;
+    if (mergeTargetNameInput) {
+      mergeTargetNameInput.disabled = useExisting;
+      if (!useExisting && !mergeTargetNameInput.value) {
+        const suggestion = currentFile ? `birlesik_${currentFile.replace(/\.json$/i, '')}.json` : `birlesik_${Date.now()}.json`;
+        mergeTargetNameInput.value = suggestion;
+      }
+    }
+    handleMergeFormChange();
+  }
+
+  function deriveMergeTarget() {
+    const usingExisting = Boolean(mergeTargetExistingRadio?.checked);
+    if (usingExisting) {
+      const value = mergeTargetSelect?.value || '';
+      return {
+        target: value,
+        createIfMissing: false,
+        conflict: false,
+        normalized: value,
+      };
+    }
+    const raw = (mergeTargetNameInput?.value || '').trim();
+    const normalized = normalizeFilenameInput(raw);
+    if (!normalized) {
+      return {
+        target: '',
+        createIfMissing: true,
+        conflict: false,
+        normalized: '',
+      };
+    }
+    const existing = matchExistingFile(normalized);
+    if (existing) {
+      return {
+        target: existing,
+        createIfMissing: false,
+        conflict: true,
+        normalized,
+      };
+    }
+    return {
+      target: normalized,
+      createIfMissing: true,
+      conflict: false,
+      normalized,
+    };
+  }
+
+  function handleMergeFormChange() {
+    if (!mergeFileSubmitBtn) return;
+    if (!hasQaAccess()) {
+      mergeFileSubmitBtn.disabled = true;
+      return;
+    }
+    const files = Array.isArray(allFiles) ? allFiles : [];
+    const source = mergeSourceSelect?.value || '';
+    const targetInfo = deriveMergeTarget();
+    let valid = Boolean(source) && Boolean(targetInfo.target);
+    let tone = 'muted';
+    let message = '';
+
+    if (!files.length) {
+      valid = false;
+      message = 'Birleştirme için en az bir JSON dosyası gereklidir.';
+      tone = 'warning';
+    } else if (!source) {
+      valid = false;
+      message = 'Lütfen kaynak dosya seçin.';
+      tone = 'warning';
+    } else if (!targetInfo.target) {
+      valid = false;
+      message = mergeTargetExistingRadio?.checked ? 'Lütfen hedef dosya seçin.' : 'Yeni dosya adı girin.';
+      tone = 'warning';
+    } else if (source && targetInfo.target && source === targetInfo.target && !targetInfo.createIfMissing) {
+      valid = false;
+      message = 'Kaynak ve hedef dosya farklı olmalıdır.';
+      tone = 'warning';
+    } else if (targetInfo.conflict && mergeTargetNewRadio?.checked) {
+      message = 'Bu isimde bir dosya zaten var; veriler mevcut dosyaya eklenecek.';
+      tone = 'info';
+    }
+
+    setInlineStatus(mergeFileStatus, message, tone);
+    mergeFileSubmitBtn.disabled = !valid;
+  }
+
+  function handleCreateFileSubmit(event) {
+    event.preventDefault();
+    if (!hasQaAccess()) {
+      if (!isAuthenticated) {
+        loginModal?.show();
+      }
+      return;
+    }
+    if (!createFileForm || !createFileSubmitBtn) return;
+
+    createFileForm.classList.add('was-validated');
+
+    const filenameRaw = (createFilenameInput?.value || '').trim();
+    if (!filenameRaw || !createFilenameInput?.checkValidity()) {
+      handleCreateFormChange();
+      return;
+    }
+    const normalizedName = normalizeFilenameInput(filenameRaw);
+    if (matchExistingFile(normalizedName)) {
+      setInlineStatus(createFileStatus, 'Bu isimde bir dosya zaten var.', 'warning');
+      handleCreateFormChange();
+      return;
+    }
+
+    const mode = Array.from(createInitialModeInputs || []).find((input) => input.checked)?.value || 'empty';
+    const requiresCopy = mode === 'copy';
+    const copyValue = createCopySelect?.value || '';
+    if (requiresCopy && !copyValue) {
+      setInlineStatus(createFileStatus, 'Lütfen kaynak dosya seçin.', 'warning');
+      handleCreateFormChange();
+      return;
+    }
+
+    const payload = { filename: normalizedName };
+    if (requiresCopy && copyValue) {
+      payload.copy_from = copyValue;
+    }
+
+    createFileSubmitBtn.disabled = true;
+    setInlineStatus(createFileStatus, 'Dosya oluşturuluyor...', 'muted');
+
+    fetch('/admin/api/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then((resp) => {
+        if (!resp.ok) {
+          return resp.json().catch(() => ({})).then((data) => {
+            const message = data?.message || data?.error || 'Dosya oluşturulamadı.';
+            throw new Error(message);
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        const createdName = data?.filename || normalizedName;
+        const count = typeof data?.count === 'number' ? data.count : 0;
+        setInlineStatus(createFileStatus, `Dosya oluşturuldu. (${count} kayıt)`, 'success');
+        if (createFilenameInput) createFilenameInput.value = '';
+        if (createCopySelect) createCopySelect.value = '';
+        return reloadFileList(createdName).then(() => {
+          if (qaTable) {
+            qaTable.ajax.reload();
+          } else if (currentFile) {
+            initQaTable();
+          }
+          setTimeout(() => {
+            createFileModal?.hide();
+            setInlineStatus(createFileStatus, '');
+          }, 900);
+        });
+      })
+      .catch((err) => {
+        setInlineStatus(createFileStatus, err.message || 'Dosya oluşturulamadı.', 'danger');
+        handleCreateFormChange();
+      });
+  }
+
+  function handleMergeFileSubmit(event) {
+    event.preventDefault();
+    if (!hasQaAccess()) {
+      if (!isAuthenticated) {
+        loginModal?.show();
+      }
+      return;
+    }
+    if (!mergeFileForm || !mergeFileSubmitBtn) return;
+
+    mergeFileForm.classList.add('was-validated');
+    handleMergeFormChange();
+    if (mergeFileSubmitBtn.disabled) return;
+
+    const source = mergeSourceSelect?.value || '';
+    const targetInfo = deriveMergeTarget();
+    if (!source || !targetInfo.target) {
+      handleMergeFormChange();
+      return;
+    }
+    if (source === targetInfo.target && !targetInfo.createIfMissing) {
+      setInlineStatus(mergeFileStatus, 'Kaynak ve hedef dosya farklı olmalıdır.', 'warning');
+      handleMergeFormChange();
+      return;
+    }
+
+    const payload = {
+      source,
+      target: targetInfo.target,
+      allow_duplicates: Boolean(mergeAllowDuplicatesInput?.checked),
+      create_if_missing: targetInfo.createIfMissing,
+    };
+
+    mergeFileSubmitBtn.disabled = true;
+    setInlineStatus(mergeFileStatus, 'Dosyalar birleştiriliyor...', 'muted');
+
+    fetch('/admin/api/files/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then((resp) => {
+        if (!resp.ok) {
+          return resp.json().catch(() => ({})).then((data) => {
+            const message = data?.message || data?.error || 'Dosyalar birleştirilemedi.';
+            throw new Error(message);
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        const targetFile = data?.target || targetInfo.target;
+        const summary = [];
+        if (typeof data?.added === 'number') {
+          summary.push(`${data.added} kayıt aktarıldı`);
+        }
+        if (typeof data?.skipped === 'number' && data.skipped > 0) {
+          summary.push(`${data.skipped} kayıt atlandı`);
+        }
+        if (data?.created) {
+          summary.push('Yeni dosya oluşturuldu');
+        }
+        const message = summary.length ? `Birleştirme tamamlandı: ${summary.join(', ')}.` : 'Birleştirme tamamlandı.';
+        setInlineStatus(mergeFileStatus, message, 'success');
+        return reloadFileList(targetFile).then(() => {
+          if (qaTable) {
+            qaTable.ajax.reload();
+          } else if (currentFile) {
+            initQaTable();
+          }
+          setTimeout(() => {
+            mergeFileModal?.hide();
+            setInlineStatus(mergeFileStatus, '');
+          }, 1100);
+        });
+      })
+      .catch((err) => {
+        setInlineStatus(mergeFileStatus, err.message || 'Dosyalar birleştirilemedi.', 'danger');
+        handleMergeFormChange();
+      });
+  }
 
   function initQaTable() {
     qaTable = $('#qaTable').DataTable({
@@ -2396,6 +2921,76 @@ document.addEventListener('DOMContentLoaded', () => {
       },
     });
   });
+
+  if (createFileModalEl) {
+    createFileModalEl.addEventListener('show.bs.modal', prepareCreateFileModal);
+    createFileModalEl.addEventListener('hidden.bs.modal', () => {
+      setInlineStatus(createFileStatus, '');
+    });
+  }
+
+  if (createInitialModeInputs && typeof createInitialModeInputs.forEach === 'function') {
+    createInitialModeInputs.forEach((input) => {
+      input.addEventListener('change', handleCreateInitialModeChange);
+    });
+  }
+  if (createFilenameInput) {
+    createFilenameInput.addEventListener('input', handleCreateFormChange);
+  }
+  if (createCopySelect) {
+    createCopySelect.addEventListener('change', handleCreateFormChange);
+  }
+  if (createFileForm) {
+    createFileForm.addEventListener('submit', handleCreateFileSubmit);
+  }
+
+  if (mergeFileModalEl) {
+    mergeFileModalEl.addEventListener('show.bs.modal', prepareMergeFileModal);
+    mergeFileModalEl.addEventListener('hidden.bs.modal', () => {
+      setInlineStatus(mergeFileStatus, '');
+    });
+  }
+  if (mergeSourceSelect) mergeSourceSelect.addEventListener('change', handleMergeFormChange);
+  if (mergeTargetSelect) mergeTargetSelect.addEventListener('change', handleMergeFormChange);
+  if (mergeTargetNameInput) mergeTargetNameInput.addEventListener('input', handleMergeFormChange);
+  if (mergeTargetExistingRadio) mergeTargetExistingRadio.addEventListener('change', handleMergeTargetModeChange);
+  if (mergeTargetNewRadio) mergeTargetNewRadio.addEventListener('change', handleMergeTargetModeChange);
+  if (mergeAllowDuplicatesInput) mergeAllowDuplicatesInput.addEventListener('change', () => {
+    setInlineStatus(mergeFileStatus, '');
+  });
+  if (mergeFileForm) {
+    mergeFileForm.addEventListener('submit', handleMergeFileSubmit);
+  }
+
+  if (createFileBtn) {
+    createFileBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (!hasQaAccess()) {
+        if (!isAuthenticated) {
+          loginModal?.show();
+        } else {
+          alert('Bu işlem için yeterli yetkiniz bulunmuyor.');
+        }
+        return;
+      }
+      createFileModal?.show();
+    });
+  }
+
+  if (mergeFileBtn) {
+    mergeFileBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (!hasQaAccess()) {
+        if (!isAuthenticated) {
+          loginModal?.show();
+        } else {
+          alert('Bu işlem için yeterli yetkiniz bulunmuyor.');
+        }
+        return;
+      }
+      mergeFileModal?.show();
+    });
+  }
 
   $('#addBtn').on('click', () => {
     if (!isAuthenticated) {
