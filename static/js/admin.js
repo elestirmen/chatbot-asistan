@@ -83,6 +83,18 @@ document.addEventListener('DOMContentLoaded', () => {
   let existingAvatarRelative = null;
   const personalityEmojiInput = null;
 
+  const modelSelectInput = document.getElementById('modelSelect');
+  const modelCustomInput = document.getElementById('modelCustomInput');
+  const saveModelBtn = document.getElementById('saveModelBtn');
+  const resetModelBtn = document.getElementById('resetModelBtn');
+  const modelStatusEl = document.getElementById('modelStatus');
+  const samplingControlsWrapper = document.getElementById('samplingControls');
+  const temperatureInput = document.getElementById('temperatureInput');
+  const topPInput = document.getElementById('topPInput');
+  let persistedModelValue = '';
+  let defaultModelValue = '';
+  let modelSuggestions = [];
+
   function hasQaAccess() {
     return adminRole === ROLE_ADMIN || adminRole === ROLE_EDITOR;
   }
@@ -215,6 +227,283 @@ document.addEventListener('DOMContentLoaded', () => {
     if (systemPromptInput) systemPromptInput.disabled = !enabled;
     if (saveSystemPromptBtn) saveSystemPromptBtn.disabled = !enabled;
     if (reloadSystemPromptBtn) reloadSystemPromptBtn.disabled = !enabled;
+  }
+
+  function showModelStatus(message, tone = 'muted') {
+    if (!modelStatusEl) return;
+    modelStatusEl.textContent = message || '';
+    modelStatusEl.className = `small d-block mt-2 text-${tone}`;
+  }
+
+  function setModelControlsEnabled(enabled) {
+    if (modelSelectInput) modelSelectInput.disabled = !enabled;
+    if (modelCustomInput) {
+      const hidden = modelCustomInput.classList.contains('d-none');
+      modelCustomInput.disabled = !enabled || hidden;
+    }
+    if (saveModelBtn) saveModelBtn.disabled = !enabled;
+    if (resetModelBtn) resetModelBtn.disabled = !enabled;
+    if (!enabled) {
+      if (temperatureInput) temperatureInput.disabled = true;
+      if (topPInput) topPInput.disabled = true;
+    }
+  }
+
+  function toggleCustomModelInput(show, value) {
+    if (!modelCustomInput) return;
+    modelCustomInput.classList.toggle('d-none', !show);
+    if (show) {
+      if (typeof value === 'string') {
+        modelCustomInput.value = value;
+      }
+      modelCustomInput.disabled = modelSelectInput?.disabled ?? false;
+    } else {
+      modelCustomInput.value = '';
+      modelCustomInput.disabled = true;
+    }
+  }
+
+  function updateSamplingControlsState(modelId) {
+    const normalized = typeof modelId === 'string' ? modelId.trim().toLowerCase() : '';
+    const isGpt5 = normalized.startsWith('gpt-5');
+    if (samplingControlsWrapper) {
+      samplingControlsWrapper.classList.toggle('d-none', isGpt5);
+      samplingControlsWrapper.setAttribute('aria-hidden', isGpt5 ? 'true' : 'false');
+    }
+    const shouldDisable = !hasAdminAccess() || !normalized || isGpt5 || (modelSelectInput?.disabled ?? true);
+    if (temperatureInput) temperatureInput.disabled = shouldDisable;
+    if (topPInput) topPInput.disabled = shouldDisable;
+  }
+
+  function populateModelOptions(selectedValue) {
+    if (!modelSelectInput) return;
+    const suggestions = Array.isArray(modelSuggestions) ? modelSuggestions : [];
+    modelSelectInput.innerHTML = '';
+    suggestions.forEach((item) => {
+      if (!item || !item.id) return;
+      const option = document.createElement('option');
+      option.value = item.id;
+      const label = item.label && item.label !== item.id ? `${item.label} (${item.id})` : item.id;
+      option.textContent = label;
+      modelSelectInput.appendChild(option);
+    });
+    const customOption = document.createElement('option');
+    customOption.value = '__custom__';
+    customOption.textContent = 'Özel model...';
+    modelSelectInput.appendChild(customOption);
+    const hasMatch = suggestions.some((item) => item.id === selectedValue);
+    if (selectedValue && hasMatch) {
+      modelSelectInput.value = selectedValue;
+      toggleCustomModelInput(false);
+    } else if (selectedValue) {
+      modelSelectInput.value = '__custom__';
+      toggleCustomModelInput(true, selectedValue);
+    } else if (suggestions.length) {
+      modelSelectInput.value = suggestions[0].id;
+      toggleCustomModelInput(false);
+    } else {
+      modelSelectInput.value = '__custom__';
+      toggleCustomModelInput(true, '');
+    }
+  }
+
+  function getSelectedModelValue() {
+    if (!modelSelectInput) return '';
+    if (modelSelectInput.value === '__custom__') {
+      return (modelCustomInput?.value || '').trim();
+    }
+    return modelSelectInput.value;
+  }
+
+  function handleModelInputChange() {
+    if (!saveModelBtn || !modelStatusEl) return;
+    if (!hasAdminAccess() || modelSelectInput?.disabled) {
+      saveModelBtn.disabled = true;
+      return;
+    }
+    const candidate = getSelectedModelValue();
+    if (!candidate) {
+      showModelStatus('Model adı boş olamaz.', 'warning');
+      saveModelBtn.disabled = true;
+      return;
+    }
+    if (candidate === persistedModelValue) {
+      const suffix = candidate ? ` (${candidate})` : '';
+      showModelStatus(`Kaydedildi.${suffix}`, 'success');
+      saveModelBtn.disabled = true;
+    } else {
+      showModelStatus('Kaydedilmedi.', 'warning');
+      saveModelBtn.disabled = false;
+    }
+  }
+
+  function handleModelSelectChange() {
+    if (!modelSelectInput) return;
+    if (modelSelectInput.value === '__custom__') {
+      toggleCustomModelInput(true);
+      if (!modelCustomInput?.value && persistedModelValue && !modelSuggestions.some((item) => item.id === persistedModelValue)) {
+        modelCustomInput.value = persistedModelValue;
+      }
+    } else {
+      toggleCustomModelInput(false);
+    }
+    updateSamplingControlsState(getSelectedModelValue());
+    handleModelInputChange();
+  }
+
+  function loadModelConfig() {
+    if (!modelSelectInput) return Promise.resolve();
+    if (!hasAdminAccess()) {
+      const message = hasQaAccess()
+        ? 'Bu bölüme yalnızca admin erişebilir.'
+        : 'Giriş yaptıktan sonra düzenleyebilirsiniz.';
+      toggleCustomModelInput(false);
+      setModelControlsEnabled(false);
+      showModelStatus(message, 'muted');
+      updateSamplingControlsState(getSelectedModelValue());
+      return Promise.resolve();
+    }
+    setModelControlsEnabled(false);
+    showModelStatus('Yükleniyor...', 'muted');
+    updateSamplingControlsState(getSelectedModelValue());
+    return fetch('/admin/api/openai/model')
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Model bilgisi alınamadı.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Model bilgisi alınamadı.');
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        persistedModelValue = data?.completion_model || '';
+        defaultModelValue = data?.default_model || persistedModelValue;
+        populateModelOptions(persistedModelValue);
+        setModelControlsEnabled(true);
+        handleModelInputChange();
+        updateSamplingControlsState(getSelectedModelValue());
+        return data;
+      })
+      .catch((err) => {
+        setModelControlsEnabled(true);
+        handleModelInputChange();
+        showModelStatus(err.message || 'Model bilgisi alınamadı.', 'danger');
+        updateSamplingControlsState(getSelectedModelValue());
+        throw err;
+      });
+  }
+
+  function saveModelSelection() {
+    if (!hasAdminAccess() || !modelSelectInput) return;
+    const nextValue = getSelectedModelValue();
+    if (!nextValue) {
+      showModelStatus('Model adı boş olamaz.', 'warning');
+      if (modelSelectInput.value === '__custom__') {
+        modelCustomInput?.focus();
+      }
+      return;
+    }
+    const confirmMessage = `Seçili dil modelini "${nextValue}" olarak ayarlamak üzeresiniz. Onaylıyor musunuz?`;
+    if (!window.confirm(confirmMessage)) {
+      showModelStatus('Model değişikliği iptal edildi.', 'muted');
+      handleModelInputChange();
+      return;
+    }
+    setModelControlsEnabled(false);
+    showModelStatus('Kaydediliyor...', 'muted');
+    updateSamplingControlsState(nextValue);
+    fetch('/admin/api/openai/model', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completion_model: nextValue }),
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Model kaydedilemedi.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Model kaydedilemedi.');
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : modelSuggestions;
+        persistedModelValue = data?.completion_model || nextValue;
+        defaultModelValue = data?.default_model || defaultModelValue;
+        populateModelOptions(persistedModelValue);
+        setModelControlsEnabled(true);
+        handleModelInputChange();
+        updateSamplingControlsState(persistedModelValue);
+      })
+      .catch((err) => {
+        setModelControlsEnabled(true);
+        handleModelInputChange();
+        showModelStatus(err.message || 'Model kaydedilemedi.', 'danger');
+        updateSamplingControlsState(getSelectedModelValue());
+      });
+  }
+
+  function resetModelSelection() {
+    if (!hasAdminAccess() || !modelSelectInput) return;
+    const confirmMessage = 'Varsayılan dil modeline dönmek istediğinizden emin misiniz?';
+    if (!window.confirm(confirmMessage)) {
+      showModelStatus('Varsayılan modele geçiş iptal edildi.', 'muted');
+      handleModelInputChange();
+      return;
+    }
+    setModelControlsEnabled(false);
+    showModelStatus('Varsayılan model yükleniyor...', 'muted');
+    updateSamplingControlsState(defaultModelValue);
+    fetch('/admin/api/openai/model', {
+      method: 'DELETE',
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Varsayılan modele dönülemedi.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Varsayılan modele dönülemedi.');
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : modelSuggestions;
+        persistedModelValue = data?.completion_model || defaultModelValue;
+        defaultModelValue = data?.default_model || defaultModelValue;
+        populateModelOptions(persistedModelValue);
+        setModelControlsEnabled(true);
+        handleModelInputChange();
+        updateSamplingControlsState(persistedModelValue);
+      })
+      .catch((err) => {
+        setModelControlsEnabled(true);
+        handleModelInputChange();
+        showModelStatus(err.message || 'Varsayılan modele dönülemedi.', 'danger');
+        updateSamplingControlsState(getSelectedModelValue());
+      });
   }
 
   function setPersonalityLoading(isLoading) {
@@ -818,6 +1107,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (addPersonalityBtn) addPersonalityBtn.disabled = false;
       setSystemPromptControlsEnabled(true);
       handleSystemPromptInput();
+      if (!modelSelectInput?.disabled) {
+        handleModelInputChange();
+      }
+      updateSamplingControlsState(getSelectedModelValue());
     } else {
       if (addPersonalityBtn) addPersonalityBtn.disabled = true;
       currentSystemPrompt = '';
@@ -827,6 +1120,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'Bu bölüme yalnızca admin erişebilir.'
         : 'Giriş yaptıktan sonra düzenleyebilirsiniz.';
       showSystemPromptStatus(statusMessage, 'muted');
+      toggleCustomModelInput(false);
+      setModelControlsEnabled(false);
+      persistedModelValue = '';
+      if (modelSelectInput) {
+        modelSelectInput.value = '';
+      }
+      showModelStatus(statusMessage, 'muted');
+      updateSamplingControlsState(getSelectedModelValue());
       $('#totalChats, #totalLikes, #totalDislikes').text('-');
       $('#currentSeason').text('-');
     }
@@ -836,6 +1137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (adminAccess) {
         loadPersonalities();
         loadSystemPrompt().catch(() => {});
+        loadModelConfig().catch(() => {});
         updateOverviewStats();
       } else {
         personalityList = [];
@@ -844,6 +1146,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (adminAccess) {
       renderPersonalities();
       handleSystemPromptInput();
+      handleModelInputChange();
+      updateSamplingControlsState(getSelectedModelValue());
     }
   }
 
@@ -1441,6 +1745,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadPersonalities();
       if (hasAdminAccess()) {
         loadSystemPrompt().catch(() => {});
+        loadModelConfig().catch(() => {});
       }
     });
   }
@@ -1477,6 +1782,27 @@ document.addEventListener('DOMContentLoaded', () => {
     reloadSystemPromptBtn.addEventListener('click', (event) => {
       event.preventDefault();
       loadSystemPrompt().catch(() => {});
+    });
+  }
+  if (modelSelectInput) {
+    modelSelectInput.addEventListener('change', handleModelSelectChange);
+  }
+  if (modelCustomInput) {
+    modelCustomInput.addEventListener('input', () => {
+      updateSamplingControlsState(getSelectedModelValue());
+      handleModelInputChange();
+    });
+  }
+  if (saveModelBtn) {
+    saveModelBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      saveModelSelection();
+    });
+  }
+  if (resetModelBtn) {
+    resetModelBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      resetModelSelection();
     });
   }
   if (personalitiesTableBody) {

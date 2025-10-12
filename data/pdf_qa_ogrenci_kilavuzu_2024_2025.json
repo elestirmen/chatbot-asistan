@@ -2540,5 +2540,23 @@
       "Bir öğrenci kulübüne nasıl üye olabilirim?"
     ],
     "answer": "Öğrenciler, öğrenci kulüplerinin Microsoft Teams kanallarına katılarak üye olabilirler."
+  },
+  {
+    "questions": [
+      "LMS sisteminde derslerin izlenme oranı düşük çıkıyor."
+    ],
+    "answer": "“Derslerim” sekmesinde, ders adlarının yanında yer alan ilerleme yüzdesi, derse ait tüm aktivitelerin (sanal sınıf, doküman, bilgi notu, ödev vb.) genel tamamlama oranını göstermektedir. Ders içeriklerine yeni bir aktivite eklendiğinde ve bu aktivite henüz tamamlanmadığında, ders adının yanında görüntülenen ilerleme oranı azalacaktır. İlgili aktivite tamamlandığında, ilerleme oranınız yeniden artacaktır."
+  },
+  {
+    "questions": [
+      "Canlı dersler sırasında teknik bir sorun yaşarsam kime başvurabilirim?"
+    ],
+    "answer": "Canlı dersler sırasında herhangi bir teknik problemle karşılaşmanız durumunda, uzaktanogretim@kapadokya.edu.tr adresine e-posta göndererek destek talebinde bulunabilirsiniz. Yaşadığınız sorun en kısa sürede incelenerek gerekli geri bildirim sağlanacaktır."
+  },
+  {
+    "questions": [
+      "Ders kayıtları sonradan izlenebilir mi?"
+    ],
+    "answer": "Sanal Sınıf içerisinde bulunan ders kayıtları, aksi belirtilmediği ve farklı bir kriter belirlenmediği sürece, canlı ders sona erdikten sonra “Tekrarını İzle” butonuna tıklanarak arşivden izlenebilir."
   }
 ]

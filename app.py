@@ -75,8 +75,8 @@ try:
 except ValueError:
     OPENAI_MAX_RETRIES = 2
 
-OPENAI_COMPLETION_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-OPENAI_SUMMARY_MODEL = os.getenv("OPENAI_SUMMARY_MODEL", OPENAI_COMPLETION_MODEL)
+DEFAULT_OPENAI_COMPLETION_MODEL = _getenv_strip("OPENAI_MODEL") or "gpt-4.1-mini"
+OPENAI_SUMMARY_OVERRIDE = _getenv_strip("OPENAI_SUMMARY_MODEL")
 
 ADMIN_PASSWORD = _getenv_strip("ADMIN_PASSWORD")
 APP_PASSWORD = _getenv_strip("APP_PASSWORD")
@@ -185,6 +185,17 @@ OLD_SYSTEM_PROMPT_FILE = DATA_DIR / "system_prompt.json"
 # Yeni hedef dosyalar static/config altında tutulur
 PERSONALITIES_FILE = CONFIG_DIR / "personalities.json"
 SYSTEM_PROMPT_FILE = CONFIG_DIR / "system_prompt.json"
+MODEL_CONFIG_FILE = CONFIG_DIR / "openai_model.json"
+
+OPENAI_MODEL_SUGGESTIONS: List[Dict[str, str]] = [
+    {"id": "gpt-4.1", "label": "GPT-4.1"},
+    {"id": "gpt-4.1-mini", "label": "GPT-4.1 Mini"},
+    {"id": "gpt-4.1-nano", "label": "GPT-4.1 Nano"},
+    # GPT-5 modelleri henüz genel erişime açık değil
+    # {"id": "gpt-5-nano", "label": "GPT-5 Nano"},
+    # {"id": "gpt-5-mini", "label": "GPT-5 Mini"},
+    # {"id": "gpt-5", "label": "GPT-5"},
+]
 
 def _migrate_config_file(old_path: Path, new_path: Path) -> None:
     try:
@@ -451,6 +462,96 @@ class PersonalityManager:
         self._rebuild_prompt_cache()
 
 
+class ModelConfigManager:
+    def __init__(
+        self,
+        path: Path,
+        default_completion_model: str,
+        summary_override: Optional[str],
+        suggestions: List[Dict[str, str]],
+    ):
+        self.path = path
+        self.default_completion_model = (default_completion_model or "gpt-4.1-mini").strip() or "gpt-4.1-mini"
+        self.summary_override = (summary_override or "").strip() or None
+        self.suggestions = suggestions
+        self._lock = FileLock(str(path) + ".lock")
+        self._completion_model = self.default_completion_model
+        self._updated_at: Optional[str] = None
+        self.reload()
+
+    @staticmethod
+    def _iso_now() -> str:
+        return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+    def reload(self) -> None:
+        with self._lock:
+            if not self.path.exists():
+                self._write_unlocked(self.default_completion_model)
+                return
+            try:
+                raw = json.loads(self.path.read_text("utf-8"))
+            except Exception:
+                self._write_unlocked(self.default_completion_model)
+                return
+
+            completion = str(raw.get("completion_model") or "").strip()
+            updated_at = raw.get("updated_at")
+            if not completion:
+                self._write_unlocked(self.default_completion_model)
+                return
+
+            self._completion_model = completion
+            if isinstance(updated_at, str) and updated_at.strip():
+                self._updated_at = updated_at.strip()
+            else:
+                self._updated_at = self._iso_now()
+
+    def _write_unlocked(self, model: str) -> None:
+        normalized = (model or "").strip()
+        if not normalized:
+            normalized = self.default_completion_model
+        payload = {
+            "completion_model": normalized,
+            "updated_at": self._iso_now(),
+        }
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        self._completion_model = normalized
+        self._updated_at = payload["updated_at"]
+
+    def set(self, model: str) -> None:
+        normalized = (model or "").strip()
+        if not normalized:
+            raise ValueError("Model adı boş olamaz.")
+        with self._lock:
+            self._write_unlocked(normalized)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._write_unlocked(self.default_completion_model)
+
+    @property
+    def completion_model(self) -> str:
+        return self._completion_model or self.default_completion_model
+
+    @property
+    def summary_model(self) -> str:
+        return self.summary_override or self.completion_model
+
+    @property
+    def updated_at(self) -> Optional[str]:
+        return self._updated_at
+
+    def to_payload(self) -> Dict[str, Any]:
+        return {
+            "completion_model": self.completion_model,
+            "default_model": self.default_completion_model,
+            "summary_model": self.summary_model,
+            "updated_at": self.updated_at,
+            "suggestions": self.suggestions,
+        }
+
+
 DEFAULT_SYSTEM_PROMPT = (
     "Sen Kapadokya Üniversitesi öğrenci işleri için görev yapan bir asistanısın. "
     "Elindeki güvenilir kaynaklar dışında bilgi uydurma. Emin olmadığın veya kayıtta bulunmayan her durumda "
@@ -534,6 +635,12 @@ class SystemPromptManager:
         return {"base_prompt": self._prompt}
 
 
+model_config_manager = ModelConfigManager(
+    MODEL_CONFIG_FILE,
+    DEFAULT_OPENAI_COMPLETION_MODEL,
+    OPENAI_SUMMARY_OVERRIDE,
+    OPENAI_MODEL_SUGGESTIONS,
+)
 system_prompt_manager = SystemPromptManager(SYSTEM_PROMPT_FILE, DEFAULT_SYSTEM_PROMPT)
 PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", PERSONALITIES_DEFAULT_FALLBACK).strip().lower() or PERSONALITIES_DEFAULT_FALLBACK
 personality_manager = PersonalityManager(PERSONALITIES_FILE, DEFAULT_PERSONALITY_ENTRIES, PERSONALITY_ENV_DEFAULT)
@@ -747,6 +854,114 @@ event_logger = EventLogger(ANALYTICS_DIR)
 # -----------------------------------------------------------------------------
 # Retrieval Fonksiyonu
 # -----------------------------------------------------------------------------
+def _use_responses_api(model_name: Optional[str]) -> bool:
+    # OpenAI Python SDK'da responses API henüz mevcut değil
+    # GPT-5 modelleri de normal chat completions API'sini kullanacak
+    return False
+
+
+def _messages_to_response_input(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    payload: List[Dict[str, Any]] = []
+    for msg in messages:
+        role = str(msg.get("role") or "").strip().lower()
+        if role not in {"system", "user", "assistant"}:
+            continue
+        content = msg.get("content")
+        if isinstance(content, list):
+            text = "\n".join(str(part) for part in content)
+        else:
+            text = "" if content is None else str(content)
+        payload.append({
+            "role": role,
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": text,
+                }
+            ],
+        })
+    return payload
+
+
+def _response_to_dict(resp: Any) -> Dict[str, Any]:
+    if resp is None:
+        return {}
+    for attr in ("model_dump", "to_dict", "dict"):
+        method = getattr(resp, attr, None)
+        if callable(method):
+            try:
+                data = method()
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                continue
+    if isinstance(resp, dict):
+        return resp
+    try:
+        return json.loads(str(resp))
+    except Exception:
+        return {}
+
+
+def _extract_text_from_response(resp: Any) -> str:
+    pieces: List[str] = []
+
+    def _append_text(value: Any) -> None:
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped:
+                pieces.append(stripped)
+        elif isinstance(value, (list, tuple, set)):
+            for item in value:
+                _append_text(item)
+
+    # Try direct attribute access first
+    attr_text = getattr(resp, "output_text", None)
+    _append_text(attr_text)
+
+    data = _response_to_dict(resp)
+
+    def _walk(node: Any, depth: int = 0) -> None:
+        if depth > 10:  # Prevent infinite recursion
+            return
+            
+        if isinstance(node, dict):
+            # Handle Responses API structure: type="output_text" with text field
+            if node.get("type") == "output_text" and "text" in node:
+                _append_text(node.get("text"))
+                return  # Don't recurse further if we found output_text
+            
+            # Try common response fields
+            for field in ["output_text", "text", "content"]:
+                if field in node:
+                    value = node[field]
+                    if isinstance(value, str):
+                        _append_text(value)
+                    elif isinstance(value, (list, dict)):
+                        _walk(value, depth + 1)
+            
+            # Try message structure
+            if "message" in node:
+                _walk(node["message"], depth + 1)
+                
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item, depth + 1)
+        elif isinstance(node, str):
+            _append_text(node)
+
+    # Try all common top-level fields
+    for top_field in ["output", "content", "message", "choices"]:
+        if not pieces and top_field in data:
+            _walk(data[top_field])
+    
+    # Last resort: walk the entire dict
+    if not pieces:
+        _walk(data)
+
+    return "\n".join(pieces).strip()
+
+
 def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
     if k <= 0:
         return []
@@ -788,7 +1003,7 @@ def save_chat_log(
     LOGS_DIR.joinpath(session_id).mkdir(exist_ok=True)
     log_file = LOGS_DIR / session_id / f"chat_log_{user_id}.json"
     entry: Dict[str, Any] = {
-        "timestamp": datetime.utcnow().isoformat(sep=" ", timespec="seconds"),
+        "timestamp": datetime.now().isoformat(sep=" ", timespec="seconds"),
         "user_message": user_message,
         "assistant_response": assistant_response,
         "feedback": None,
@@ -874,6 +1089,8 @@ def chat():
         _turn_started_at = time.perf_counter()
         turn_index = int(session.get("turn_index", 0))
         word_count = len(message.split())
+        completion_model_name = model_config_manager.completion_model
+        summary_model_name = model_config_manager.summary_model
 
         if message.startswith("/"):
             cmd = message[1:].strip().lower()
@@ -894,17 +1111,24 @@ def chat():
             ]
             summary_resp: Optional[str] = None
             try:
-                summary_completion = client.chat.completions.create(
-                    model=OPENAI_SUMMARY_MODEL,
-                    messages=summary_prompt,
-                )
-                summary_resp = summary_completion.choices[0].message.content if summary_completion.choices else None
+                if _use_responses_api(summary_model_name):
+                    summary_completion = client.responses.create(
+                        model=summary_model_name,
+                        input=_messages_to_response_input(summary_prompt),
+                    )
+                    summary_resp = _extract_text_from_response(summary_completion)
+                else:
+                    summary_completion = client.chat.completions.create(
+                        model=summary_model_name,
+                        messages=summary_prompt,
+                    )
+                    summary_resp = summary_completion.choices[0].message.content if summary_completion.choices else None
             except (APITimeoutError, RateLimitError) as err:
                 app.logger.warning("Sohbet özeti alınamadı: %s", err)
             except APIError as err:
                 app.logger.warning("Sohbet özeti oluşturulurken API hatası: %s", err)
-            except Exception:
-                app.logger.exception("Sohbet özeti oluşturulurken beklenmeyen hata")
+            except Exception as err:
+                app.logger.exception("OpenAI hatası: %s", err)
 
             if summary_resp:
                 summary_text = summary_resp.strip()
@@ -981,18 +1205,40 @@ def chat():
         def generate(current_session_id: str, current_user_id: str):
             collected: list[str] = []
             try:
-                completion = client.chat.completions.create(
-                    model=OPENAI_COMPLETION_MODEL,
-                    messages=session["messages"],
-                    temperature=0.75,
-                    top_p=0.9,
-                    stream=True,
-                )
-                for chunk in completion:
-                    delta = chunk.choices[0].delta.content
-                    if delta:
-                        collected.append(delta)
-                        yield f"data: {json.dumps({'content': delta})}\n\n"
+                if _use_responses_api(completion_model_name):
+                    response = client.responses.create(
+                        model=completion_model_name,
+                        input=_messages_to_response_input(session["messages"]),
+                    )
+                    # Debug: Log full response structure
+                    response_dict = _response_to_dict(response)
+                    app.logger.info(
+                        "GPT-5 Response structure: %s",
+                        json.dumps(response_dict, indent=2, ensure_ascii=False)[:2000]
+                    )
+                    full_text = _extract_text_from_response(response)
+                    if full_text:
+                        collected.append(full_text)
+                        yield f"data: {json.dumps({'content': full_text})}\n\n"
+                    else:
+                        app.logger.warning(
+                            "Responses API boş yanıt döndü: %s",
+                            _response_to_dict(response),
+                        )
+                        raise RuntimeError("Boş yanıt döndü.")
+                else:
+                    completion = client.chat.completions.create(
+                        model=completion_model_name,
+                        messages=session["messages"],
+                        temperature=0.75,
+                        top_p=0.9,
+                        stream=True,
+                    )
+                    for chunk in completion:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            collected.append(delta)
+                            yield f"data: {json.dumps({'content': delta})}\n\n"
             except APITimeoutError:
                 app.logger.warning(
                     "OpenAI zaman aşımı: session=%s user=%s", current_session_id, current_user_id
@@ -1051,8 +1297,8 @@ def chat():
                     app.logger.exception("analytics assistant_error api_error could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
                 return
-            except Exception:
-                app.logger.exception("OpenAI çağrısı başarısız oldu")
+            except Exception as err:
+                app.logger.exception("OpenAI hatası: %s", err)
                 payload = {
                     "event": "error",
                     "message": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
@@ -1385,6 +1631,34 @@ def admin_system_prompt():
         app.logger.exception('Sistem promptu güncellenirken hata oluştu')
         return jsonify({'error': 'Internal Server Error'}), 500
     return jsonify(system_prompt_manager.to_payload())
+
+
+@admin_bp.route('/api/openai/model', methods=['GET', 'PUT', 'DELETE'])
+def admin_openai_model():
+    if not _is_admin():
+        return _unauthorized()
+
+    if request.method == 'GET':
+        return jsonify(model_config_manager.to_payload())
+
+    if request.method == 'DELETE':
+        try:
+            model_config_manager.reset()
+        except Exception:
+            app.logger.exception('OpenAI modeli varsayılana alınırken hata oluştu')
+            return jsonify({'error': 'Internal Server Error'}), 500
+        return jsonify(model_config_manager.to_payload())
+
+    payload = request.get_json(force=True) or {}
+    new_model = str(payload.get('completion_model') or '').strip()
+    try:
+        model_config_manager.set(new_model)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+    except Exception:
+        app.logger.exception('OpenAI modeli güncellenirken hata oluştu')
+        return jsonify({'error': 'Internal Server Error'}), 500
+    return jsonify(model_config_manager.to_payload())
 
 
 @admin_bp.route('/api/personalities', methods=['GET', 'POST'])
@@ -1752,7 +2026,7 @@ def _make_event(event_type: str, session_id: Optional[str], user_id: Optional[st
         "user_id": user_id,
         "season": _season_from_dt(now),
         "app_version": APP_VERSION,
-        "model": OPENAI_COMPLETION_MODEL,
+        "model": model_config_manager.completion_model,
     }
     base.update(fields)
     return base

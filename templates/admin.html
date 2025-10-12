@@ -379,6 +379,36 @@
       </div>
       <div class="card shadow-sm mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-cpu me-2 text-primary"></i>OpenAI Dil Modeli</span>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="resetModelBtn" type="button" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
+            <button class="btn btn-primary" id="saveModelBtn" type="button" disabled><i class="bi bi-save"></i> Kaydet</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <label for="modelSelect" class="form-label">Chatbot yanıtları için kullanılacak model</label>
+          <select id="modelSelect" class="form-select" disabled></select>
+          <input type="text" id="modelCustomInput" class="form-control mt-2 d-none" placeholder="Özel model kimliğini girin" disabled>
+          <div class="form-text">Model kimliği OpenAI API hesabınızda etkin olmalıdır.</div>
+          <div id="samplingControls" class="mt-3" aria-hidden="false">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="temperatureInput" class="form-label mb-1">Temperature</label>
+                <input type="number" class="form-control" id="temperatureInput" name="temperature" step="0.01" min="0" max="2" value="0.75">
+                <div class="form-text">Daha yüksek değerler yanıtları çeşitlendirir.</div>
+              </div>
+              <div class="col-md-6">
+                <label for="topPInput" class="form-label mb-1">Top-p</label>
+                <input type="number" class="form-control" id="topPInput" name="top_p" step="0.01" min="0" max="1" value="0.90">
+                <div class="form-text">Çekirdek örnekleme olasılık eşiği.</div>
+              </div>
+            </div>
+          </div>
+          <small id="modelStatus" class="small d-block mt-2 text-muted">-</small>
+        </div>
+      </div>
+      <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-journal-text me-2 text-primary"></i>Genel Sistem Promptu</span>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary" id="reloadSystemPromptBtn" disabled><i class="bi bi-arrow-clockwise"></i></button>
