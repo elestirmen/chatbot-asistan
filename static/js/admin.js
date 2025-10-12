@@ -1215,12 +1215,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const canSelect = fileCount > 0;
     const canMerge = qaAccess && fileCount > 1 && Boolean(currentFile);
 
+    // JSON Operations Dropdown
+    $('#jsonOperationsDropdown').prop('disabled', !qaAccess);
+    
     if (createFileBtn) {
       createFileBtn.disabled = !qaAccess;
     }
     if (mergeFileBtn) {
       mergeFileBtn.disabled = !canMerge;
     }
+    
+    // New buttons in dropdown
+    $('#deleteFileBtn').prop('disabled', !qaAccess || !canSelect || !currentFile);
+    $('#importJsonBtn').prop('disabled', !qaAccess || !canSelect || !currentFile);
+    $('#exportJsonBtn').prop('disabled', !canSelect || !currentFile);
+    
     $fileSel.prop('disabled', !canSelect);
     handleCreateFormChange();
     handleMergeFormChange();
@@ -1711,21 +1720,320 @@ document.addEventListener('DOMContentLoaded', () => {
       ajax: {
         url: '/admin/api/items',
         data: function(){ return { file: currentFile }; },
-        dataSrc: '',
+        dataSrc: function(json) {
+          updateQaStats(json);
+          return json;
+        },
         type: 'GET',
         cache: false,
       },
       columns: [
-        { data: null, render: (_d, _t, _r, meta) => meta.row + 1 },
-        { data: 'questions', render: (d) => `<span class='badge bg-info me-1'>${d.length}</span><ul class='mb-0'>${d.map((q) => `<li>${esc(q)}</li>`).join('')}</ul>` },
-        { data: 'answer', render: (d) => esc(d) },
-        { data: null, orderable: false, render: (_d, _t, _r, meta) => {
+        { 
+          data: null, 
+          orderable: false,
+          className: 'text-center',
+          render: () => '<input type="checkbox" class="form-check-input qa-checkbox">'
+        },
+        { data: null, className: 'text-center', render: (_d, _t, _r, meta) => meta.row + 1 },
+        { 
+          data: 'questions', 
+          render: (d) => {
+            const badge = `<span class='badge bg-info me-2'>${d.length} soru</span>`;
+            const list = `<ul class='question-list'>${d.map((q) => `<li>${esc(q)}</li>`).join('')}</ul>`;
+            return badge + list;
+          }
+        },
+        { 
+          data: 'answer', 
+          render: (d) => `<div class='answer-preview'>${esc(d)}</div>`
+        },
+        {
+          data: 'answer',
+          className: 'text-center',
+          render: (d) => {
+            const len = (d || '').length;
+            let colorClass = 'bg-success';
+            if (len > 500) colorClass = 'bg-warning';
+            if (len > 800) colorClass = 'bg-danger';
+            return `<span class='badge ${colorClass} char-count-badge'>${len}</span>`;
+          }
+        },
+        { 
+          data: null, 
+          orderable: false,
+          className: 'text-center',
+          render: (_d, _t, _r, meta) => {
             if (!isAuthenticated) return '<small class="text-muted">Giriş Gerekli</small>';
-            return `<button class='btn btn-sm btn-warning editBtn me-1' data-idx='${meta.row}'>Düzenle</button>` +
-                   `<button class='btn btn-sm btn-danger delBtn' data-idx='${meta.row}'>Sil</button>`;
-          } },
+            return `<div class="btn-group btn-group-sm" role="group">
+                      <button class='btn btn-outline-primary editBtn' data-idx='${meta.row}' title='Düzenle'>
+                        <i class='bi bi-pencil'></i>
+                      </button>
+                      <button class='btn btn-outline-danger delBtn' data-idx='${meta.row}' title='Sil'>
+                        <i class='bi bi-trash'></i>
+                      </button>
+                    </div>`;
+          } 
+        },
       ],
+      pageLength: 25,
+      order: [[1, 'asc']],
+      searching: true, // Arama fonksiyonu aktif ama UI gizli
+      dom: 'lrtip', // 'f' (filter/search box) hariç tüm elementler - bu DataTables'ın kendi arama kutusunu gizler
+      language: {
+        lengthMenu: "Sayfa başına _MENU_ kayıt",
+        info: "_TOTAL_ kayıttan _START_ - _END_ arası",
+        infoEmpty: "Kayıt yok",
+        infoFiltered: "(_MAX_ kayıt içinden filtrelendi)",
+        paginate: {
+          first: "İlk",
+          last: "Son",
+          next: "Sonraki",
+          previous: "Önceki"
+        }
+      }
     });
+  }
+
+  function updateQaStats(data) {
+    if (!Array.isArray(data)) return;
+    
+    const totalItems = data.length;
+    const totalQuestions = data.reduce((sum, item) => sum + (item.questions?.length || 0), 0);
+    const avgAnswerLen = data.length > 0 
+      ? Math.round(data.reduce((sum, item) => sum + (item.answer?.length || 0), 0) / data.length)
+      : 0;
+    
+    // Calculate file size estimate (rough JSON size)
+    const jsonStr = JSON.stringify(data);
+    const fileSizeKB = Math.round(jsonStr.length / 1024);
+    
+    $('#statTotalItems').text(totalItems);
+    $('#statTotalQuestions').text(totalQuestions);
+    $('#statAvgAnswerLen').text(avgAnswerLen + ' kar.');
+    $('#statFileSize').text(fileSizeKB + ' KB');
+    
+    // Update file info with enhanced styling (teal theme)
+    if (currentFile) {
+      $('#fileInfo').html(`
+        <i class="bi bi-file-check" style="color: #20c997;"></i>
+        <span class="fw-bold" style="color: #20c997;">${currentFile}</span> 
+        <span class="text-muted">yüklendi ve aktif</span>
+      `);
+    }
+  }
+
+  // Global search across all files
+  let globalSearchTimeout = null;
+
+  $('#globalQaSearchInput').on('input', function() {
+    const query = $(this).val().trim();
+    
+    clearTimeout(globalSearchTimeout);
+    
+    if (query.length < 2) {
+      $('#globalSearchResults').slideUp();
+      return;
+    }
+    
+    globalSearchTimeout = setTimeout(() => {
+      performGlobalSearch(query);
+    }, 500); // Debounce 500ms
+  });
+
+  $('#clearGlobalQaSearch').on('click', function() {
+    $('#globalQaSearchInput').val('');
+    $('#globalSearchResults').slideUp();
+  });
+
+  $('#closeGlobalSearch').on('click', function() {
+    $('#globalSearchResults').slideUp();
+    $('#globalQaSearchInput').val('');
+  });
+
+  function performGlobalSearch(query) {
+    if (!allFiles || allFiles.length === 0) {
+      $('#globalSearchResultsContent').html('<p class="text-muted">Dosya bulunamadı.</p>');
+      $('#globalSearchResults').slideDown();
+      return;
+    }
+
+    $('#globalSearchResults').slideDown();
+    $('#globalSearchResultsContent').html('<div class="text-center"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Aranıyor...</span></div><p class="mt-2 text-muted">Tüm dosyalarda aranıyor...</p></div>');
+
+    let allResults = [];
+    let filesProcessed = 0;
+    const lowerQuery = query.toLowerCase();
+
+    // Search in all files
+    allFiles.forEach(filename => {
+      $.get(`/admin/api/items?file=${filename}`, function(data) {
+        if (Array.isArray(data)) {
+          data.forEach((item, idx) => {
+            let matchFound = false;
+            let matchType = '';
+            let matchText = '';
+
+            // Search in questions
+            if (item.questions && Array.isArray(item.questions)) {
+              item.questions.forEach(q => {
+                if (q.toLowerCase().includes(lowerQuery)) {
+                  matchFound = true;
+                  matchType = 'question';
+                  matchText = q;
+                }
+              });
+            }
+
+            // Search in answer
+            if (!matchFound && item.answer && item.answer.toLowerCase().includes(lowerQuery)) {
+              matchFound = true;
+              matchType = 'answer';
+              matchText = item.answer;
+            }
+
+            if (matchFound) {
+              allResults.push({
+                file: filename,
+                index: idx,
+                item: item,
+                matchType: matchType,
+                matchText: matchText
+              });
+            }
+          });
+        }
+      }).always(() => {
+        filesProcessed++;
+        
+        // When all files are processed, display results
+        if (filesProcessed === allFiles.length) {
+          displayGlobalSearchResults(allResults, query);
+        }
+      });
+    });
+  }
+
+  function displayGlobalSearchResults(results, query) {
+    $('#globalSearchCount').text(results.length);
+
+    if (results.length === 0) {
+      $('#globalSearchResultsContent').html(`
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          <strong>"${esc(query)}"</strong> için sonuç bulunamadı.
+        </div>
+      `);
+      return;
+    }
+
+    let html = '';
+    const lowerQuery = query.toLowerCase();
+
+    results.forEach((result, idx) => {
+      const highlightedText = highlightMatch(result.matchText, query);
+      const questions = result.item.questions || [];
+      const answer = result.item.answer || '';
+
+      html += `
+        <div class="global-search-item">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="file-badge">
+                <i class="bi bi-file-earmark-code"></i> ${esc(result.file)}
+              </span>
+              <span class="badge bg-secondary ms-2">Kayıt #${result.index + 1}</span>
+            </div>
+            <button class="btn btn-sm btn-outline-primary load-file-btn" 
+                    data-file="${esc(result.file)}" 
+                    data-index="${result.index}">
+              <i class="bi bi-box-arrow-in-down-right"></i> Dosyayı Aç
+            </button>
+          </div>
+          
+          <div class="item-preview">
+            <div class="mb-2">
+              <strong class="text-primary">
+                <i class="bi bi-question-circle"></i> 
+                ${result.matchType === 'question' ? 'Eşleşen ' : ''}Sorular:
+              </strong>
+              <ul class="question-list mt-1">
+                ${questions.map(q => {
+                  const highlighted = q.toLowerCase().includes(lowerQuery) 
+                    ? highlightMatch(q, query) 
+                    : esc(q);
+                  return `<li>${highlighted}</li>`;
+                }).join('')}
+              </ul>
+            </div>
+            
+            <div>
+              <strong class="text-success">
+                <i class="bi bi-chat-left-text"></i> 
+                ${result.matchType === 'answer' ? 'Eşleşen ' : ''}Cevap:
+              </strong>
+              <div class="mt-1 answer-preview">
+                ${result.matchType === 'answer' ? highlightedText : esc(answer.substring(0, 200))}${answer.length > 200 ? '...' : ''}
+              </div>
+              <small class="text-muted">
+                <i class="bi bi-type"></i> ${answer.length} karakter
+              </small>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    $('#globalSearchResultsContent').html(html);
+
+    // Bind click events for "Load File" buttons
+    $('.load-file-btn').on('click', function() {
+      const file = $(this).data('file');
+      const index = $(this).data('index');
+      
+      // Switch to that file
+      $('#fileSelect').val(file).trigger('change');
+      
+      // Close global search
+      $('#globalSearchResults').slideUp();
+      $('#globalQaSearchInput').val('');
+      
+      // Scroll to the item (after a small delay to let the table load)
+      setTimeout(() => {
+        if (qaTable) {
+          const page = Math.floor(index / qaTable.page.len());
+          qaTable.page(page).draw(false);
+          
+          // Highlight the row
+          setTimeout(() => {
+            const $row = $(`#qaTable tbody tr:eq(${index % qaTable.page.len()})`);
+            if ($row.length) {
+              $row.addClass('table-warning');
+              $row[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+              
+              setTimeout(() => {
+                $row.removeClass('table-warning');
+              }, 2000);
+            }
+          }, 300);
+        }
+      }, 500);
+    });
+  }
+
+  function highlightMatch(text, query) {
+    if (!text || !query) return esc(text);
+    
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const index = lowerText.indexOf(lowerQuery);
+    
+    if (index === -1) return esc(text);
+    
+    const before = text.substring(0, index);
+    const match = text.substring(index, index + query.length);
+    const after = text.substring(index + query.length);
+    
+    return `${esc(before)}<span class="match-highlight">${esc(match)}</span>${esc(after)}`;
   }
 
   // ===============================
@@ -3076,6 +3384,17 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#answerInput').on('input', function () {
     const val = $(this).val();
     $('#answerCount').text(`${val.length}/${currentAnswerLimit}`);
+    
+    // Show warning when close to limit
+    const warningThreshold = currentAnswerLimit * 0.9;
+    if (val.length >= warningThreshold) {
+      $('#answerLimitWarning').show();
+    } else {
+      $('#answerLimitWarning').hide();
+    }
+    
+    // Update preview
+    updateQaPreview();
   });
 
   // Toggle between 600 and 1200
@@ -3083,7 +3402,524 @@ document.addEventListener('DOMContentLoaded', () => {
     if (this.checked) setAnswerLimit(ANSWER_MAX); else setAnswerLimit(ANSWER_MIN);
   });
 
-  $('#qaModal').on('shown.bs.modal', () => $('#questionsInput').trigger('focus'));
+  // Update question count badge
+  $('#questionsInput').on('input', function() {
+    const questions = $(this).val().split('\n').map(s => s.trim()).filter(Boolean);
+    $('#questionCountBadge').text(questions.length);
+    updateQaPreview();
+  });
+
+  // Update preview in QA modal
+  function updateQaPreview() {
+    const questions = $('#questionsInput').val().split('\n').map(s => s.trim()).filter(Boolean);
+    const answer = $('#answerInput').val().trim();
+    
+    if (questions.length === 0 && !answer) {
+      $('#qaPreview').html(`<p class="text-muted mb-0"><i class="bi bi-lightbulb"></i> Soru ve cevap girildikçe burada önizleme görünecek...</p>`);
+      return;
+    }
+    
+    let preview = '<div class="preview-content">';
+    if (questions.length > 0) {
+      preview += '<div class="mb-2"><strong class="text-primary"><i class="bi bi-question-circle"></i> Sorular:</strong></div>';
+      preview += '<ul class="question-list">';
+      questions.forEach(q => {
+        preview += `<li>${esc(q)}</li>`;
+      });
+      preview += '</ul>';
+    }
+    
+    if (answer) {
+      preview += '<div class="mt-3 mb-2"><strong class="text-success"><i class="bi bi-chat-left-text"></i> Cevap:</strong></div>';
+      preview += `<div class="answer-preview p-2 bg-white rounded border">${esc(answer)}</div>`;
+      preview += `<div class="text-muted small mt-1"><i class="bi bi-type"></i> ${answer.length} karakter</div>`;
+    }
+    preview += '</div>';
+    
+    $('#qaPreview').html(preview);
+  }
+
+  $('#qaModal').on('shown.bs.modal', () => {
+    $('#questionsInput').trigger('focus');
+    updateQaPreview();
+  });
+
+  // ===============================
+  // ENHANCED QA FEATURES
+  // ===============================
+
+  // Bulk selection
+  let selectedQaItems = new Set();
+
+  $('#selectAllQa').on('change', function() {
+    const isChecked = $(this).prop('checked');
+    $('.qa-checkbox').prop('checked', isChecked);
+    updateBulkSelection();
+  });
+
+  $(document).on('change', '.qa-checkbox', function() {
+    updateBulkSelection();
+  });
+
+  function updateBulkSelection() {
+    selectedQaItems.clear();
+    $('.qa-checkbox:checked').each(function() {
+      const row = $(this).closest('tr');
+      const idx = qaTable.row(row).index();
+      selectedQaItems.add(idx);
+    });
+    
+    $('#selectedCount').text(selectedQaItems.size);
+    
+    if (selectedQaItems.size > 0) {
+      $('#bulkActionsBar').fadeIn();
+    } else {
+      $('#bulkActionsBar').fadeOut();
+    }
+  }
+
+  $('#clearSelectionBtn').on('click', function() {
+    $('.qa-checkbox').prop('checked', false);
+    $('#selectAllQa').prop('checked', false);
+    updateBulkSelection();
+  });
+
+  $('#bulkDeleteBtn').on('click', function() {
+    if (selectedQaItems.size === 0) return;
+    
+    if (!confirm(`Seçili ${selectedQaItems.size} öğeyi silmek istediğinizden emin misiniz?`)) {
+      return;
+    }
+    
+    const indicesToDelete = Array.from(selectedQaItems).sort((a, b) => b - a);
+    let deleteCount = 0;
+    
+    indicesToDelete.forEach(idx => {
+      $.ajax({
+        url: `/admin/api/items/${idx}?file=${currentFile}`,
+        method: 'DELETE',
+        async: false,
+        success: () => deleteCount++
+      });
+    });
+    
+    alert(`${deleteCount} öğe silindi.`);
+    qaTable.ajax.reload();
+    updateBulkSelection();
+  });
+
+  $('#bulkExportBtn').on('click', function() {
+    if (selectedQaItems.size === 0) return;
+    
+    const exportData = [];
+    selectedQaItems.forEach(idx => {
+      const data = qaTable.row(idx).data();
+      exportData.push(data);
+    });
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `export_${selectedQaItems.size}_items_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // QA Search
+  $('#qaSearchInput').on('input', function() {
+    if (qaTable) {
+      qaTable.search($(this).val()).draw();
+    }
+  });
+
+  $('#clearQaSearch').on('click', function() {
+    $('#qaSearchInput').val('');
+    if (qaTable) {
+      qaTable.search('').draw();
+    }
+  });
+
+  // Bulk Add Modal
+  let bulkAddModal;
+  $('#bulkAddBtn').on('click', function() {
+    if (!bulkAddModal) {
+      bulkAddModal = new bootstrap.Modal(document.getElementById('bulkAddModal'));
+    }
+    bulkAddModal.show();
+  });
+
+  // JSON formatting
+  $('#formatJsonBtn').on('click', function() {
+    try {
+      const input = $('#bulkJsonInput').val();
+      const parsed = JSON.parse(input);
+      $('#bulkJsonInput').val(JSON.stringify(parsed, null, 2));
+      $('#bulkJsonStatus').html('<div class="alert alert-success"><i class="bi bi-check-circle"></i> JSON formatlandı</div>');
+      updateBulkPreview('json', parsed);
+    } catch (e) {
+      $('#bulkJsonStatus').html(`<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Hata: ${e.message}</div>`);
+    }
+  });
+
+  $('#validateJsonBtn').on('click', function() {
+    try {
+      const input = $('#bulkJsonInput').val();
+      const parsed = JSON.parse(input);
+      
+      if (!Array.isArray(parsed)) {
+        throw new Error('JSON bir array olmalı');
+      }
+      
+      const errors = [];
+      parsed.forEach((item, idx) => {
+        if (!item.questions || !Array.isArray(item.questions)) {
+          errors.push(`#${idx + 1}: 'questions' alanı eksik veya array değil`);
+        }
+        if (!item.answer || typeof item.answer !== 'string') {
+          errors.push(`#${idx + 1}: 'answer' alanı eksik veya string değil`);
+        }
+      });
+      
+      if (errors.length > 0) {
+        $('#bulkJsonStatus').html(`<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> ${errors.length} hata bulundu:<ul class="mb-0 mt-2">${errors.map(e => `<li>${e}</li>`).join('')}</ul></div>`);
+      } else {
+        $('#bulkJsonStatus').html(`<div class="alert alert-success"><i class="bi bi-check-circle"></i> JSON geçerli! ${parsed.length} kayıt hazır.</div>`);
+        $('#bulkAddSubmitBtn').prop('disabled', false);
+        updateBulkPreview('json', parsed);
+      }
+    } catch (e) {
+      $('#bulkJsonStatus').html(`<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Geçersiz JSON: ${e.message}</div>`);
+      $('#bulkAddSubmitBtn').prop('disabled', true);
+    }
+  });
+
+  // Auto-validate on input change
+  $('#bulkJsonInput, #bulkCsvInput, #bulkTextInput').on('input', function() {
+    $('#bulkAddSubmitBtn').prop('disabled', true);
+  });
+
+  function updateBulkPreview(type, data) {
+    if (!Array.isArray(data) || data.length === 0) {
+      $('#bulkPreviewContainer').html('<p class="text-muted">Veri girince önizleme görünecek...</p>');
+      $('#bulkPreviewCount').text('0');
+      return;
+    }
+    
+    $('#bulkPreviewCount').text(data.length);
+    let html = '';
+    
+    data.slice(0, 5).forEach((item, idx) => {
+      html += `<div class="bulk-preview-item">
+        <div class="d-flex justify-content-between mb-1">
+          <strong>#${idx + 1}</strong>
+          <span class="badge bg-info">${item.questions?.length || 0} soru</span>
+        </div>
+        <div class="small text-muted">${(item.questions || []).join(', ')}</div>
+        <div class="mt-1 small"><strong>Cevap:</strong> ${esc((item.answer || '').substring(0, 100))}${(item.answer || '').length > 100 ? '...' : ''}</div>
+      </div>`;
+    });
+    
+    if (data.length > 5) {
+      html += `<div class="text-muted text-center mt-2"><small>... ve ${data.length - 5} kayıt daha</small></div>`;
+    }
+    
+    $('#bulkPreviewContainer').html(html);
+  }
+
+  $('#bulkAddSubmitBtn').on('click', function() {
+    const activeTab = $('.nav-link.active', '#bulkAddModal').attr('id');
+    let data = [];
+    
+    try {
+      if (activeTab === 'bulk-json-tab') {
+        data = JSON.parse($('#bulkJsonInput').val());
+      } else if (activeTab === 'bulk-csv-tab') {
+        const lines = $('#bulkCsvInput').val().split('\n').filter(l => l.trim());
+        lines.forEach(line => {
+          const parts = line.split(',');
+          if (parts.length >= 2) {
+            const questions = parts[0].split('|').map(q => q.trim()).filter(Boolean);
+            const answer = parts.slice(1).join(',').trim();
+            data.push({ questions, answer });
+          }
+        });
+      } else if (activeTab === 'bulk-text-tab') {
+        const text = $('#bulkTextInput').val();
+        const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
+        
+        blocks.forEach(block => {
+          const lines = block.split('\n');
+          const questions = [];
+          let answer = '';
+          
+          lines.forEach(line => {
+            if (line.trim().startsWith('Q:')) {
+              questions.push(line.substring(2).trim());
+            } else if (line.trim().startsWith('A:')) {
+              answer = line.substring(2).trim();
+            }
+          });
+          
+          if (questions.length > 0 && answer) {
+            data.push({ questions, answer });
+          }
+        });
+      }
+      
+      // Add all items
+      let addedCount = 0;
+      data.forEach(item => {
+        $.ajax({
+          url: `/admin/api/items?file=${currentFile}`,
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(item),
+          async: false,
+          success: () => addedCount++
+        });
+      });
+      
+      alert(`${addedCount} kayıt eklendi!`);
+      bulkAddModal.hide();
+      qaTable.ajax.reload();
+      
+      // Clear inputs
+      $('#bulkJsonInput, #bulkCsvInput, #bulkTextInput').val('');
+      $('#bulkPreviewContainer').html('<p class="text-muted">Veri girince önizleme görünecek...</p>');
+      
+    } catch (e) {
+      alert('Hata: ' + e.message);
+    }
+  });
+
+  // Import/Export
+  let importJsonModal;
+  let importedFileData = null;
+
+  $('#importJsonBtn').on('click', function() {
+    if (!importJsonModal) {
+      importJsonModal = new bootstrap.Modal(document.getElementById('importJsonModal'));
+    }
+    importJsonModal.show();
+  });
+
+  $('#selectFileBtn').on('click', function() {
+    $('#jsonFileInput').click();
+  });
+
+  $('#jsonFileInput').on('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      handleImportFile(file);
+    }
+  });
+
+  // Drag and drop
+  const dragDropZone = document.getElementById('dragDropZone');
+  if (dragDropZone) {
+    dragDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      $(dragDropZone).addClass('dragover');
+    });
+    
+    dragDropZone.addEventListener('dragleave', () => {
+      $(dragDropZone).removeClass('dragover');
+    });
+    
+    dragDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      $(dragDropZone).removeClass('dragover');
+      
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.json')) {
+        handleImportFile(file);
+      } else {
+        alert('Lütfen sadece .json dosyası seçin');
+      }
+    });
+  }
+
+  function handleImportFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        
+        if (!Array.isArray(data)) {
+          throw new Error('JSON bir array olmalı');
+        }
+        
+        importedFileData = data;
+        
+        $('#importFileName').text(file.name);
+        $('#importFileSize').text((file.size / 1024).toFixed(2) + ' KB');
+        $('#importRecordCount').text(data.length);
+        $('#importPreviewContent').text(JSON.stringify(data.slice(0, 3), null, 2));
+        
+        $('#dragDropZone').hide();
+        $('#importFilePreview').show();
+        $('#importSubmitBtn').prop('disabled', false);
+        
+      } catch (err) {
+        alert('Geçersiz JSON dosyası: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  $('#clearImportFile').on('click', function() {
+    importedFileData = null;
+    $('#jsonFileInput').val('');
+    $('#dragDropZone').show();
+    $('#importFilePreview').hide();
+    $('#importSubmitBtn').prop('disabled', true);
+  });
+
+  $('#importSubmitBtn').on('click', function() {
+    if (!importedFileData) return;
+    
+    const merge = $('#importMergeOption').is(':checked');
+    
+    if (merge) {
+      // Use the merge API endpoint
+      alert('Birleştirme özelliği için mevcut "Birleştir" butonunu kullanın.');
+    } else {
+      // Replace current data
+      if (!confirm('Mevcut tüm veriler silinecek ve yenileriyle değiştirilecek. Emin misiniz?')) {
+        return;
+      }
+      
+      // This would require a new API endpoint to replace all data
+      // For now, show a message
+      alert('Tam değiştirme özelliği henüz mevcut değil. Birleştir seçeneğini kullanın veya dosyayı manuel olarak değiştirin.');
+    }
+  });
+
+  $('#exportJsonBtn').on('click', function() {
+    if (!currentFile) {
+      alert('Önce bir dosya seçin');
+      return;
+    }
+    
+    // Fetch current data
+    $.get(`/admin/api/items?file=${currentFile}`, function(data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentFile;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  });
+
+  // ===============================
+  // DELETE FILE FUNCTIONALITY
+  // ===============================
+
+  let deleteFileModal;
+  let deleteFileTarget = null;
+
+  $('#deleteFileBtn').on('click', function() {
+    if (!currentFile) {
+      alert('Silinecek dosya yok');
+      return;
+    }
+
+    if (!deleteFileModal) {
+      deleteFileModal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
+    }
+
+    deleteFileTarget = currentFile;
+    
+    // Populate modal
+    $('#deleteFileName').text(currentFile);
+    $('#deleteFileConfirmInput').val('');
+    $('#deleteFileConfirmBtn').prop('disabled', true);
+    
+    // Get file item count
+    $.get(`/admin/api/items?file=${currentFile}`, function(data) {
+      const count = Array.isArray(data) ? data.length : 0;
+      $('#deleteFileItemCount').text(count);
+    });
+
+    deleteFileModal.show();
+  });
+
+  // Validate filename input for delete confirmation
+  $('#deleteFileConfirmInput').on('input', function() {
+    const input = $(this).val();
+    const isMatch = input === deleteFileTarget;
+    $('#deleteFileConfirmBtn').prop('disabled', !isMatch);
+    
+    if (input && !isMatch) {
+      $('#deleteFileStatus').html('<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Dosya adı eşleşmiyor</div>');
+    } else {
+      $('#deleteFileStatus').html('');
+    }
+  });
+
+  // Confirm delete
+  $('#deleteFileConfirmBtn').on('click', function() {
+    if (!deleteFileTarget) return;
+
+    const btn = $(this);
+    btn.prop('disabled', true);
+    
+    $('#deleteFileStatus').html('<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Dosya siliniyor...</div>');
+
+    // Backend'de dosya silme endpoint'i olmalı
+    // Şimdilik dosyayı boşaltıp sonra silmeyi simüle ediyoruz
+    fetch(`/admin/api/files/${deleteFileTarget}`, {
+      method: 'DELETE'
+    })
+    .then(resp => {
+      if (!resp.ok) {
+        return resp.json().catch(() => ({})).then((data) => {
+          throw new Error(data?.message || 'Dosya silinemedi');
+        });
+      }
+      return resp.json();
+    })
+    .then(() => {
+      $('#deleteFileStatus').html('<div class="alert alert-success"><i class="bi bi-check-circle"></i> Dosya başarıyla silindi!</div>');
+      
+      setTimeout(() => {
+        deleteFileModal.hide();
+        
+        // Reload file list
+        const remainingFiles = allFiles.filter(f => f !== deleteFileTarget);
+        const nextFile = remainingFiles.length > 0 ? remainingFiles[0] : null;
+        
+        reloadFileList(nextFile).then(() => {
+          if (qaTable) {
+            if (nextFile) {
+              qaTable.ajax.reload();
+            } else {
+              qaTable.clear().draw();
+            }
+          }
+        });
+        
+        deleteFileTarget = null;
+        $('#deleteFileConfirmInput').val('');
+        $('#deleteFileStatus').html('');
+      }, 1500);
+    })
+    .catch(err => {
+      $('#deleteFileStatus').html(`<div class="alert alert-danger"><i class="bi bi-x-circle"></i> ${err.message}</div>`);
+      btn.prop('disabled', false);
+    });
+  });
+
+  // Clear modal on close
+  $('#deleteFileModal').on('hidden.bs.modal', function() {
+    deleteFileTarget = null;
+    $('#deleteFileConfirmInput').val('');
+    $('#deleteFileStatus').html('');
+    $('#deleteFileConfirmBtn').prop('disabled', true);
+  });
 
   // Keyboard shortcuts
   $(document).on('keydown', (e) => {

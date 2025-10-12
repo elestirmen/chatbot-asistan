@@ -1714,6 +1714,38 @@ def admin_files_merge():
     })
 
 
+@admin_bp.route('/api/files/<filename>', methods=['DELETE'])
+def admin_delete_file(filename):
+    """Delete a JSON file"""
+    if not _has_qna_access():
+        return _unauthorized()
+    
+    if not filename:
+        return jsonify({'error': 'Bad Request', 'message': 'Dosya adı gerekli.'}), 400
+    
+    try:
+        file_path = _resolve_data_file(filename)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+    
+    if not file_path.exists():
+        return jsonify({'error': 'Not Found', 'message': 'Dosya bulunamadı.'}), 404
+    
+    # Prevent deleting the default file
+    if file_path.name == DEFAULT_QA_FILE:
+        return jsonify({'error': 'Forbidden', 'message': 'Varsayılan dosya silinemez.'}), 403
+    
+    try:
+        file_path.unlink()
+        return jsonify({
+            'success': True,
+            'message': f'{filename} başarıyla silindi.',
+            'deleted_file': filename
+        })
+    except Exception as exc:
+        return jsonify({'error': 'Internal Server Error', 'message': f'Dosya silinirken hata: {str(exc)}'}), 500
+
+
 @admin_bp.route('/api/auth_status')
 def admin_auth_status():
     role = _current_admin_role()

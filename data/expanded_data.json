@@ -1078,5 +1078,968 @@
       "Öğrenci Kabul Edilecek Yüksek Lisans Programları neler?"
     ],
     "answer": "Dil ve Konuşma Terapisi Yüksek Lisans Programı (Tezli) (2025-2026 Güz Yarıyılı için belirlenen kontenjan dolmuştur.)\nDil ve Konuşma Terapisi Yüksek Lisans Programı (Tezsiz)\nGastronomi ve Mutfak Sanatları (Tezli)\nGastronomi ve Mutfak Sanatları (Tezsiz)\nKültürel Çalışmalar Yüksek Lisans Programı (Tezli)\nPsikoloji Yüksek Lisans Programı (Tezli)\nSiyaset Bilimi ve Kamu Yönetimi Yüksek Lisans Programı (Tezli)\nSürdürülebilir Turizm Yönetimi Yüksek Lisans Programı (Tezli)\nSürdürülebilir Turizm Yönetimi Yüksek Lisans Programı (Tezsiz)\nTurist Rehberliği Yüksek Lisans Programı (Tezli)\nTurist Rehberliği Yüksek Lisans Programı (Tezsiz)\nUluslararası İlişkiler Yüksek Lisans Programı (Tezli)\nAile Danışmanlığı (Tezli)\nAile Danışmanlığı (Tezsiz)\nHavacılık Teknolojileri ve Yönetimi (Tezli)\nHavacılık Teknolojileri ve Yönetimi (Tezsiz)"
+  },
+  {
+    "questions": [
+      "Öğrenim sürem doldu, mezun olmak için sınav hakkım var mı?"
+    ],
+    "answer": "Kapadokya Üniversitesi'nin yönergesine göre, azami öğrenim süresini dolduran önlisans ve lisans öğrencilerine mezun olabilmeleri için ek sınav hakkı tanınmaktadır. Bu sınavda amaç, başarısız ders sayısını beş derse indirmektir."
+  },
+  {
+    "questions": [
+      "Ek sınavda geçmem gereken ders sayısı ne kadar olmalı ki bu ek süreden faydalanabileyim?"
+    ],
+    "answer": "Ek sınavda geçmeniz gereken ders sayısı, azami öğrenim süresini doldurmuş olmanıza rağmen başarısız ders sayınızın beş veya daha az olmasıdır. Başarısız ders sayınız beşin altında ise ek süre hakkından yararlanabilirsiniz."
+  },
+  {
+    "questions": [
+      "Azami öğrenim süresi derken tam olarak neyi kastediyorsunuz?"
+    ],
+    "answer": "Azami öğrenim süresi, bir önlisans veya lisans programında öğrenciye tanınan en uzun eğitim süresidir. Bu süre dolduğunda, öğrencinin mezun olabilmesi için ek sınav hakkı gibi belirli koşullar altında ek süreler tanımlanabilir."
+  },
+  {
+    "questions": [
+      "Bu ek süre dediğiniz şey tam olarak ne anlama geliyor?"
+    ],
+    "answer": "Ek Süre, azami öğrenim süresini dolduran son sınıf öğrencilerine başarısız oldukları derslerin sınavlarına girebilmeleri için tanınan üç veya dört yarıyıllık ek bir süredir. Bu süre, öğrencilerin mezun olabilmek için başarısız ders sayısını azaltmalarına olanak tanır."
+  },
+  {
+    "questions": [
+      "Eğer ben normal süremde beş dersten fazla başarısız olursam ne olur?"
+    ],
+    "answer": "Normal öğrenim sürenizi aşarsanız ve beşten fazla dersiniz kalırsa, kayıt hakkınız silinebilir. Ancak, azami süre sonunda beş veya daha az başarısız dersiniz varsa ek sınavlara girme hakkı kazanabilirsiniz."
+  },
+  {
+    "questions": [
+      "Azami öğrenim süresi benim için kaç yıl olacak, bunu nasıl öğrenebilirim?"
+    ],
+    "answer": "Azami öğrenim süreniz, kayıt olduğunuz programın türüne göre değişir. Ön lisans için 4 yıl, lisans için 7 veya 8 yıl azami süre olarak belirlenmiştir."
+  },
+  {
+    "questions": [
+      "Benim programım normalde 6 yıl sürecek, ben bu programı en geç kaç yıla kadar bitirmeliyim?"
+    ],
+    "answer": "Programınızın azami öğrenim süresi 9 yıldır. Yükseköğretim Yürütme Kurulu'nun kararı uyarınca, bu süre 2014-2015 güz yarıyılından itibaren başlar."
+  },
+  {
+    "questions": [
+      "Hazırlık sınıfını geçemezsem ne olur?"
+    ],
+    "answer": "Hazırlık eğitim süresi azami iki yıldır. Bu süreyi tamamlayamayan öğrencinin üniversite ile ilişiği kesilir."
+  },
+  {
+    "questions": [
+      "Yatay geçiş yaparsam azami öğrenim sürem nasıl hesaplanır?"
+    ],
+    "answer": "Yatay geçiş yapan öğrencilerin azami süreleri, kabul edildiği sınıf çıkartılarak programın normal azami süresinden hesaplanır. Bu durumda, önceki eğitiminde geçen süreler dikkate alınarak kalan öğrenim süresi belirlenir."
+  },
+  {
+    "questions": [
+      "Öğrenim ücretini ödeyemediğimde ilişik kesme durumu oluyor mu?"
+    ],
+    "answer": "Öğrenim ücretinin ödenmemesi tek başına ilişik kesmeye neden olmaz. Ancak dört yıl üst üste öğrenim ücreti ödenmezse ve kayıt yenilenmezse üniversite yetkili kurullarının kararı ve Yükseköğretim Kurulunun onayı ile ilişik kesilebilir."
+  },
+  {
+    "questions": [
+      "Azami süreyi doldurursam sınav tekrarı yapabilir miyim?"
+    ],
+    "answer": "Evet, azami öğrenim süresini dolduran öğrencilere başarısız oldukları dersler için iki ek sınav hakkı verilir. Bu sınavlar akademik takvimde belirlenen tarihlerde yapılır."
+  },
+  {
+    "questions": [
+      "Merhaba, yatay geçiş yapmak istiyorum, şartlar nelerdir?"
+    ],
+    "answer": "Yatay geçiş için, öğretim dili Türkçe olan bir programa başvurabilirsin. Başvurunun kabulü için not ortalamanın yeterli olması ve geçmek istediğin bölümün kontenjanı dahilinde yer açılması gerekiyor."
+  },
+  {
+    "questions": [
+      "Ek sınav hakkım varsa devam zorunluluğu olan derslere kayıt yaptırmam gerekiyor mu?"
+    ],
+    "answer": "Evet, uygulama ağırlıklı dersler için ek sınav hakkını kullanabilmek için dersin açıldığı yarıyılda ders/kredi öğrenim ücretini ödeyerek derse kayıt yaptırmak ve ara sınavlara katılmak zorunludur. Devam koşullarını yerine getirerek sınava girme hakkı elde etmeniz gerekir."
+  },
+  {
+    "questions": [
+      "Eğer başarısız ders sayım çok yüksek olursa ne olur?"
+    ],
+    "answer": "Başarısız ders sayısı beş derse indirilemezse üniversite ile ilişki kesilir. Başarısız ders sayısı beş veya daha az ise öğrenciye ek süre tanınır."
+  },
+  {
+    "questions": [
+      "Ek sınavlarla başarısız ders sayısını beş derse indirenlere kaç yarıyıl ek süre tanınıyor?"
+    ],
+    "answer": "Ek sınavlarla başarısız ders sayısını beş derse indirenlere üç yarıyıl ek süre tanınır. Ek sınavları almadan beş derse kadar başarısız olan öğrencilere ise dört yarıyıl ek süre verilir."
+  },
+  {
+    "questions": [
+      "Bir dersten başarısız olan öğrenciler bu haktan nasıl yararlanabiliyor?"
+    ],
+    "answer": "Bir dersten başarısız olan öğrencilere, öğrencilik hakkından yararlanmaksızın sınırsız sınav girme hakkı tanınır. Bu öğrenciler sınava girdiği her ders için ders/kredi öğrenim ücretini ödemeye devam ederler."
+  },
+  {
+    "questions": [
+      "Üç eğitim öğretim yılı üst üste sınava girmeyen bir öğrencinin durumu ne olur?"
+    ],
+    "answer": "Üç eğitim öğretim yılı üst üste sınava girmeyen öğrenci, sınırsız sınav hakkından vazgeçmiş sayılır ve ilişiği kesilir. Bu durumda tekrar bu haklardan yararlanamaz."
+  },
+  {
+    "questions": [
+      "Sınav hakkım sınırsız olursa ders ücretini ödemeye devam edecek miyim?"
+    ],
+    "answer": "Evet, sınav hakkı sınırsız olsa bile sınava girdiği her ders için ders/kredi öğrenim ücretini ödemeye devam edecektir. Ancak bu öğrenciler, sınav hakkı dışındaki diğer öğrencilik haklarından yararlanamazlar."
+  },
+  {
+    "questions": [
+      "Eğer programımın müfredatında değişiklik olursa sınavlarıma girebilir miyim?"
+    ],
+    "answer": "Evet, programınızın öğretim planında bir değişiklik olması durumunda yönetim kurulu kararı ile uygun görülen derslerden sınav hakkınızı kullanabilirsiniz. Bu hak, azami süreyi aşan veya sınırsız sınav hakkı olan öğrenciler için geçerlidir."
+  },
+  {
+    "questions": [
+      "Mazeret sınavı diye bir şey var mı, yoksa sınava girme hakkı verilen derslerin ek sınavları için özel bir durum mu geçerli?"
+    ],
+    "answer": "Mazeret sınavı düzenlenmez. Devam zorunluluğu olmayan ve sınava girme hakkı verilen derslerin ek sınavları veya sınırsız sınav hakları için mazeret sınavı uygulanmaz."
+  },
+  {
+    "questions": [
+      "Final sınavında ek sınav hakkı kullanabilir miyim?"
+    ],
+    "answer": "Evet, yönetim kurulu kararı ile final sınavında ek sınav veya sınırsız sınav haklarını kullanabilirsiniz. Ancak başvuru süresi içinde başvurunuzu yapmanız ve ders/kredi öğrenim ücretini ödemeniz gerekmektedir."
+  },
+  {
+    "questions": [
+      "Ek sınav ücreti ödedikten sonra ders kapanırsa ne olur?"
+    ],
+    "answer": "Ek sınav ücreti geri ödenir veya öğrenci açılan bir başka derse kayıt yaptırabilir. Dersin kapanması durumunda ek sınav hakkı için ödenen ücret iade edilir ya da öğrenci bu hakkını farklı bir ders için kullanabilir."
+  },
+  {
+    "questions": [
+      "Devam zorunluluğu olmayan bir dersten geçer not almak için kaç puan almam gerekiyor?"
+    ],
+    "answer": "Devam zorunluluğu olmayan derslerden ek sınav veya sınırsız sınav hakkını kullanan öğrencilerin sınavlarda 100 tam puan üzerinden en az 60 puan almaları zorunludur. Bu puan, harf notu ile değerlendirilir."
+  },
+  {
+    "questions": [
+      "Bu metinde bahsedilen yönetmelik ve kanunlara nereden ulaşabilirim?"
+    ],
+    "answer": "Metinde belirtilen 2547 sayılı Yükseköğretim Kanunu ve Kapadokya Üniversitesi Ön Lisans ve Lisans Eğitim-Öğretim Yönetmeliği'ne resmi gazete veya üniversitenin internet sitesi üzerinden ulaşabilirsiniz. Ayrıca, Senato kararlarına da Kapadokya Üniversitesi'nin ilgili birimlerinden bilgi alarak erişebilirsiniz."
+  },
+  {
+    "questions": [
+      "Eğer bir sorun yaşarsam bu yönergede çözümü olmayan bir konuyla ilgili kime danışmalıyım?"
+    ],
+    "answer": "Bu yönergede çözümü bulunmayan konularda öncelikle Kapadokya Üniversitesi Ön Lisans ve Lisans Eğitim-Öğretim Yönetmeliği'ne bakmalı veya Senato kararlarını incelemelisiniz. Bu kaynaklarda da çözüm bulamazsanız, Rektörlük ile iletişime geçebilirsiniz."
+  },
+  {
+    "questions": [
+      "Bu yönerge ne zaman geçerli olmaya başladı?"
+    ],
+    "answer": "Bu yönerge, Kapadokya Üniversitesi Senatosu tarafından kabul edildiği tarihte yürürlüğe girmiştir. Kabul tarihi belirtilmediğinden kesin bir başlangıç tarihi tespit edilemez."
+  },
+  {
+    "questions": [
+      "Öğretim elemanları için proje desteği alabilmek için nelere dikkat etmeliyim??"
+    ],
+    "answer": "Kapadokya Üniversitesi'nin BAP yönergesine göre, stratejik planla uyumlu projeler hazırlayın ve bilimsel yayınların açık erişime sunulmasına odaklanın. Ayrıca, dış kaynaklı proje başvurularında da üniversitenin destek mekanizmalarını kullanmayı ihmal etmeyin."
+  },
+  {
+    "questions": [
+      "Bu destek programlarından öğrenciler olarak biz de faydalanabiliyor muyuz?"
+    ],
+    "answer": "Evet, bu yönerge Kapadokya Üniversitesi öğrenci ve öğretim elemanlarının bilimsel/mesleki gelişimini destekleme programlarını da kapsar. Öğrenciler, projelerde yer alarak veya bireysel olarak başvurarak destekten faydalanabilirler."
+  },
+  {
+    "questions": [
+      "Dış kaynaklardan bir proje geliştirmek istersem üniversite bu projeye nasıl destek sağlar?"
+    ],
+    "answer": "Kapadokya Üniversitesi, dış kaynaklı projelere seçilme, yürütülme, izlenme ve raporlama süreçlerinde destek sağlar. Ayrıca, proje sonuçlarının değerlendirilmesi ve bilimsel yayınların duyurulması konusunda da yardımcı olur."
+  },
+  {
+    "questions": [
+      "Bu bilimsel araştırma projelerine başvurmak için ne gibi şartlar gerekiyor?"
+    ],
+    "answer": "Bu yönerge, KÜN'de yürütülecek bilimsel araştırma projelerinin seçilmesi, desteklenmesi ve değerlendirilmesi ile ilgili usul ve esasları kapsar. Projelerin alanında bilime katkı sağlaması ve ülkenin kalkınmasına hizmet etmesi beklenmektedir."
+  },
+  {
+    "questions": [
+      "Proje önerisi hazırlarken nelere dikkat etmeliyim?"
+    ],
+    "answer": "Proje önerisinde bilimsel hedeflerin açıkça belirtilmesi, projenin özgünlüğüne ve yeniliğine vurgu yapılması önemlidir. Ayrıca, bütçenin gerçekçi olması ve projenin KÜN'ün stratejik öncelikleriyle uyumlu olması da dikkat edilmesi gereken hususlardır.\nDoküman No YNG-015\nBİLİMSEL ARAŞTIRMA Yayın Tarihi TEMMUZ 2018\nPROJELERİ (BAP) UYGULAMA Revizyon No 05\nYÖNERGESİ Revizyon"
+  },
+  {
+    "questions": [
+      "Teknoloji Transfer ve Proje Yönetim Ofisi’nin (TTPYO) görevleri nelerdir?"
+    ],
+    "answer": "Teknoloji Transfer ve Proje Yönetim Ofisi (TTPYO), BAP Komisyonu sekretaryasını yürütür ve bilimsel araştırma projeleriyle bağlantılı satın alma, ödeme süreçlerinden sorumludur. Ayrıca, bilimsel araştırma projeleri, destekleme programları ve teknoloji transfer faaliyetlerini koordine eder."
+  },
+  {
+    "questions": [
+      "Öğrenci bursuna başvurmak için proje kapsamında görev almam gerekiyor mu?"
+    ],
+    "answer": "Evet, bu yönergeye göre öğrenci bursiyeri olmak için bilimsel araştırma projelerinde proje ekibinde yer almak ve burslu statüsünde görevlendirilmek gerekmektedir. Proje kapsamında burslu olarak görev almayan öğrenciler burs başvurusunda bulunamazlar."
+  },
+  {
+    "questions": [
+      "Projelerde yer alan araştırmacıların kimler olduğunu öğrenebilir miyim?"
+    ],
+    "answer": "Kapadokya Üniversitesi Bilimsel Araştırma Projeleri Uygulama Yönergesi'ne göre, araştırmacı; proje yürütücüsü tarafından proje ekibinde yer alan öğretim elemanları, lisans/lisansüstü öğrencileri veya uzman/mezunlardır. Bu kişiler, projenin yürütülmesinde görev alırlar ve Proje Yürütücüsü'nün sorumluluğundadırlar."
+  },
+  {
+    "questions": [
+      "Bir projeye dahil olmak için ne yapmam gerekiyor?"
+    ],
+    "answer": "Kapadokya Üniversitesi'nde bir projeye dahil olmak için öncelikle üniversitenin BAP yönergesini incelemeli ve proje yürütücüsü ile iletişime geçerek araştırma ekibine katılma isteğinizi belirtmelisiniz. Ayrıca, lisans veya lisansüstü öğrenciyseniz bursiyer olarak da projelerde görev alabilirsiniz."
+  },
+  {
+    "questions": [
+      "Burs alarak projelerde görev almak için nelere dikkat etmeliyim?"
+    ],
+    "answer": "Bursiyer olarak projelerde görev almak için öncelikle üniversitenin yatırım programında yer alan projeler dışında bilimsel araştırma projelerinde burslu statüsünde öğrenci olmanız gerekmektedir. Ayrıca, proje kapsamında Bilimsel Araştırma Projesi Destekleme Sözleşmesi'ne uyarak sorumluluklarınızı yerine getirmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Bilimsel etkinliklere katılım konusunda destek sağlıyor musunuz?"
+    ],
+    "answer": "Evet, Kapadokya Üniversitesi BAP Komisyonu tarafından desteklenmesine karar verilen projeler kapsamında bilimsel etkinliklere katılım desteklenebilir. Bu destekleme ilke, usul ve sorumlulukları Bilimsel Araştırma Projesi Destekleme Sözleşmesi ile belirlenir."
+  },
+  {
+    "questions": [
+      "Öncelikli araştırma alanları nelerdir ve bu alanlarda proje yapmak avantajlı mı?"
+    ],
+    "answer": "Öncelikli araştırma alanları Kapadokya Üniversitesi’nin Stratejik Planı Hedefleri doğrultusunda belirlenir. Bu alanlardaki projeler üniversitenin stratejik hedeflerine hizmet ettiği için desteklenmesi daha olasıdır ve avantajlı olabilir."
+  },
+  {
+    "questions": [
+      "Bu \"Dış Paydaş\" tanımına göre üniversiteyle işbirliği yapan kurumlar neler olabilir?"
+    ],
+    "answer": "Kapadokya Üniversitesi'nin hedeflerine ulaşmasına katkı sağlayan tüm kurum dışı paydaşlarıdır. Bu kurumlar arasında sanayi şirketleri, yerel yönetimler, sivil toplum kuruluşları veya diğer üniversiteler bulunabilir."
+  },
+  {
+    "questions": [
+      "Öğrenci projelerinde \"Deneysel Geliştirme\" ne demek tam olarak, örnek verebilir misiniz?"
+    ],
+    "answer": "Deneysel geliştirme, mevcut bilgiyi kullanarak yeni bir ürün, süreç veya hizmet oluşturmak ya da var olanları iyileştirmek için yapılan sistemli çalışmaları ifade eder. Örneğin, bir öğrencinin daha verimli güneş enerjisi paneli tasarlayıp prototipini oluşturması deneysel geliştirmeye girer."
+  },
+  {
+    "questions": [
+      "Araştırma sonuçlarımızı yayınlarken \"Açık Erişim\"in avantajları nelerdir?"
+    ],
+    "answer": "Açık erişim, araştırma sonuçlarının daha geniş bir kitleye ulaşmasını sağlayarak bilimin ilerlemesine katkıda bulunur. Ayrıca araştırmacının görünürlüğünü artırarak akademik itibarını güçlendirir."
+  },
+  {
+    "questions": [
+      "KÜNASİS sistemi tam olarak ne işe yarıyor?"
+    ],
+    "answer": "Kapadokya Üniversitesi Kurumsal Arşiv Sistemi (KÜNASİS), üniversite araştırmacılarının akademik çalışmalarını ve verilerini bir araya getirir. Bu sistem, bu çalışmaları düzenler ve uzun süreli olarak saklar."
+  },
+  {
+    "questions": [
+      "BAP Komisyonu'ndaki öğretim üyeleri kaç yıl görev yapıyorlar?"
+    ],
+    "answer": "BAP Komisyonu'ndaki öğretim üyeleri dört yıl boyunca görev yaparlar. Süresi biten üye aynı usulle yeniden görevlendirilebilir."
+  },
+  {
+    "questions": [
+      "Projelerle ilgili takibi yapan \"İzleyici\" kim oluyor ve nasıl belirleniyor?"
+    ],
+    "answer": "İzleyici, BAP Komisyonu tarafından belirlenen Kapadokya Üniversitesi öğretim elemanıdır. İzleyici, projelerin iş-zaman planına, bütçesine, bilimsel yöntemlere ve etik kurallara uygun ilerlemesini takip eder."
+  },
+  {
+    "questions": [
+      "BAP Komisyonu'nda üyelik nasıl oluyor?"
+    ],
+    "answer": "BAP Komisyonu üyeleri, üniversitedeki bilim dalları arasında denge gözetilerek dört yıl için görevlendirilir. Süresi biten üyeler aynı usulle yeniden görevlendirilebilir."
+  },
+  {
+    "questions": [
+      "Bir komisyon üyesi toplantılara katılmasa ne olur?"
+    ],
+    "answer": "Üye mazeretsiz olarak üst üste iki kez veya yılda üç kez toplantıya katılmazsa üyeliği kendiliğinden sona erer. Üniversite bünyesindeki asıl görevinden ayrılan bir üyenin BAP Komisyonu üyeliği de düşer."
+  },
+  {
+    "questions": [
+      "Komisyonda alınan kararlar nasıl belirleniyor?"
+    ],
+    "answer": "Kararlar oy çokluğu ile alınır ve çekimser oy kullanılamaz. Oyların eşitliği durumunda komisyon başkanının oyu yönünde karar alınır."
+  },
+  {
+    "questions": [
+      "Bir projeye başvurmak istersem ilk olarak ne yapmam gerekiyor?"
+    ],
+    "answer": "BAP yönergesine göre, bir projeye başvurmak için öncelikle Madde 6'da belirtilen BAP Komisyonunun görevlerini incelemelisiniz. Ardından, Teknoloji Transfer ve Proje Yönetim Ofisi sekretaryası aracılığıyla başvuru sürecini öğrenmeniz gerekmektedir."
+  },
+  {
+    "questions": [
+      "Proje sonuçlarımın KÜNASİS’e kaydedilmesiyle ilgili süreç nasıl ilerliyor?"
+    ],
+    "answer": "BAP Komisyonu, proje sonuç raporlarınızın ve araştırma verilerinizin KÜNASİS'de depolanmasını sağlar/takip eder. Açık erişime açılacak olanlar için ise, \"Açık Kaynak Teslim Formu\" ile Kütüphane ve Dokümantasyon Dairesi Başkanlığı’na iletilmesi BAP Komisyonunun sorumluluğundadır."
+  },
+  {
+    "questions": [
+      "BAP Komisyonu Başkanı'nın görevleri arasında projelere yönelik duyurular yapmak da var mı?"
+    ],
+    "answer": "Evet, BAP Komisyonu Başkanı'nın görevleri arasında projelerle ilgili duyuruları hazırlamak ve yazışmaları yapmak yer almaktadır. Bu görevi, komisyonun işleyişini koordine etme sorumluluğunun bir parçasıdır."
+  },
+  {
+    "questions": [
+      "BAP Komisyonu Başkanı'nın görevleri arasında öğrenci etkinliklerine katılım da var mı?"
+    ],
+    "answer": "Evet, BAP Komisyonu Başkanı Öğrenci Etkinlikleri Komisyonuna BAP Komisyonunu temsilen katılmak ve akademik etkinlikleri koordine etmekle görevlidir. Bu sayede BAP projeleri ile öğrenci etkinlikleri arasında bir sinerji oluşturulması hedeflenir."
+  },
+  {
+    "questions": [
+      "Desteklenen projelerle ilgili süreç nasıl ilerliyor, onaylandıktan sonra neler yapılıyor?"
+    ],
+    "answer": "BAP Komisyonu tarafından desteklenmesine karar verilen projelerin sözleşmeleri hazırlanır ve imzalanır. Projelerin yürüyüşü izlenir, sorunlu projelerde ise yönergede belirtilen yaptırımlar uygulanır."
+  },
+  {
+    "questions": [
+      "Teknoloji Transfer ve Proje Yönetim Ofisi’nin tam olarak ne gibi işlerle ilgilendiğini öğrenebilir miyim?"
+    ],
+    "answer": "Kapadokya Üniversitesi Teknoloji Transfer ve Proje Yönetim Ofisi'nin görevleri, Kapadokya Üniversitesi Teknoloji Transfer ve Proje Yönetim Ofisi önergesinde tanımlanmıştır. Bu ofis, üniversitenin projelerinin yönetimi ve teknoloji transferi süreçleriyle ilgilenir."
+  },
+  {
+    "questions": [
+      "Bu projelerden hangileri lisans öğrencilerine yönelik?"
+    ],
+    "answer": "Lisans Öğrencisi Katılımlı Araştırma Projeleri (LAP) ve Lisansüstü Tez Projeleri (TEZ) lisans öğrencilerine yönelik projelerdir. Ayrıca, diğer proje türleri de lisans öğrencilerinin katılımına açık olabilir."
+  },
+  {
+    "questions": [
+      "Proje başvurusu yapabilmek için hangi şartları sağlamamız gerekiyor?"
+    ],
+    "answer": "KÜN bünyesinde faaliyet gösteren tüm birimler bilimsel araştırma projelerine başvuru yapabilir. Destek miktarı projenin niteliğine göre belirlenir."
+  },
+  {
+    "questions": [
+      "Desteklenecek proje türleri arasında farklılıklar var mı, örneğin bir proje diğerine göre daha fazla destek alabiliyor mu?"
+    ],
+    "answer": "Evet, desteklenecek proje türleri arasında farklar bulunmaktadır. Projelerin niteliğine göre değişen destek miktarları belirlenir; bazı projeler diğerlerine kıyasla daha yüksek finansman sağlayabilir."
+  },
+  {
+    "questions": [
+      "Bu projelerden ben de yararlanmak istiyorum, nasıl bir süreç izlemem gerekiyor?"
+    ],
+    "answer": "KÜN bünyesinde faaliyet gösteren tüm birimler bu projelere başvurabilir. Başvuru süreci ve destek miktarları proje türüne göre değişiklik gösterdiğinden, KÜN BAP Birimi ile iletişime geçerek detaylı bilgi almanız gerekmektedir."
+  },
+  {
+    "questions": [
+      "Projelerde destek miktarı neye göre değişiyor?"
+    ],
+    "answer": "Projelerde sağlanacak destek miktarı, projenin niteliğine göre belirlenir. Bilimsel Araştırma ve Geliştirme Projeleri ile Topluma Katkı Projelerinde bu durum geçerlidir."
+  },
+  {
+    "questions": [
+      "Öğrenci etkinlikleri için bu programlardan nasıl faydalanabilirim?"
+    ],
+    "answer": "Öğrenci etkinlikleri, KÜN Akademik Birimleri tarafından düzenlenen \"Akademik Etkinlik Programları\" (AEP) kapsamında desteklenebilir. Bu program aracılığıyla bölüm/program içeriklerini zenginleştirecek öğrenci etkinliklerine başvuru yapabilirsiniz."
+  },
+  {
+    "questions": [
+      "Öğretim elemanları için bu destek programlarından hangisi yurt dışına gitmek isteyenler için uygun?"
+    ],
+    "answer": "Uzun Süreli Yurt Dışı Bilimsel Ziyaretleri Destekleme Programı (YDZP), KÜN Öğretim Elemanlarının bilimsel çalışma veya incelemelerde bulunmak amacıyla yurt dışına gidişlerini sağlayan destekleri içerir. Bu program, yurt dışına gitmek isteyen öğretim elemanları için uygundur."
+  },
+  {
+    "questions": [
+      "Bu deneyim paylaşımı toplantıları kimlere yönelik ve genellikle hangi konularda geçiyor?"
+    ],
+    "answer": "Deneyim paylaşımı toplantıları, tecrübeli akademisyenlerle meslek hayatının başında olanlara yöneliktir. Eğitim öğretim, bilimsel yayın yapma, proje hazırlama ve topluma katkı gibi konularda bilgi ve birikim aktarılır."
+  },
+  {
+    "questions": [
+      "Tez yazarken bir konuda takılırsam, bana kim yardımcı olabilir veya nereden destek alabilirim?"
+    ],
+    "answer": "Tez yazımında takıldığınızda, deneyimli akademisyenlerden akıl hocalığı almak için Tez-Proje Yazım Desteği Programı'ndan (TPYD) faydalanabilirsiniz. Ayrıca KÜN Öğretim Elemanları tarafından düzenlenen Deneyim Paylaşımı Toplantıları'na katılarak da bilgi ve tecrübe edinebilirsiniz."
+  },
+  {
+    "questions": [
+      "Merhaba, bilimsel araştırma projelerinde öncelik hangi konulara veriliyor?"
+    ],
+    "answer": "Bilimsel araştırma projelerinde üniversitenin uzmanlık alanlarına ve ülke bilim politikasına uygun, evrensel/ulusal bilime katkı sağlayan konulara öncelik veriliyor. Özellikle özgün, uygulamaya dönük, çok katılımlı ve disiplinlerarası projelere ağırlık veriliyor."
+  },
+  {
+    "questions": [
+      "Projelerde etik kurul onayı gerekli mi ve ne zaman gerekiyor?"
+    ],
+    "answer": "İnsan ve hayvan esaslı çalışmalarda etik kurul onayı zorunludur. Topluma katkı projelerinde ise etik kurul onay gerekliliği proje yürütücüsünün talebi doğrultusunda belirlenir."
+  },
+  {
+    "questions": [
+      "Proje değerlendirme sürecinde nelere dikkat ediliyor?"
+    ],
+    "answer": "Proje değerlendirme sürecinde özgünlük, uygulanabilirlik, çok katılımlılık ve disiplinlerarası nitelik gibi kriterlere öncelik veriliyor. Ayrıca insan veya hayvan içeren çalışmalarda etik kurul onayı aranıyor ve üniversitenin stratejik hedeflerine uygunluk da önemli bir faktör olarak değerlendiriliyor."
+  },
+  {
+    "questions": [
+      "Proje başvurularında üniversitenin hangi alanlara öncelik verdiğini öğrenebilir miyim?"
+    ],
+    "answer": "Üniversite, proje seçiminde öncelikli araştırma alanlarına ve topluma katkı hedeflerine uygunluğa önem vermektedir. Bu alanlar üniversitenin stratejik planında belirtilmiştir."
+  },
+  {
+    "questions": [
+      "Projeler değerlendirilirken ortaklıklara ne kadar önem veriliyor?"
+    ],
+    "answer": "Projeler değerlendirilirken çok paydaşlı özellik taşımak yani ulusal/uluslararası iş birlikleri içermek %20 oranında puanlandırılıyor. Bu da ortaklıkların proje seçiminde önemli bir kriter olduğunu gösteriyor."
+  },
+  {
+    "questions": [
+      "Başvuracağım projenin daha önce yapılmış bir projeden farklı olduğundan nasıl emin olabilirim?"
+    ],
+    "answer": "Proje önerinizi hazırlarken kapsamlı bir literatür taraması yaparak benzer çalışmaları tespit edin. Benzerlikleri ortadan kaldırarak özgün bir yaklaşım sergileyin ve projenizin yenilikçi yönlerini vurgulayın."
+  },
+  {
+    "questions": [
+      "Bu proje başvurularında daha çok ne gibi şeylere dikkat ediliyor?"
+    ],
+    "answer": "Proje başvurularında öncelikle özgünlük, bilimsel geçerlilik ve kariyer geliştirme potansiyeli gibi kriterler öne çıkıyor. Ayrıca açık bilim prensiplerine uyum, maliyet etkinliği ve Kapadokya Üniversitesi'nin stratejik hedefleriyle örtüşme de değerlendirmede önemli rol oynuyor."
+  },
+  {
+    "questions": [
+      "Projemin kariyerime katkısı nasıl değerlendirilecek?"
+    ],
+    "answer": "Projenizin kariyer geliştirme potansiyeli, projenin konusunun sizin kariyer gelişimine yapacağı katkı ve size yeni yetenekler kazandırma potansiyeli açısından değerlendirilecektir. Bu kriter, toplam puanın %10'unu oluşturur."
+  },
+  {
+    "questions": [
+      "Projemi açık bilim ve açık erişim sistemlerine açmak bana nasıl bir avantaj sağlar?"
+    ],
+    "answer": "Projenizi açık bilim ve açık erişim sistemlerine açmak, değerlendirme sürecinde \"Açıklık\" kriteri kapsamında 10 puan almanızı sağlar. Ayrıca, akademik ve mesleki etkinlikleri destekleme programında öncelikli değerlendirilmenize katkıda bulunur."
+  },
+  {
+    "questions": [
+      "Bu projeler için başvurular ne zaman yapılıyor?"
+    ],
+    "answer": "Bilimsel araştırma projeleri, topluma katkı projeleri ve akademik/mesleki gelişimi destekleme programları için başvuru takvimi her yıl BAP Komisyonu tarafından belirlenerek ilan edilir. Proje önerileri Teknoloji Transfer ve Proje Yönetim Ofisi’ne sunulur."
+  },
+  {
+    "questions": [
+      "Proje önerisi sunarken hangi formları kullanmam gerekiyor?"
+    ],
+    "answer": "Proje önerisi sunarken \"Bilimsel Araştırma ve Topluma Katkı Projesi Başvuru Formu (BAP.FR.002)\" ile eklerini ve gerekirse \"Bilimsel Araştırma Projesi Değerlendirme Formu (BAP.\" formlarını kullanmanız gerekiyor. Teknoloji Transfer ve Proje Yönetim Ofisi'ne sunulması gerekmektedir."
+  },
+  {
+    "questions": [
+      "Ön değerlendirme aşamasında nelere dikkat ediliyor?"
+    ],
+    "answer": "Ön değerlendirmede proje önerilerinin gerekli koşulları sağlayıp sağlamadığı incelenir. Şartları sağlayan projeler Komisyon Başkanı tarafından BAP Komisyonunun değerlendirmesine sunulur."
+  },
+  {
+    "questions": [
+      "Bir projem var ve bu süreçte hakem değerlendirmesi olacak mı?"
+    ],
+    "answer": "Projenizin türüne göre BAP Komisyonu tarafından doğrudan karar verilebileceği gibi, komisyonun gerekli görmesi halinde hakemlere gönderilerek değerlendirilmesi sağlanabilir. Hakem raporları ve proje ekibinin yayınları da dikkate alınarak projenin desteklenip desteklenmeyeceğine karar verilir."
+  },
+  {
+    "questions": [
+      "Proje değerlendirme sürecinde danışman öğretim üyeleri nelere dikkat ediyor?"
+    ],
+    "answer": "Danışman öğretim üyeleri proje önerisini özgünlük, araştırma yöntemi, yürütücü/araştırmacıların yayınları, maliyet ve harcama gerekçesi açısından değerlendirir. Değerlendirme raporlarını BAP Komisyonuna sunarlar."
+  },
+  {
+    "questions": [
+      "Projeme onay çıkarsa bütçe nasıl tahsis ediliyor?"
+    ],
+    "answer": "Projeniz uygun bulunursa ve planlanan projeler arasında yer alıyorsa bütçeniz genel bütçeden karşılanır. Planlananlar arasında değilse Mütevelli Heyet Koordinatörlüğü onayı sonrasında bütçe tahsis edilir."
+  },
+  {
+    "questions": [
+      "Bir projem var ama bütçesi genel bütçeden karşılanacak mı, bunu nasıl anlayabilirim?"
+    ],
+    "answer": "Projenizin bütçesinin genel bütçeden karşılanıp karşılanmayacağını anlamak için öncelikle BAP Komisyonu'nun onayını almanız gerekir. Onaylanan proje planlananlar arasında değilse, Mütevelli Heyet Koordinatörlüğü onayı sonrasında uygulama sürecine geçilir ve bu da bütçenin genel bütçeden karşılanacağı anlamına gelir."
+  },
+  {
+    "questions": [
+      "Projem kabul edilmezse, sonraki yıl tekrar başvurmam mümkün mü?"
+    ],
+    "answer": "Evet, yeterli ödenek bulunmaması nedeniyle desteklenemeyen proje önerileri daha sonraki akademik yılda Teknoloji Transfer ve Proje Yönetim Ofisi’ne tekrar sunulabilir. Bu durum, projenizin yeniden değerlendirilme fırsatı sağlar."
+  },
+  {
+    "questions": [
+      "Bir projede ödenek yetersiz kalırsa ne yapmalıyım ve bu konuda kimden yardım alabilirim?"
+    ],
+    "answer": "Ödenek yetersizliği durumunda, gerekçelendirerek durumu BAP Komisyonuna sunmalısınız. Kabul edilmesi halinde Mütevelli Heyet Koordinatörlüğü onayı ile diğer projelerin bütçesinden aktarım yapılabilir."
+  },
+  {
+    "questions": [
+      "Öğrenci projelerinde destek almak için ilk olarak nereye başvurmam gerekiyor?"
+    ],
+    "answer": "Öğrenci projelerinde destek almak için ilk olarak birim yöneticisine başvurulmalı ve ardından Teknoloji Transfer ve Proje Yönetim Ofisi’ne başvuru yapılmalıdır. Başvurular BAP Komisyonu tarafından değerlendirilir."
+  },
+  {
+    "questions": [
+      "Yurt dışında bir konferansa katılmak istersem bu konuda bana nasıl yardımcı olabilirsiniz?"
+    ],
+    "answer": "Yurt dışı bilimsel etkinliklere katılım desteği için Bilimsel Faaliyetlere Katılım Talep Formu'nu (BAP.FR.004) doldurarak Teknoloji Transfer ve Proje Yönetim Ofisi’ne başvurmanız gerekmektedir. Başvurunuz öncelikle ofis tarafından değerlendirilecek, ardından BAP Komisyonu tarafından onaylanıp bütçe imkanları doğrultusunda desteklenecektir."
+  },
+  {
+    "questions": [
+      "Eğer bir proje önerim reddedilirse, aynı projeyi tekrar sunma imkanım var mı?"
+    ],
+    "answer": "Evet, yeterli ödenek bulunmaması nedeniyle reddedilen projeler daha sonraki yıllarda yeniden Teknoloji Transfer ve Proje Yönetim Ofisi’ne sunulabilir. Bu, projenin geliştirilerek tekrar başvurulabileceği anlamına gelir."
+  },
+  {
+    "questions": [
+      "Eğer bir eğitim almak istiyorsam nasıl bir süreç izlemem gerekiyor?"
+    ],
+    "answer": "Eğer bir eğitim almak istiyorsanız öncelikle Eğitim Talep Formu'nu (İK.FR.024) doldurarak birim yöneticinize iletmeniz gerekmektedir. Yöneticiniz tarafından TTPYO'ye gönderilen talep, BAP Komisyonu ve Rektörlük onayından sonra hayata geçirilir."
+  },
+  {
+    "questions": [
+      "BAP Komisyonu'nun düzenlediği eğitim programları hakkında bilgi alabilir miyim?"
+    ],
+    "answer": "BAP Komisyonu, öğretim elemanlarının akademik ve mesleki gelişimini desteklemek amacıyla gerekli gördüğü konularda eğitim programları düzenler. Bu eğitimlerin etkinliği katılımcı ve eğitimci değerlendirmeleri ile izlenir."
+  },
+  {
+    "questions": [
+      "Akademik etkinliklere başvurmak için nelere dikkat etmeliyim?"
+    ],
+    "answer": "Akademik etkinliklere başvurmadan önce bölüm başkanlığınızın veya program sorumlunuzun belirlediği başvuru koşullarını ve nitelikleri öğrenmelisiniz. Ayrıca KÜN stratejik plan hedefleri doğrultusunda ilan edilen akademik yıl içindeki niceliksel ve niteliksel özellikleri de göz önünde bulundurmalısınız."
+  },
+  {
+    "questions": [
+      "Akademik etkinliklere başvurmak için ne yapmam gerekiyor?"
+    ],
+    "answer": "Akademik etkinliklere başvurmak için Etkinlik İhtiyaç Talep Formu'nu (BAP.FR.012) ve eklerini Teknoloji Transfer ve Proje Yönetim Ofisi’ne sunmalısınız. Ayrıca akademik biriminizin gelecek yılki etkinlik programını haziran sonuna kadar TTPYO’ya bildirmeniz gerekmektedir."
+  },
+  {
+    "questions": [
+      "Haziran ayında bir sonraki yıl için planladığımız etkinliği nasıl bildirebiliriz?"
+    ],
+    "answer": "Haziran ayı sonuna kadar akademik biriminizce hazırlanan etkinlik programını Teknoloji Transfer ve Proje Yönetim Ofisi’ne (TTPYO) bildirmeniz gerekmektedir. Bu program, KÜN Stratejik Plan hedefleri doğrultusunda BAP Komisyonu tarafından onaylanacaktır."
+  },
+  {
+    "questions": [
+      "Etkinlik planımda hangi bilgilere yer vermem gerekiyor?"
+    ],
+    "answer": "Etkinlik planınızda etkinlik türü, düzenleyen akademik birim, yerleşke, başlık, tarih, katılımcı bilgileri, bütçe, puanlar ve sorumlu kişi bilgilerine yer vermeniz gerekmektedir. Bu plan, üniversitenin genel bütçesine dahil edilmek üzere Mütevelli Heyet onayına sunulacaktır."
+  },
+  {
+    "questions": [
+      "Etkinlik planım için başvuruda bulunmam gereken son tarih ne zaman?"
+    ],
+    "answer": "Etkinlikten en az iki hafta önce Teknoloji Transfer ve Proje Yönetim Ofisi’ne (BAP.FR.012) başvuru yapmanız gerekmektedir. Planlı etkinliklerdeki değişiklikler veya yılın başında destek programına dâhil edilmeyen etkinlikler için de aynı süre geçerlidir."
+  },
+  {
+    "questions": [
+      "Bir etkinliğimde bütçe yetersiz kalırsa nasıl bir yol izlemeliyim?"
+    ],
+    "answer": "Etkinlikten en az iki hafta önce gerekçeli \"AEP Bütçe Artırım Talep Formu\" ile Teknoloji Transfer ve Proje Yönetim Ofisi'ne başvurmalısınız. Kabul edilmesi durumunda ödenek aktarımı Mütevelli Heyet Koordinatörlüğü onayıyla BAP Komisyonu tarafından, yapılmayacağı kesinleşmiş etkinliklerin bütçesinden yapılır."
+  },
+  {
+    "questions": [
+      "Üniversitede düzenlenen etkinlikleri takip etmek için hangi platformu kullanabilirim?"
+    ],
+    "answer": "Üniversitenin internet sitesinde yer alan \"Etkinlik Takvimi\"ni kullanarak üniversitede düzenlenen etkinlikleri takip edebilirsiniz. Bu takvim, Akademik Etkinlik Destekleme Programı Sorumlusu tarafından güncellenir ve yayınlanır."
+  },
+  {
+    "questions": [
+      "Bir etkinlik düzenlemeye karar verirsem bütçe artırımı talebini ne zaman yapmam gerekiyor?"
+    ],
+    "answer": "Etkinlikten en az iki hafta önce \"AEP Bütçe Artırım Talep Formu\" ile Teknoloji Transfer ve Proje Yönetim Ofisi'ne başvurulmalıdır. Gerekçenin kabul edilmesi durumunda bütçe aktarımı Mütevelli Heyet Koordinatörlüğü onayıyla BAP Komisyonu tarafından yapılır."
+  },
+  {
+    "questions": [
+      "Etkinlikten sonra hangi bilgileri nereye iletmem gerekiyor?"
+    ],
+    "answer": "Etkinlikten sonraki en geç yedi gün içinde, Etkinlik Sonucu Bildirim Formu'nu (BAP.FR.010) Teknoloji Transfer ve Proje Yönetim Ofisi’ne iletmelisiniz. Ayrıca ulusal/uluslararası katılımlı etkinliklerde katılımcı memnuniyetini ölçmek için Bilimsel Toplantı Katılımcı Memnuniyet Belirleme Formu (BAP.FR.015) kullanılmalıdır."
+  },
+  {
+    "questions": [
+      "Etkinliğin yeri ve ekipmanlarla ilgili bir kontrol süreci var mı, bu süreçte neler oluyor?"
+    ],
+    "answer": "Evet, etkinlik öncesinde TTPYO tarafından BAP Etkinlikleri Süreç Kontrol Formu (BAP.FR.017) ile etkinlik yeri, fiziksel uygunluğu ve ekipman donanımı kontrol edilir. Aksaklık tespit edilirse BAP Komisyon Başkanlığına bildirilir."
+  },
+  {
+    "questions": [
+      "Projeler kabul edildikten sonra ne yapmam gerekiyor?"
+    ],
+    "answer": "Projeler onaylandıktan sonra BAP Komisyon Başkanı ile destekleme sözleşmesi imzalamanız gerekmektedir. Sözleşme imzalandıktan sonra projeye belirtilen süre içinde başlamanız ve iş-zaman planına uygun ilerlemeniz beklenir."
+  },
+  {
+    "questions": [
+      "Proje sözleşmesinde özellikle dikkat etmem gereken bir şey var mı?"
+    ],
+    "answer": "Proje sözleşmesindeki en önemli husus, projede elde edilecek nitelikli bilimsel yayınlarda Kapadokya Üniversitesi mensubiyeti ve desteğinin belirtilmesidir. Ayrıca, yasal bir mazereti olmaksızın sözleşmenin imzalanmaması veya projenin 6 ay içinde başlatılmaması durumunda proje iptal edilir."
+  },
+  {
+    "questions": [
+      "Eğer projemde bir sorun olursa nereye başvurmalıyım?"
+    ],
+    "answer": "Projenizde bir aksaklık tespit ederseniz, durumu BAP Komisyon Başkanlığına bildirmeniz gerekmektedir. Ayrıca, projelerin ilerlemesini takip etmek için KÜN öğretim elemanlarından görevlendirilen izleyici ile de iletişime geçebilirsiniz."
+  },
+  {
+    "questions": [
+      "Proje desteklemeleriyle ilgili bir proje başlatmak istiyorum, bu projeye başlamak için ne kadar süreim var?"
+    ],
+    "answer": "Proje desteği kazanmanızdan itibaren en geç altı ay içinde çalışmalara başlamanız gerekmektedir. Aksi takdirde sözleşmeniz iptal edilir."
+  },
+  {
+    "questions": [
+      "Projelerle ilgili süreçte bana bir öğretim elemanı eşlik edecek mi?"
+    ],
+    "answer": "Evet, projelerin ilerleyişini takip etmek amacıyla KÜN öğretim elemanları arasından bir izleyici görevlendirilecektir. Bu izleyici, projenin iş-zaman planına, bütçesine ve bilimsel yöntemlere uygunluğunu aylık olarak raporlayacaktır."
+  },
+  {
+    "questions": [
+      "Ara raporları hangi durumlarda sunmam gerekiyor ve bu raporlar nasıl değerlendiriliyor?"
+    ],
+    "answer": "Ara raporlar, sözleşme tarihinden itibaren altı aylık dönemlerde BAP Komisyonuna sunulur. Raporlar komisyon tarafından değerlendirilir, gerektiğinde hakem incelemesine gönderilebilir veya tez projelerinde danışman/kurullar başarılı bulursa istenmeyebilir."
+  },
+  {
+    "questions": [
+      "Bir projede ara raporu ne zaman vermem gerekebilir?"
+    ],
+    "answer": "Ara rapor, proje danışmanı/tez izleme komitesi tarafından başarılı bulunan tez projeleri için istenmeyebilir. Proje çalışmasında sorunlar ortaya çıkması durumunda ise durumun ortaya çıktığı tarihten itibaren 1 ay içinde BAP Komisyonuna sunulmalıdır."
+  },
+  {
+    "questions": [
+      "Ara raporu geciktirirsem ne olur?"
+    ],
+    "answer": "Ara raporun komisyonca kabul edilen bir mazeret gösterilmeden 1 aydan fazla geciktirilmesi durumunda proje işlemleri durdurulur. Uyarıya rağmen 15 gün içinde verilmemesi halinde ise proje iptal edilir, harcamalar yasal faiziyle geri alınır ve 2 yıl süreyle BAP desteklerinden faydalanılamaz."
+  },
+  {
+    "questions": [
+      "Proje bitince sonuç raporunu neye göre hazırlamam gerekiyor?"
+    ],
+    "answer": "Proje sonuç raporu, BAP Proje Sonuç Raporu Formu'na (BAP.FR.008) uygun olarak hazırlanmalıdır. Tez projelerinde ise tezin elektronik nüshası yeterlidir."
+  },
+  {
+    "questions": [
+      "Proje sonuç raporunu teslim etmezsem ne olur?"
+    ],
+    "answer": "Proje sonuç raporunu 2 ay içerisinde sunmazsanız, mevcut projeleriniz durdurulur ve uyarıya rağmen 15 gün içinde teslim edilmezse bir daha proje desteği alamazsınız. Raporunuz yetersiz bulunursa ise 3 yıl süreyle yeni proje desteği alamayabilirsiniz."
+  },
+  {
+    "questions": [
+      "Sonuç raporu yetersiz bulunursa tekrar proje desteği alabilir miyim?"
+    ],
+    "answer": "Sonuç raporu yetersiz bulunanlar 3 yıl boyunca yeni bir proje desteği alamaz. Ancak, komisyonun uygun görmesi halinde ek süre ile rapor düzeltilebilir veya çalışmalar yeniden yapılabilir."
+  },
+  {
+    "questions": [
+      "Ek süre talebinde bulunmak için ne yapmam gerekiyor?"
+    ],
+    "answer": "Ek süre talebiniz için BAP.FR.008 formunu kullanarak BAP Komisyonuna başvurmanız gerekmektedir. Komisyon uygun bulması durumunda ek süre verilebilir."
+  },
+  {
+    "questions": [
+      "Bir projemde biraz gecikme oldu, ek süre alabilir miyim?"
+    ],
+    "answer": "Evet, proje yürütücüsü olarak BAP.FR.011 formunu kullanarak TTPYO Koordinatörlüğüne başvurarak BAP Komisyonundan bir yıla kadar ek süre talep edebilirsiniz. Başvurunuzun, sözleşmede belirtilen proje bitiş tarihinden en geç 30 gün önce yapılmalıdır."
+  },
+  {
+    "questions": [
+      "Proje sonuçlarımla ilgili bir gelir elde edersem ne yapmam gerekiyor?"
+    ],
+    "answer": "Proje sonuçlarından yapılacak herhangi bir yayın veya uygulama için Kapadokya Üniversitesi Rektörlüğü’nden izin alınması zorunludur. Elde edilen bilimsel sonuçların telif hakları Kapadokya Üniversitesi'ne aittir."
+  },
+  {
+    "questions": [
+      "Projelerimin çıktılarını yayınlarken nelere dikkat etmeliyim?"
+    ],
+    "answer": "Projelerden elde edilen bilimsel sonuçların telif hakları Kapadokya Üniversitesi'ne aittir ve yayınlar KÜNASİS arşivinde saklanmalıdır. Ayrıca, projeden gelir elde edilecek herhangi bir yayın için Rektörlükten izin alınması gerekmektedir."
+  },
+  {
+    "questions": [
+      "Projelerden elde edilen sonuçları yayınlamak için illa ki dergi şart mı?"
+    ],
+    "answer": "Hayır, projelerin temel araştırma niteliğinde olması durumunda ulusal/uluslararası hakemli dergilerde veya konferanslarda yayınlanması zorunludur. Uygulamalı araştırma veya deneysel geliştirme projelerinde ise yayın yapma zorunluluğu bulunmamaktadır."
+  },
+  {
+    "questions": [
+      "Uygulamalı araştırma projelerinde de yayın yapmamız gerekiyor mu?"
+    ],
+    "answer": "Uygulamalı araştırma veya deneysel geliştirme niteliğindeki projelerde yayın yapma zorunluluğu bulunmamaktadır. Ancak bu tip proje sonuçlarından elde edilen çıktılar ve araştırma verileri KÜNASİS arşivinde saklanır ve ambargo süresi sonunda açık erişimde paylaşıma açılır."
+  },
+  {
+    "questions": [
+      "Desteklenen bir projede bu ibareyi ( “Bu çalışma Kapadokya Üniversitesi Bilimsel Araştırma Projeleri Komisyonu tarafından desteklenmiştir. Proje Numarası: …”) unutursam ne olur?"
+    ],
+    "answer": "Desteklenen projede bu ibareyi kullanmazsanız, sözleşme şartları gereği aldığınız destek geri istenebilir. Ayrıca, proje sonuçlarının yayınlanması Kapadokya Üniversitesi'nin Açık Bilim ve Açık Erişim Yönergeleri'ne uygun olmalıdır."
+  },
+  {
+    "questions": [
+      "Bir projede elde ettiğim araştırma verilerini nasıl paylaşıma açabilirim?"
+    ],
+    "answer": "Proje sonuçlarından elde edilen tüm araştırma verileri KÜNASİS arşivinde saklanır ve ambargo süresi sonunda açık erişimde paylaşıma açılır. Ayrıca, KÜN Açık Bilim Yönergesi doğrultusunda bu veriler Açık Bilim Komisyonu’na iletilir."
+  },
+  {
+    "questions": [
+      "Projemi iptal etmek istersem ne yapmam gerekiyor?"
+    ],
+    "answer": "Projenizi iptal ettirmek için KÜN BAP Komisyonu'na başvurmanız gerekir. İptal kararı komisyon tarafından alınır ve size resmi yazı ile bildirilir."
+  },
+  {
+    "questions": [
+      "Yeni proje başvurusu için yayın şartı derken neyi kastediyorsunuz?"
+    ],
+    "answer": "Yeni proje başvurusunda bulunacak yürütücülerin, daha önce KÜN tarafından desteklenen bir projeden elde edilen çıktıları Açık Bilim Yönergesi'ne uygun olarak yayınlamış olması gerekmektedir. Bu şart, bilimsel araştırmaların sonuçlarının kamuya açık hale getirilmesini ve bilginin paylaşımını teşvik etmeyi amaçlar."
+  },
+  {
+    "questions": [
+      "Bir projem iptal olursa, o projede harcadığım paralar geri alınır mı?"
+    ],
+    "answer": "Evet, komisyon iptal edilen projeler için yapılan ödemeleri proje yürütücüsü ve ortak araştırmacılardan kısmen veya tamamen geri alır. Geri alınan malzemeler ise diğer araştırmalarda kullanılmak üzere ilgili birimlere tahsis edilebilir."
+  },
+  {
+    "questions": [
+      "İptal edilen bir projeden kalan malzemeler ne olur?"
+    ],
+    "answer": "İptal edilen projelerde yapılan ödemeler ve satın alınan malzemeler komisyon tarafından proje yürütücüsü ve ortak araştırmacılardan kısmen veya tamamen geri alınır. Bu malzemeler diğer araştırmalarda kullanılmak üzere komisyon tarafından ilgili araştırmacılara veya uygun görülecek birimlere tahsis edilebilir."
+  },
+  {
+    "questions": [
+      "Proje yürütücüsü olarak bir proje iptal edilirse, tekrar destekli projelerde görev almak için ne kadar süre beklemem gerekiyor?"
+    ],
+    "answer": "Projesi iptal edilen bir yürütücü, iptal tarihinden itibaren iki yıl (24 ay) süre ile desteklenen projelerde görev alamaz. Bu süre dolduktan sonra tekrar proje başvurusu yapabilir."
+  },
+  {
+    "questions": [
+      "Bir projede bütçe değişikliği yapmak istersem nasıl bir yol izlemeliyim?"
+    ],
+    "answer": "Proje yürütücüsü, TTPYO aracılığıyla BAP Komisyonuna sunulmak üzere zeyilname hazırlayarak ek bütçe talebinde bulunabilir. Ek bütçe talebi projenin toplam bütçesinin %50'sini geçemez ve komisyon onayı ile proje sözleşmesi revize edilir."
+  },
+  {
+    "questions": [
+      "Proje kapsamında kongreye gitmek için bütçe desteği alabilir miyim?"
+    ],
+    "answer": "Evet, proje başvurusu sırasında öngörülmüş ve BAP Komisyonu tarafından onaylanmış bir seyahat bütçesi varsa, ulusal/uluslararası kongre veya sempozyumda sunulacak bildiri için seyahat ve katılım giderleri karşılanabilir. Projenin toplam bütçesinin %50'sini geçemeyen ek bütçe talebiyle de bu destek sağlanabilir."
+  },
+  {
+    "questions": [
+      "Seyahat giderleri için proje başvurusu yaparken nelere dikkat etmeliyim?"
+    ],
+    "answer": "Proje başvurusunda seyahat bütçesini öngörmeli ve komisyon tarafından onaylanmasını sağlamalısınız. Ayrıca, seyahatin araştırma veya kongre/sempozyum katılımı amacına yönelik olması gerekmektedir."
+  },
+  {
+    "questions": [
+      "Bir projede seyahat masraflarımın karşılanması için ne yapmam gerekiyor?"
+    ],
+    "answer": "Proje başvurusunda ilgili seyahat bütçesini öngörmeli ve BAP Komisyonu tarafından onaylanmasını sağlamalısınız. Araştırma veya kongre/sempozyum katılımı amacına yönelik seyahat giderlerinin karşılanabilmesi için bu şartlar sağlanmalıdır."
+  },
+  {
+    "questions": [
+      "Proje kapsamında alacağım makine teçhizatları kullanırken nelere dikkat etmeliyim?"
+    ],
+    "answer": "Proje kapsamında aldığınız makine, teçhizat ve donanımların korunmasından, bakım ve onarımından siz sorumlusunuz. Bu ekipmanlar proje tamamlanıncaya kadar sizin kontrolünüzde olup mülkiyeti Kapadokya Üniversitesine aittir."
+  },
+  {
+    "questions": [
+      "Kitap almak istediğim bir proje olursa hangi adımları izlemeliyim?"
+    ],
+    "answer": "Kitap alımı için KÜN Kütüphane ve Dökümantasyon Biriminden onaylı bir yazı almanız gerekmektedir. Onaylanan kitaplar satın alındıktan sonra KÜN Kütüphanesine demirbaş olarak kaydedilecek ve size teslim edilecektir."
+  },
+  {
+    "questions": [
+      "Proje yürütücüsü projeyi bitirdikten sonra elde edilen verileri ne kadar süre saklamak zorunda?"
+    ],
+    "answer": "Proje yürütücüsü, projeye ait tüm kayıt ve verileri projenin sonuçlandığı tarihten itibaren 5 yıl süreyle saklamakla yükümlüdür. Bu veri saklama zorunluluğu, proje tamamlandıktan sonraki süreçte de devam eder."
+  },
+  {
+    "questions": [
+      "Ekipte bir değişiklik yapmak istersek nasıl bir süreç izlememiz gerekiyor?"
+    ],
+    "answer": "Komisyon gerekli gördüğü hallerde veya gerekçeli talebiniz yerinde bulunması durumunda proje ekibinizde değişiklik yapabilir. Değişiklik talebinizi komisyona iletmeniz gerekmektedir."
+  },
+  {
+    "questions": [
+      "Projelerde etik dışı bir durum yaşanırsa neler olabilir?"
+    ],
+    "answer": "Projelerdeki etik ihlallerinde proje iptal edilebilir, demirbaşlar geri alınabilir ve etik kurallara aykırı davranan kişiler gelecekteki projelerde desteklenemez. Ayrıca durum, Bilimsel Araştırma ve Yayın Etiği Kuruluna bildirilebilir veya yasal işlem başlatılabilir."
+  },
+  {
+    "questions": [
+      "Bir projede araştırmacıların sağlık sorunları yaşanırsa ne olur?"
+    ],
+    "answer": "Araştırmacıların sağlık sorunları nedeniyle projenin yürütülemez hale gelmesi durumunda BAP Komisyonu, projenin içeriğinde düzeltme yapılmasına, proje ekibinde değişiklik yapılmasına veya projenin iptal edilmesine karar verebilir. Bu kararlar, araştırmacının durumu ve projenin ilerleyişi göz önünde bulundurularak verilir."
+  },
+  {
+    "questions": [
+      "Tez projemde ilerleyemezsem ne gibi durumlar söz konusu olabilir?"
+    ],
+    "answer": "Tez projeniz yürütülemez hale gelirse, proje ekibinde değişiklik yapılması veya projenin iptali gibi kararlar alınabilir. Bu durum genellikle öğrencinin eğitimini bırakması veya proje ekibinin çoğunluğunun üniversite ile ilişiğinin kesilmesi gibi durumlarda ortaya çıkar."
+  },
+  {
+    "questions": [
+      "BAP Komisyonu'nun yaptığı çalışmalarla ilgili bilgiye nereden ulaşabilirim?"
+    ],
+    "answer": "BAP Komisyonu'nun yıllık faaliyet raporunu Rektörlüğe sunar. Bu raporda komisyonun faaliyetleri, bütçe kullanımı, dış kaynak geliştirme çalışmaları gibi bilgilere yer verilir."
+  },
+  {
+    "questions": [
+      "Öğretim elemanlarının araştırma becerilerini geliştirmek için ne gibi çalışmalar yapılıyor?"
+    ],
+    "answer": "Yönergede belirtilen bilgilere göre, öğretim elemanlarının araştırma yetkinliğini geliştirmeye yönelik olarak yapılan çalışmalar BAP Komisyonu tarafından düzenli olarak değerlendiriliyor. Bu değerlendirmeler kapsamında iç ve dış paydaşlardan geri dönüşler analiz edilerek süreçlerin iyileştirilmesi hedefleniyor."
+  },
+  {
+    "questions": [
+      "Bütçe kullanımı konusunda nasıl bir değerlendirme yapıyorsunuz?"
+    ],
+    "answer": "Bütçe kullanım performansı, harcamaların proje bütçesi içindeki dağılımı ve uygunluğu açısından değerlendirilir. Ayrıca, bütçe gerçekleşme oranları hedeflerle karşılaştırılır ve sapmaların nedenleri incelenerek düzeltici önlemler alınır."
+  },
+  {
+    "questions": [
+      "Proje tamamlandıktan sonra geri bildirim almak için hangi adımlar izleniyor?"
+    ],
+    "answer": "Proje yürütücüsü tarafından iç ve dış paydaşlardan memnuniyet anketi alınır ve bu anket sonuçları BAP Komisyonu tarafından değerlendirilerek Rektörlüğe raporlanır. Bu geri bildirimler, süreçlerin iyileştirilmesi için kullanılır."
+  },
+  {
+    "questions": [
+      "Proje başvurularıyla ilgili sonuçlar ne zaman açıklanıyor?"
+    ],
+    "answer": "Proje başvurusu sonuçları, BAP Komisyonu tarafından değerlendirildikten sonra faaliyet raporlaması kapsamında Rektörlüğe iletilir. Anket sonuçlarına göre bu süreçte bir zaman dilimi belirtilmemiştir."
+  },
+  {
+    "questions": [
+      "Projelerle ilgili raporlamayı kim yapıyor?"
+    ],
+    "answer": "BAP Komisyonu anket sonuçlarını değerlendirerek faaliyet raporlamasını yapar ve bu raporlar Rektörlüğe iletilir. Bu yönergede hüküm bulunmayan durumlarda ise Yükseköğretim Kurumları Bilimsel Araştırma Projeleri Hakkında Yönetmelik hükümleri uygulanır."
+  },
+  {
+    "questions": [
+      "Bu yönergeyle ilgili bir sorun yaşarsam kime danışabilirim?"
+    ],
+    "answer": "Bu yönergeyle ilgili bir sorun yaşarsanız öncelikle Proje Yönetim Ofisi'ne danışabilirsiniz. Daha sonra ise BAP Komisyonu aracılığıyla Rektörlüğe başvurabilirsiniz."
+  },
+  {
+    "questions": [
+      "Avukata verilmişim ne yapacağım? Borcum ne kadar?"
+    ],
+    "answer": "Dosya, Hukuk bürosuna devredilmiş ve ödemenini, hukuk bürosuna yapılacağı bilgisi verilmelidir. 0384 212 21 19 numaralı telefondan iletişime geçilebilir."
+  },
+  {
+    "questions": [
+      "Yaz okulunda hangi durumlarda ders alabilirim?",
+      "Yaz okulunda ders almak için ne gibi şartlar var?",
+      "Hangi koşullarda yaz okulundan faydalanabilirim?",
+      "Yaz okuluna katılarak ders alabilmem için hangi durumların gerçekleşmesi gerekiyor?"
+    ],
+    "answer": "Yaz okulunda normal dönemde başarısız olduğunuz derslerden başarılı olmak veya başarılı olduğunuz dersleri tekrar alarak notunuzu yükseltmek için ders alabilirsiniz. Ayrıca üniversitenin eğitim imkanlarını yaz aylarında değerlendirmek de bir amaçtır."
+  },
+  {
+    "questions": [
+      "Yaz okuluyla normal dönemdeki not ortalamamı yükseltebilir miyim?",
+      "Yaz okulunda aldığım derslerle genel akademik performansımı artırabilir miyim?",
+      "Yaz okulu, dönem sonu not ortalamama katkıda bulunarak onu iyileştirebilir mi?",
+      "Derslerimi yazın tekrar alarak veya yeni dersler ekleyerek not ortalamamı yükseltme imkanım var mı?"
+    ],
+    "answer": "Evet, yaz okulunda alınan dersler genel not ortalamanıza dahil edilir ve bu sayede not ortalamanızı yükseltmeniz mümkündür. Ancak bazı üniversitelerde yaz okulu derslerinin kredi katkısı farklı olabilir, bu nedenle ilgili yönetmeliği kontrol etmeniz önemlidir."
+  },
+  {
+    "questions": [
+      "Hazırlık sınıfında yaz okuluna katılmak mümkün mü?",
+      "Hazırlık öğrencilerinin yazın da ders alması gibi bir imkan var mı?",
+      "Yaz okulunda hazırlık sınıfı öğrencileri de eğitim görebilir mi?",
+      "Hazırlık seviyesinde yaz dönemi dersleri mevcut mu?"
+    ],
+    "answer": "Evet, Kapadokya Üniversitesi yönergesine göre hazırlık sınıfı öğrencileri de yaz öğretiminden faydalanabilir. Yönergede, yaz eğitiminin kapsamının hazırlık sınıflarını da içerdiği belirtilmektedir."
+  },
+  {
+    "questions": [
+      "Yaz okulu tam olarak ne amaçla açılmış?",
+      "Yaz okulunun açılış amacını açıklar mısınız?",
+      "Yaz okulunu açmaktaki temel hedef neydi?",
+      "Bu yaz okulu hangi ihtiyaçları karşılamak için açıldı?"
+    ],
+    "answer": "Yaz okulu, öğrencilerin başarısız oldukları dersleri tamamlamalarına, notlarını yükseltmelerine veya eğitimlerini hızlandırmalarına olanak sağlamak amacıyla kurulmuştur. Ayrıca üniversitenin eğitim imkanlarını yıl boyunca değerlendirmek ve öğrenci yığılmalarını gidermek gibi amaçlara da hizmet eder."
+  },
+  {
+    "questions": [
+      "Yaz okulunda dersler normal dönemdeki gibi mi işliyor?",
+      "Yaz okulundaki eğitim, normal öğretim dönemindekiyle aynı formatta mı yürütülüyor?",
+      "Yaz okulunda ders anlatımı, düzenli öğretimdeki gibi mi olacak?",
+      "Yaz okulunda işlenen konular ve kullanılan yöntemler normal döneme benziyor mu?"
+    ],
+    "answer": "Evet, yaz okulunda ders saati normal bir dönemdeki kadar oluyor ancak eğitim-öğretim süresinden sayılmaz. Hazırlık sınıfı hariç bu kural geçerlidir."
+  },
+  {
+    "questions": [
+      "Eğer yaz okulunda bir dersten başarılı olursam bu notu normal eğitimim boyunca kullanabilir miyim?",
+      "Yaz okulundan aldığım bir dersteki başarı notum, genel akademik geçmişimde geçerli olacak mı?",
+      "Bu dersten yaz okulunda geçmek, normal eğitimimdeki not ortalamasına dahil edilebilir mi?",
+      "Yaz okulunda başarılı olduğum bir dersin notu, eğitim hayatım boyunca benimle birlikte kalacak mı?"
+    ],
+    "answer": "Evet, yaz okulunda başarıyla tamamladığınız derslerin notları normal eğitiminizdeki not ortalamasına dahil edilir ve transkriptinizde yer alır. Bu notlar, diğer dersler gibi değerlendirilir ve genel akademik başarınızı etkiler."
+  },
+  {
+    "questions": [
+      "Yaz okulunda ders almak istiyorum, normal dönemdeki ders yükümün ne kadarını alabilirim?",
+      "Yaz okulunda kaç kredi alabilirim, normal eğitim dönemindeki kredilerime göre?",
+      "Normal derse devam ederken yaz okuluna yazılabileceğim maksimum ders sayısı nedir?",
+      "Yaz okulu derslerinin normal döneme etkisi ne olur, hangi şartlarda ders alabilirim?"
+    ],
+    "answer": "Yaz okulunda normal ders yükünün %50'sini aşmayacak oranda ders alabilirsiniz. İngilizce hazırlık sınıfında ise haftada en fazla otuz saat ders alınabilir."
+  },
+  {
+    "questions": [
+      "Eğer güz dönemi başında ilişik kesme durumuna düşersem yine de yaz okulundan ders alabilir miyim?",
+      "Güz döneminin başlarında üniversiteyle ilişiğim kesilirse, yaz okulunda ders almam mümkün müdür?",
+      "Eğer güz dönemi başlangıcında kaydım silinirse yaz okulundan ders seçebilir miyim?",
+      "Güz yarıyortasında ilişik kesme olursa yaz okulu için herhangi bir engel var mıdır?"
+    ],
+    "answer": "Evet, azami kanuni süresini doldurmuş ve ilişik kesme durumuna gelmiş öğrenciler de yaz döneminden ders alabilirler. Ancak ilişik kesme işlemi bir sonraki akademik yılın güz dönemi başında yapılır."
+  },
+  {
+    "questions": [
+      "Yaz okulunda hangi dersleri tekrar edebilirim veya yeni dersler alabilirim?",
+      "Yaz okulunda hangi imkanlarım var, hem eksiklerimi kapatmak hem de kendime yeni şeyler katmak adına?",
+      "Yaz döneminde tekrar edebileceğim veya öğrenebileceğim dersler nelerdir?",
+      "Yaz okulunda hangi konularda destek alabilirim; mevcut bilgilerimi pekiştirebilir miyim yoksa farklı alanlarda mı eğitim görebilirim?"
+    ],
+    "answer": "Yaz okulunda normal dönemde CC'nin altında not aldığınız dersleri tekrar edebilirsiniz ve en fazla iki yeni ders alabilirsiniz. İngilizce Hazırlık Sınıfında ise DD veya DC notuyla başarısız olduğunuz derslere katılabilirsiniz."
+  },
+  {
+    "questions": [
+      "Yaz okulunda zaten C aldığım bir dersi tekrar alabilir miyim?",
+      "Yaz okulundaki başarısız olduğum bir derse yeniden kayıt olabilir miyim, çünkü daha önce almıştım ve C notu almıştım?",
+      "Daha önce C ile geçtiğim bir dersi tekrar almam mümkün müdür?",
+      "Not ortalamamı yükseltmek için yaz okulunda aldığım ve C notuyla tamamladığım dersi tekrar seçebilir miyim?"
+    ],
+    "answer": "Hayır, daha önce CC ve üstü harf notu aldığı dersleri yaz okulundan alamazsınız. Yönergeye göre, bu durum kesinlikle yasaktır."
+  },
+  {
+    "questions": [
+      "Başka bir üniversiteden yaz okulunda ders almak istersem nelere dikkat etmem gerekiyor?",
+      "Yaz okulu derslerini başka bir yükseköğretim kurumundan alırken göz önünde bulundurmam gereken hususlar nelerdir?",
+      "Farklı bir üniversitenin yaz okulunda eğitim almak istediğimde dikkat etmem gereken noktalar hangileridir?",
+      "Başka bir üniversitede yaz okuluna katıldığımda nelere özen göstermeliyim?"
+    ],
+    "answer": "Başka bir üniversiteden yaz okulunda ders alabilmek için öncelikle dersin kendi üniversitenizin yaz okulunda açılmamış olması gerekir. Ayrıca alınacak dersin müfredat, kredi vb. bilgileri ile birlikte Fakülte/Yüksekokul Yönetim Kurulu'ndan onay almak da şarttır."
+  },
+  {
+    "questions": [
+      "Hazırlık sınıfında DD ve DC dışında notlar alırsam da yaz okuluna katılabilir miyim?",
+      "Hazırlıkta DD veya DC'den daha yüksek notlar alsam, yaz okulu şartım var mı?",
+      "Eğer hazırlık sınıfında DD ve DC harici notlar alırsam, yaz okuluna gitmek zorunda mıyım?",
+      "Hazırlıkta ortalamamı yükseltirsem, yani DD ve DC dışında bir not alırsam yaz okulundan muaf olur muyum?"
+    ],
+    "answer": "Hayır, hazırlık sınıfında sadece DD ve DC notları alarak başarısız olan öğrenciler yaz okuluna katılabilir. Diğer notlarla başarılı olunması durumunda yaz okuluna katılım mümkün değildir."
+  },
+  {
+    "questions": [
+      "Yaz okulunda bir dersten geçmek için en az hangi notu almam gerekiyor?",
+      "Yaz okulundaki ilgili derste başarılı sayılmak için kaç puan almalıyım?",
+      "Bu dersi yaz okulunda geçebilmek için asgari notum ne olmalı?",
+      "Yaz okulunda bu ders için hangi notun üzerinde olmam gerekiyor ki, dersten olayım?"
+    ],
+    "answer": "Yaz okulunda bir dersten geçmek için en az CC harf notunu almak gerekir. CC'nin altında alınan notlar başarısız sayılır."
+  },
+  {
+    "questions": [
+      "Daha önce geçtiğim bir dersi yaz okulunda tekrar almak zorunda mıyım?",
+      "* Bu dersi daha önceden almıştım, şimdi yaz okulunda almam gerekiyor mu?",
+      "* Yaz okulunda aynı dersi tekrar almak zorunda kalacak mıyım, çünkü bu dersten zaten geçtim miydi?",
+      "* Geçtiğim bir ders için yaz okulu seçeneğini değerlendirmem gerekiyor mu?"
+    ],
+    "answer": "Hayır, daha önce geçilmiş bir dersin koşulunu sağlamış olmak, yaz okulunda o derse devam etme zorunluluğunu ortadan kaldırır. Ancak, not yükseltmek isteyen öğrenciler bu dersi isteğe bağlı olarak alabilirler."
+  },
+  {
+    "questions": [
+      "Eğer yaz okulunda bir derse kayıtlıysam dönem sonu sınavına girebilir miyim?",
+      "Yaz okulundaki dersler, dönem sonu sınavını etkiliyor mu?",
+      "Yaz okulu dersi alan öğrenciler dönem sonunda sınava tabi tutulacaklar mı?",
+      "Ders kayıtlı olduğum yaz okulunun notu, dönem sonu sınavıma yansıtılır mı?"
+    ],
+    "answer": "Evet, eğer yaz okuluna kayıtlıysanız sadece o dersin dönem sonu sınavına girebilirsiniz. Yönergeye göre, yaz okulunda açılan derslerin dönem sonu sınavına yalnızca yaz okuluna kayıtlı öğrenciler girebilir."
   }
 ]
