@@ -629,15 +629,6 @@
   },
   {
     "questions": [
-      "obs sistemine giremiyorum",
-      "OBS'ye erişimimde sorun yaşıyorum",
-      "OBS programına bağlanamıyorum, ne yapmalıyım?",
-      "OBS sunucularına giriş yaparken bir hata alıyorum"
-    ],
-    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
-  },
-  {
-    "questions": [
       "öğrenci bilgi sistemine nasıl giriş yaparım?",
       "Öğrenci işleri portalına erişim sağlamak için hangi adımları izlemeliyim?",
       "Öğrenci bilgi sistemine bağlanmak için gerekli olan süreç nedir?",
@@ -650,7 +641,11 @@
       "obs sistemine giriş şifremi nasıl öğrenebilirim?",
       "OBS sistemindeki şifremi unuttum, nasıl sıfırlayabilirim?",
       "OBS hesabıma erişmek için kullandığım şifreyi hatırlamıyorum, ne yapmalıyım?",
-      "Şifremi kurtarmak için OBS'ye nasıl başvurabilirim?"
+      "Şifremi kurtarmak için OBS'ye nasıl başvurabilirim?",
+      "obs sistemine giremiyorum",
+      "OBS'ye erişimimde sorun yaşıyorum",
+      "OBS programına bağlanamıyorum, ne yapmalıyım?",
+      "OBS sunucularına giriş yaparken bir hata alıyorum"
     ],
     "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
   },

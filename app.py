@@ -2898,6 +2898,9 @@ def admin_api_chat_global_search():
         if to_dt and (to_s and len(to_s) == 10):
             to_dt = to_dt.replace(hour=23, minute=59, second=59)
     
+    from_dt_local = _ensure_local_tz(from_dt)
+    to_dt_local = _ensure_local_tz(to_dt)
+
     results: List[Dict[str, Any]] = []
     
     for sess in _list_sessions():

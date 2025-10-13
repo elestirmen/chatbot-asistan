@@ -2558,5 +2558,11 @@
       "Ders kayıtları sonradan izlenebilir mi?"
     ],
     "answer": "Sanal Sınıf içerisinde bulunan ders kayıtları, aksi belirtilmediği ve farklı bir kriter belirlenmediği sürece, canlı ders sona erdikten sonra “Tekrarını İzle” butonuna tıklanarak arşivden izlenebilir."
+  },
+  {
+    "questions": [
+      "OBS sistemine nasıl giriş yapabilirim?"
+    ],
+    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz."
   }
 ]
