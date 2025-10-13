@@ -2363,12 +2363,6 @@
   },
   {
     "questions": [
-      "OBS sistemine nasıl giriş yapabilirim?"
-    ],
-    "answer": "Öğrenci Bilgi Sistemine (OBS) Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz."
-  },
-  {
-    "questions": [
       "Devamsızlık hakkım ne kadar?"
     ],
     "answer": "Kapadokya Üniversitesi’nde teorik derslerde en az %70, uygulamalı derslerde ise en az %80 devam zorunludur."
@@ -2558,11 +2552,5 @@
       "Ders kayıtları sonradan izlenebilir mi?"
     ],
     "answer": "Sanal Sınıf içerisinde bulunan ders kayıtları, aksi belirtilmediği ve farklı bir kriter belirlenmediği sürece, canlı ders sona erdikten sonra “Tekrarını İzle” butonuna tıklanarak arşivden izlenebilir."
-  },
-  {
-    "questions": [
-      "OBS sistemine nasıl giriş yapabilirim?"
-    ],
-    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz."
   }
 ]

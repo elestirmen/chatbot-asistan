@@ -650,16 +650,37 @@ SYSTEM_PREFIX_LENGTH = 2  # Genel yönerge + kişilik mesajı
 MAX_HISTORY_MESSAGES = 22
 MAX_CONTEXT_MESSAGES = SYSTEM_PREFIX_LENGTH + MAX_HISTORY_MESSAGES + 1  # Özet slotu için +1
 
-try:
-    SERVER_LOCAL_TZ = datetime.now().astimezone().tzinfo or timezone.utc
-except Exception:
-    SERVER_LOCAL_TZ = timezone.utc
+def _load_server_timezone() -> timezone:
+    tz_candidates = [
+        _getenv_strip("SERVER_TIMEZONE"),
+        _getenv_strip("TZ"),
+    ]
+    for candidate in tz_candidates:
+        if not candidate:
+            continue
+        try:
+            return ZoneInfo(candidate)
+        except Exception:
+            print(f"[Timezone] Bilinmeyen timezone '{candidate}', sistem saat dilimi kullanılacak.", flush=True)
+    try:
+        system_tz = datetime.now().astimezone().tzinfo
+        if system_tz:
+            return system_tz
+    except Exception:
+        pass
+    try:
+        return ZoneInfo("Europe/Istanbul")
+    except Exception:
+        return timezone.utc
 
 
-def _load_chatlog_timezone() -> timezone:
+SERVER_LOCAL_TZ = _load_server_timezone()
+
+
+def _load_chatlog_timezone(default: timezone) -> timezone:
     tz_name = _getenv_strip("CHATLOG_TIMEZONE")
     if not tz_name:
-        return timezone.utc
+        return default
     normalized = tz_name.upper()
     if normalized in {"UTC", "Z"}:
         return timezone.utc
@@ -667,10 +688,10 @@ def _load_chatlog_timezone() -> timezone:
         return ZoneInfo(tz_name)
     except Exception:
         print(f"[ChatLog] Bilinmeyen timezone '{tz_name}', UTC kullanılacak.", flush=True)
-        return timezone.utc
+        return default
 
 
-CHATLOG_TZ = _load_chatlog_timezone()
+CHATLOG_TZ = _load_chatlog_timezone(SERVER_LOCAL_TZ)
 
 # -----------------------------------------------------------------------------
 # Ön-işleme Fonksiyonu
@@ -901,14 +922,24 @@ embedding_manager.load_or_create()
 # -----------------------------------------------------------------------------
 
 def _iso_utc(dt: Optional[datetime] = None) -> str:
-    dt = dt or datetime.utcnow()
+    if dt is None:
+        dt = datetime.now(timezone.utc)
+    elif dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
     # Use Zulu-style for clarity; store seconds precision
-    return dt.replace(microsecond=0).isoformat() + "Z"
+    return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _events_file_for(dt: Optional[datetime] = None) -> Path:
-    dt = dt or datetime.utcnow()
-    return ANALYTICS_DIR / f"events_{dt.strftime('%Y%m%d')}.ndjson"
+    if dt is None:
+        dt_local = datetime.now(SERVER_LOCAL_TZ)
+    elif dt.tzinfo is None:
+        dt_local = dt.replace(tzinfo=SERVER_LOCAL_TZ)
+    else:
+        dt_local = dt.astimezone(SERVER_LOCAL_TZ)
+    return ANALYTICS_DIR / f"events_{dt_local.strftime('%Y%m%d')}.ndjson"
 
 
 class EventLogger:
@@ -2286,9 +2317,9 @@ def _parse_dt(s: Optional[str]) -> Optional[datetime]:
     s = s.strip()
     for fmt in ('%Y-%m-%d', '%Y-%m-%d %H:%M:%S'):
         try:
-            dt = datetime.strptime(s, fmt)
+            dt = datetime.strptime(s, fmt).replace(tzinfo=SERVER_LOCAL_TZ)
             if fmt == '%Y-%m-%d':
-                return datetime(dt.year, dt.month, dt.day)
+                return dt.replace(hour=0, minute=0, second=0, microsecond=0)
             return dt
         except Exception:
             continue
@@ -2321,14 +2352,15 @@ def _season_from_dt(dt: Optional[datetime]) -> Optional[str]:
 
 
 def _make_event(event_type: str, session_id: Optional[str], user_id: Optional[str], **fields: Any) -> Dict[str, Any]:
-    now = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
+    now_local = now_utc.astimezone(SERVER_LOCAL_TZ)
     base = {
         "event_id": uuid.uuid4().hex,
         "event_type": event_type,
-        "ts": _iso_utc(now),
+        "ts": _iso_utc(now_utc),
         "session_id": session_id,
         "user_id": user_id,
-        "season": _season_from_dt(now),
+        "season": _season_from_dt(now_local),
         "app_version": APP_VERSION,
         "model": model_config_manager.completion_model,
     }
@@ -2367,10 +2399,10 @@ def admin_api_chat_logs_advanced():
 
     entries = _load_logs(sess, user_id)
 
-    now = datetime.now()  # Use local time
+    now = datetime.now(SERVER_LOCAL_TZ)
     if rng == 'today':
-        from_dt = datetime(now.year, now.month, now.day, 0, 0, 0)
-        to_dt = datetime(now.year, now.month, now.day, 23, 59, 59)
+        from_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        to_dt = now.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif rng == '7d':
         from_dt = now - timedelta(days=7)
         to_dt = now
@@ -2381,9 +2413,7 @@ def admin_api_chat_logs_advanced():
         from_dt = _parse_dt(from_s)
         to_dt = _parse_dt(to_s)
         if to_dt and (to_s and len(to_s) == 10):
-            to_dt = to_dt.replace(hour=23, minute=59, second=59)
-    from_dt_local = _ensure_local_tz(from_dt)
-    to_dt_local = _ensure_local_tz(to_dt)
+            to_dt = to_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
     from_dt_local = _ensure_local_tz(from_dt)
     to_dt_local = _ensure_local_tz(to_dt)
 
@@ -2879,11 +2909,11 @@ def admin_api_chat_global_search():
         per_page = 25
     
     # Parse date range - use local time instead of UTC
-    now = datetime.now()  # Local time
+    now = datetime.now(SERVER_LOCAL_TZ)
     if rng == 'today':
         # Today: from 00:00:00 to 23:59:59
-        from_dt = datetime(now.year, now.month, now.day, 0, 0, 0)
-        to_dt = datetime(now.year, now.month, now.day, 23, 59, 59)
+        from_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        to_dt = now.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif rng == '7d':
         # Last 7 days
         from_dt = now - timedelta(days=7)
@@ -2896,7 +2926,7 @@ def admin_api_chat_global_search():
         from_dt = _parse_dt(from_s)
         to_dt = _parse_dt(to_s)
         if to_dt and (to_s and len(to_s) == 10):
-            to_dt = to_dt.replace(hour=23, minute=59, second=59)
+            to_dt = to_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
     
     from_dt_local = _ensure_local_tz(from_dt)
     to_dt_local = _ensure_local_tz(to_dt)
@@ -3014,7 +3044,7 @@ app.register_blueprint(admin_bp, url_prefix='/admin')
 
 
 def _seconds_until(hour: int, minute: int) -> float:
-    now = datetime.now()
+    now = datetime.now(SERVER_LOCAL_TZ)
     target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
     if target <= now:
         target += timedelta(days=1)

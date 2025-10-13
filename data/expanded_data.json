@@ -34,9 +34,10 @@
       "OBS sistemine nasıl giriş yapabilirim?",
       "OBS'e erişmek için hangi adımları izlemeliyim?",
       "OBS programını açmak için ne yapmalıyım?",
-      "OBS sistemine bağlanmak için gerekli olanlar nelerdir?"
+      "OBS sistemine bağlanmak için gerekli olanlar nelerdir?",
+      "obsye nasıl girerim"
     ],
-    "answer": "Kullanıcı Adı: Öğrenci No / Şifre: Kunogrencinintcsi şeklinde giriş yapabilirsiniz. yani öğrenci numaranıaz 12345678910 ise şifreniz Kun12345678910 şeklinde olmalı"
+    "answer": "Kullanıcı Adı: Öğrenci No , Şifre: Kun+TCNUMARASI şeklinde giriş yapabilirsiniz. yani TC numaranız 12345678910 ise şifreniz Kun12345678910 şeklinde olmalıdır."
   },
   {
     "questions": [
