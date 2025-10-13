@@ -1174,7 +1174,7 @@ def ar_view():
 
 @app.route("/ar/assets/<path:filename>")
 def ar_assets(filename: str):
-    allowed_extensions = {".gltf", ".bin", ".jpg", ".jpeg", ".png"}
+    allowed_extensions = {".gltf", ".bin", ".jpg", ".jpeg", ".png", ".usdz"}
     requested_path = Path(filename)
     if requested_path.suffix.lower() not in allowed_extensions or requested_path.name.startswith("."):
         abort(404)

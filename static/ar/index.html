@@ -52,6 +52,72 @@
             box-shadow:
                 0 32px 64px -36px rgba(15, 23, 42, 0.4),
                 0 22px 48px -28px rgba(37, 99, 235, 0.28);
+            position: relative;
+            overflow: hidden;
+        }
+        .ar-cta-button {
+            position: absolute;
+            right: 1.2rem;
+            bottom: 0.75rem;
+            --ar-base-translate-x: 0;
+            transform: translateX(var(--ar-base-translate-x)) translateY(0);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            border: none;
+            border-radius: 999px;
+            padding: 0.7rem 1.6rem;
+            font-size: 0.98rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            background: linear-gradient(135deg, #2563eb, #4338ca);
+            color: #f8fafc;
+            cursor: pointer;
+            box-shadow:
+                0 16px 38px -18px rgba(30, 64, 175, 0.55),
+                0 8px 18px -12px rgba(59, 130, 246, 0.45);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            z-index: 3;
+        }
+        .ar-cta-button:hover,
+        .ar-cta-button:focus-visible {
+            transform: translateX(var(--ar-base-translate-x)) translateY(-1px);
+            box-shadow:
+                0 22px 44px -16px rgba(30, 64, 175, 0.6),
+                0 12px 24px -12px rgba(59, 130, 246, 0.5);
+            outline: none;
+        }
+        .ar-cta-button:focus-visible {
+            box-shadow:
+                0 0 0 3px rgba(255, 255, 255, 0.45),
+                0 12px 24px -12px rgba(59, 130, 246, 0.5);
+        }
+        .ar-cta-button.is-disabled,
+        .ar-cta-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: translateX(var(--ar-base-translate-x)) translateY(0);
+            box-shadow: none;
+        }
+        .ar-cta-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.1rem;
+            height: 2.1rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+        }
+        .ar-cta-icon svg {
+            width: 1.15rem;
+            height: 1.15rem;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.6;
+        }
+        .ar-cta-label {
+            white-space: nowrap;
         }
         .status-chip {
             position: absolute;
@@ -87,36 +153,6 @@
         .info-toggle:focus-visible {
             transform: translateY(-1px);
             background: rgba(59, 130, 246, 0.94);
-        }
-        .floating-controls {
-            position: absolute;
-            right: 1.2rem;
-            bottom: 1.1rem;
-            display: flex;
-            gap: 0.75rem;
-            background: rgba(15, 23, 42, 0.62);
-            padding: 0.65rem 0.85rem;
-            border-radius: 999px;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 16px 38px -22px rgba(15, 23, 42, 0.6);
-        }
-        .floating-controls button {
-            appearance: none;
-            border: none;
-            border-radius: 999px;
-            padding: 0.5rem 1.1rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.16);
-            color: #f8fafc;
-            transition: background 0.2s ease, transform 0.2s ease;
-        }
-        .floating-controls button:hover,
-        .floating-controls button:focus-visible {
-            background: rgba(255, 255, 255, 0.28);
-            transform: translateY(-1px);
         }
         .info-sheet {
             position: absolute;
@@ -176,8 +212,11 @@
                     0 30px 60px -36px rgba(59, 130, 246, 0.36),
                     0 20px 48px -28px rgba(14, 165, 233, 0.28);
             }
-            .floating-controls {
-                background: rgba(15, 23, 42, 0.8);
+            .ar-cta-button {
+                background: linear-gradient(135deg, #2563eb, #0ea5e9);
+                box-shadow:
+                    0 20px 44px -20px rgba(14, 165, 233, 0.55),
+                    0 10px 26px -12px rgba(37, 99, 235, 0.45);
             }
         }
         @media (max-width: 768px) {
@@ -190,21 +229,22 @@
             model-viewer {
                 height: min(70vh, 520px);
             }
-            .floating-controls {
-                left: 50%;
-                right: auto;
-                transform: translateX(-50%);
+            .ar-cta-button {
+                bottom: 0.65rem;
+                padding: 0.68rem 1.4rem;
+                font-size: 0.93rem;
             }
         }
         @media (max-width: 520px) {
-            .floating-controls {
-                flex-direction: column;
-                gap: 0.5rem;
-                padding: 0.6rem 0.75rem;
+            .ar-cta-label {
+                font-size: 0.9rem;
             }
-            .floating-controls button {
-                width: 100%;
-                text-align: center;
+        }
+        @media (max-width: 768px) {
+            .ar-cta-button {
+                right: 50%;
+                bottom: 0.65rem;
+                --ar-base-translate-x: 50%;
             }
         }
     </style>
@@ -214,13 +254,14 @@
 <body>
     <header>
         <h1>Fabrika Yerleşkesi AR Deneyimi</h1>
-        <p class="lead">Modeli döndürerek inceleyin, uyumlu cihazlarda AR simgesiyle gerçek dünyaya taşıyın.</p>
+        <p class="lead">Modeli döndürerek inceleyin, uyumlu cihazlarda AR Modu butonuyla gerçek dünyaya taşıyın.</p>
     </header>
     <main>
         <div class="viewer-wrapper">
             <model-viewer
                 id="campus-viewer"
                 src="/ar/assets/fabrika_yerleskesi.gltf"
+                ios-src="/ar/assets/fabrika_yerleskesi.usdz"
                 ar
                 camera-controls
                 tone-mapping="neutral"
@@ -235,19 +276,24 @@
                 max-field-of-view="80deg"
                 environment-image="neutral"
             >
+                <button class="ar-cta-button is-disabled" slot="ar-button" type="button" aria-label="Artırılmış gerçeklik modunu aç">
+                    <span class="ar-cta-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" role="img" focusable="false">
+                            <path d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke-linejoin="round"></path>
+                            <path d="M4 7.5L12 12l8-4.5M12 12v9" stroke-linecap="round"></path>
+                        </svg>
+                    </span>
+                    <span class="ar-cta-label">AR Modu</span>
+                </button>
                 <div slot="poster">Model yükleniyor…</div>
             </model-viewer>
             <div class="status-chip" data-role="ar-status" data-state="checking">AR uyumluluğu kontrol ediliyor…</div>
             <button type="button" class="info-toggle" aria-label="AR ipuçlarını aç">i</button>
-            <div class="floating-controls" aria-label="Model kontrol düğmeleri">
-                <button type="button" data-action="toggle-autorotate">Oto Dönüş</button>
-                <button type="button" data-action="reset-view">Sıfırla</button>
-            </div>
             <div class="info-sheet" role="dialog" aria-modal="true" aria-label="AR kullanım ipuçları">
                 <div>
                     <ul>
                         <li>Yakınlaştırmak ve döndürmek için iki parmağınızı kullanın.</li>
-                        <li>AR simgesiyle modeli bulunduğunuz ortama yerleştirebilirsiniz.</li>
+                        <li>AR Modu butonuyla modeli bulunduğunuz ortama yerleştirebilirsiniz.</li>
                         <li>Daha iyi sonuç için aydınlık ve düz bir yüzey seçin.</li>
                     </ul>
                     <button type="button" data-action="close-info">Anladım</button>
@@ -263,62 +309,142 @@
     </noscript>
     <script>
         const modelViewer = document.getElementById("campus-viewer");
-        const autoRotateToggle = document.querySelector('[data-action="toggle-autorotate"]');
-        const resetButton = document.querySelector('[data-action="reset-view"]');
         const statusChip = document.querySelector('[data-role="ar-status"]');
         const infoToggle = document.querySelector(".info-toggle");
         const infoSheet = document.querySelector(".info-sheet");
         const closeInfo = document.querySelector('[data-action="close-info"]');
-        const initialOrbit = modelViewer.getAttribute("camera-orbit") || "auto auto auto";
+        const arCtaButton = modelViewer.querySelector('[slot="ar-button"]');
+
+        const readyMessageDefault = "AR hazır · Simge ile başlatın";
+        const readyMessageIOS = "AR hazır · iOS simgesiyle açın";
+        let arReadyLabel = readyMessageDefault;
+        const defaultArButtonLabel = "AR Modu";
+        const iosArButtonLabel = "AR Modu · iOS";
+        let arButtonLabel = defaultArButtonLabel;
+
+        const updateArButtonLabel = (label) => {
+            if (!arCtaButton) {
+                return;
+            }
+            const labelNode = arCtaButton.querySelector(".ar-cta-label");
+            if (labelNode && labelNode.textContent !== label) {
+                labelNode.textContent = label;
+            }
+        };
+
+        const setArAvailability = (available) => {
+            if (!arCtaButton) {
+                return;
+            }
+            arCtaButton.disabled = !available;
+            arCtaButton.classList.toggle("is-disabled", !available);
+        };
+
+        setArAvailability(false);
 
         const updateStatus = (state, text) => {
             statusChip.dataset.state = state;
             statusChip.textContent = text;
         };
 
-        const checkARSupport = async () => {
-            if (!("xr" in navigator) || !navigator.xr?.isSessionSupported) {
-                updateStatus("unsupported", "AR desteklenmiyor · 3B inceleme aktif");
-                return;
+        const isIOSDevice = () => {
+            const ua = window.navigator.userAgent;
+            const platform = window.navigator.platform;
+            const isTouchMac = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+            return /iPad|iPhone|iPod/.test(ua) || isTouchMac;
+        };
+
+        const supportsQuickLookAR = () => {
+            if (!isIOSDevice()) {
+                return false;
             }
+            const anchor = document.createElement("a");
+            const relList = anchor.relList;
+            return !!relList && typeof relList.supports === "function" && relList.supports("ar");
+        };
+
+        const resolveCanActivateAR = async () => {
             try {
-                const supported = await navigator.xr.isSessionSupported("immersive-ar");
-                if (supported) {
-                    updateStatus("supported", "AR hazır · Simge ile başlatın");
-                } else {
-                    updateStatus("unsupported", "AR desteklenmiyor · 3B inceleme aktif");
+                const value = modelViewer.canActivateAR;
+                if (value instanceof Promise) {
+                    return await value;
                 }
+                if (typeof value === "function") {
+                    const result = value.call(modelViewer);
+                    return result instanceof Promise ? await result : !!result;
+                }
+                return !!value;
             } catch (error) {
-                updateStatus("unsupported", "AR kontrolü başarısız · 3B inceleme aktif");
-                console.error("AR support check failed:", error);
+                console.warn("canActivateAR check failed:", error);
+                return false;
             }
         };
 
-        checkARSupport();
+        const checkARSupport = async () => {
+            const quickLookAvailable = supportsQuickLookAR();
+            const readyLabel = quickLookAvailable ? readyMessageIOS : readyMessageDefault;
+            arButtonLabel = quickLookAvailable ? iosArButtonLabel : defaultArButtonLabel;
+            updateArButtonLabel(arButtonLabel);
+            try {
+                const canActivate = await resolveCanActivateAR();
+                if (canActivate) {
+                    arReadyLabel = readyLabel;
+                    updateStatus("supported", arReadyLabel);
+                    setArAvailability(true);
+                    return;
+                }
+            } catch (error) {
+                console.error("AR support check failed:", error);
+                updateStatus("unsupported", "AR kontrolü başarısız · 3B inceleme aktif");
+                setArAvailability(false);
+                return;
+            }
+
+            let immersiveSupported = false;
+            if ("xr" in navigator && typeof navigator.xr?.isSessionSupported === "function") {
+                try {
+                    immersiveSupported = await navigator.xr.isSessionSupported("immersive-ar");
+                } catch (error) {
+                    console.error("WebXR support check failed:", error);
+                    updateStatus("unsupported", "AR kontrolü başarısız · 3B inceleme aktif");
+                    setArAvailability(false);
+                    return;
+                }
+            }
+
+            if (immersiveSupported) {
+                arReadyLabel = readyLabel;
+                updateStatus("supported", arReadyLabel);
+                setArAvailability(true);
+                return;
+            }
+
+            if (quickLookAvailable) {
+                arReadyLabel = readyLabel;
+                updateStatus("supported", arReadyLabel);
+                setArAvailability(true);
+                return;
+            }
+
+            arReadyLabel = readyMessageDefault;
+            updateStatus("unsupported", "AR desteklenmiyor · 3B inceleme aktif");
+            setArAvailability(false);
+        };
+
+        if (window.customElements?.whenDefined) {
+            customElements.whenDefined("model-viewer").then(checkARSupport);
+        } else {
+            checkARSupport();
+        }
 
         modelViewer.addEventListener("ar-status", (event) => {
             if (event.detail.status === "session-started") {
                 updateStatus("presenting", "AR modunda · Konumlandırın");
+                setArAvailability(true);
             } else if (event.detail.status === "not-presenting" && statusChip.dataset.state !== "unsupported") {
-                updateStatus("supported", "AR hazır · Simge ile başlatın");
+                updateStatus("supported", arReadyLabel);
+                setArAvailability(true);
             }
-        });
-
-        autoRotateToggle.addEventListener("click", () => {
-            const isActive = modelViewer.hasAttribute("auto-rotate");
-            if (isActive) {
-                modelViewer.removeAttribute("auto-rotate");
-                autoRotateToggle.textContent = "Oto Dönüş";
-            } else {
-                modelViewer.setAttribute("auto-rotate", "");
-                autoRotateToggle.textContent = "Oto Dönüş ✦";
-            }
-        });
-
-        resetButton.addEventListener("click", () => {
-            modelViewer.cameraOrbit = initialOrbit;
-            modelViewer.turntableRotation = 0;
-            modelViewer.jumpCameraToGoal();
         });
 
         const toggleInfo = (show) => {
