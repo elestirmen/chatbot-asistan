@@ -1016,6 +1016,12 @@
           <p class="text-muted small mb-0">Chatbot’un kullandığı OpenAI modelini ve örnekleme parametrelerini yönetin.</p>
         </div>
       </div>
+      <div class="alert alert-warning d-flex align-items-start gap-2">
+        <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+        <div>
+          <strong>Dikkat:</strong> Bu bölümde yapılan değişiklikler chatbot’un davranışını doğrudan etkiler. Sadece etkilerini bildiğiniz ayarları güncelleyin ve kaydetmeden önce mevcut değerleri not alın.
+        </div>
+      </div>
       <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-cpu me-2 text-primary"></i>OpenAI Dil Modeli</span>
@@ -1034,13 +1040,19 @@
               <div class="col-md-6">
                 <label for="temperatureInput" class="form-label mb-1">Temperature</label>
                 <input type="number" class="form-control" id="temperatureInput" name="temperature" step="0.01" min="0" max="2" value="0.75">
-                <div class="form-text">Daha yüksek değerler yanıtları çeşitlendirir.</div>
+                <div class="form-text">Yanıtların çeşitliliğini belirler; 0 ise deterministik, 1+ ise daha yaratıcı sonuçlar üretir. Çoğu üretim için 0.6–0.85 aralığı dengeli kabul edilir.</div>
               </div>
               <div class="col-md-6">
                 <label for="topPInput" class="form-label mb-1">Top-p</label>
                 <input type="number" class="form-control" id="topPInput" name="top_p" step="0.01" min="0" max="1" value="0.90">
-                <div class="form-text">Çekirdek örnekleme olasılık eşiği.</div>
+                <div class="form-text">Çekirdek örnekleme olasılık eşiği; 0.90 değeri toplam olasılığın %90’ını kapsayan kelime havuzunu kullanır. Değeri düşürmek daha güvenli ama daha kısıtlı yanıtlar üretir.</div>
               </div>
+            </div>
+            <div class="alert alert-secondary mt-3 mb-0">
+              <ul class="mb-0 small ps-3">
+                <li>Temperature ve Top-p birlikte çalışır; biri yükseltilirken diğeri makul seviyede tutulmalıdır.</li>
+                <li>Değerleri değiştirdikten sonra sohbeti test edin; beklenmedik davranış görürseniz <em>Kaydet</em> yerine <em>Resetle</em> butonuyla varsayılan ayarlara dönün.</li>
+              </ul>
             </div>
           </div>
           <small id="modelStatus" class="small d-block mt-2 text-muted">-</small>
