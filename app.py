@@ -24,7 +24,8 @@ import re
 import secrets
 import unicodedata
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import shutil
 import sys
 from pathlib import Path
@@ -649,6 +650,28 @@ SYSTEM_PREFIX_LENGTH = 2  # Genel yönerge + kişilik mesajı
 MAX_HISTORY_MESSAGES = 22
 MAX_CONTEXT_MESSAGES = SYSTEM_PREFIX_LENGTH + MAX_HISTORY_MESSAGES + 1  # Özet slotu için +1
 
+try:
+    SERVER_LOCAL_TZ = datetime.now().astimezone().tzinfo or timezone.utc
+except Exception:
+    SERVER_LOCAL_TZ = timezone.utc
+
+
+def _load_chatlog_timezone() -> timezone:
+    tz_name = _getenv_strip("CHATLOG_TIMEZONE")
+    if not tz_name:
+        return timezone.utc
+    normalized = tz_name.upper()
+    if normalized in {"UTC", "Z"}:
+        return timezone.utc
+    try:
+        return ZoneInfo(tz_name)
+    except Exception:
+        print(f"[ChatLog] Bilinmeyen timezone '{tz_name}', UTC kullanılacak.", flush=True)
+        return timezone.utc
+
+
+CHATLOG_TZ = _load_chatlog_timezone()
+
 # -----------------------------------------------------------------------------
 # Ön-işleme Fonksiyonu
 # -----------------------------------------------------------------------------
@@ -685,6 +708,58 @@ def strip_old_summary(msgs: List[Dict[str, str]]) -> List[Dict[str, str]]:
         filtered.append(msg)
     filtered.reverse()
     return filtered
+
+
+def _attach_server_tz(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=SERVER_LOCAL_TZ)
+    return dt
+
+
+def _chatlog_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _format_chatlog_timestamp(dt: datetime) -> str:
+    aware = _attach_server_tz(dt)
+    return aware.astimezone(CHATLOG_TZ).isoformat(sep=" ", timespec="seconds")
+
+
+def _parse_chatlog_timestamp(value: Optional[str]) -> Optional[datetime]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    normalized = text[:-1] + "+00:00" if text.endswith("Z") else text
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        try:
+            parsed = datetime.strptime(text, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+    return _attach_server_tz(parsed)
+
+
+def _ensure_local_tz(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    return _attach_server_tz(dt).astimezone(SERVER_LOCAL_TZ)
+
+
+def _normalized_timestamp_str(value: Optional[str]) -> Optional[str]:
+    parsed = _parse_chatlog_timestamp(value)
+    if not parsed:
+        return value
+    return _format_chatlog_timestamp(parsed)
+
+
+def _timestamp_epoch(value: Optional[str]) -> float:
+    parsed = _parse_chatlog_timestamp(value)
+    if not parsed:
+        return float("-inf")
+    return parsed.timestamp()
 
 
 def build_system_messages(personality: str) -> List[Dict[str, str]]:
@@ -1001,7 +1076,7 @@ def save_chat_log(
     LOGS_DIR.joinpath(session_id).mkdir(exist_ok=True)
     log_file = LOGS_DIR / session_id / f"chat_log_{user_id}.json"
     entry: Dict[str, Any] = {
-        "timestamp": datetime.now().isoformat(sep=" ", timespec="seconds"),
+        "timestamp": _format_chatlog_timestamp(_chatlog_now()),
         "user_message": user_message,
         "assistant_response": assistant_response,
         "feedback": None,
@@ -1021,6 +1096,11 @@ def save_chat_log(
                         logs = loaded
                 except json.JSONDecodeError:
                     pass
+        for item in logs:
+            if isinstance(item, dict):
+                normalized_ts = _normalized_timestamp_str(item.get("timestamp"))
+                if normalized_ts:
+                    item["timestamp"] = normalized_ts
         logs.append(entry)
         with log_file.open("w", encoding="utf-8") as fp:
             json.dump(logs, fp, ensure_ascii=False, indent=2)
@@ -2124,17 +2204,14 @@ def _list_sessions() -> List[Dict[str, Any]]:
                 if isinstance(data, list) and data:
                     ts_str = data[-1].get('timestamp')
                     if ts_str:
-                        try:
-                            ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-                        except Exception:
-                            ts = None
+                        ts = _parse_chatlog_timestamp(ts_str)
                         if ts and (last_ts is None or ts > last_ts):
                             last_ts = ts
             except Exception:
                 pass
         sessions.append({
             'session_id': p.name,
-            'last_activity': last_ts.isoformat(sep=' ') if last_ts else None,
+            'last_activity': _format_chatlog_timestamp(last_ts) if last_ts else None,
             'last_activity_ts': last_ts.timestamp() if last_ts else 0,
         })
     sessions.sort(key=lambda x: x.get('last_activity_ts', 0), reverse=True)
@@ -2166,10 +2243,7 @@ def _list_user_logs(session_id: str) -> List[Dict[str, Any]]:
                 if data:
                     ts_str = data[-1].get('timestamp')
                     if ts_str:
-                        try:
-                            last_ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-                        except Exception:
-                            last_ts = None
+                        last_ts = _parse_chatlog_timestamp(ts_str)
         except Exception:
             pass
         out.append({
@@ -2179,7 +2253,7 @@ def _list_user_logs(session_id: str) -> List[Dict[str, Any]]:
             'like': like,
             'dislike': dislike,
             'unrated': unrated,
-            'last_activity': last_ts.isoformat(sep=' ') if last_ts else None,
+            'last_activity': _format_chatlog_timestamp(last_ts) if last_ts else None,
             'last_activity_ts': last_ts.timestamp() if last_ts else 0,
         })
     out.sort(key=lambda x: x.get('last_activity_ts', 0), reverse=True)
@@ -2225,14 +2299,12 @@ def _season_from_ts(ts_str: Optional[str]) -> Optional[str]:
     """Akademik sezonu (YYYY-YYYY+1) zaman damgasından türet.
     Eylül (9) ve sonrası yeni sezon başlangıcı kabul edilir.
     """
-    if not ts_str:
+    dt = _parse_chatlog_timestamp(ts_str)
+    if not dt:
         return None
-    try:
-        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-    except Exception:
-        return None
-    year = ts.year
-    if ts.month >= 9:
+    ts_local = dt.astimezone(SERVER_LOCAL_TZ)
+    year = ts_local.year
+    if ts_local.month >= 9:
         return f"{year}-{year+1}"
     else:
         return f"{year-1}-{year}"
@@ -2310,21 +2382,22 @@ def admin_api_chat_logs_advanced():
         to_dt = _parse_dt(to_s)
         if to_dt and (to_s and len(to_s) == 10):
             to_dt = to_dt.replace(hour=23, minute=59, second=59)
+    from_dt_local = _ensure_local_tz(from_dt)
+    to_dt_local = _ensure_local_tz(to_dt)
+    from_dt_local = _ensure_local_tz(from_dt)
+    to_dt_local = _ensure_local_tz(to_dt)
 
     filtered: List[Dict[str, Any]] = []
     for e in entries:
         ts_ok = True
         ts_str = e.get('timestamp')
-        if ts_str and (from_dt or to_dt):
-            try:
-                ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-            except Exception:
-                ts = None
-            if ts is not None:
-                if from_dt and ts < from_dt:
-                    ts_ok = False
-                if to_dt and ts > to_dt:
-                    ts_ok = False
+        parsed_ts = _parse_chatlog_timestamp(ts_str)
+        if parsed_ts and (from_dt_local or to_dt_local):
+            ts_local = parsed_ts.astimezone(SERVER_LOCAL_TZ)
+            if from_dt_local and ts_local < from_dt_local:
+                ts_ok = False
+            if to_dt_local and ts_local > to_dt_local:
+                ts_ok = False
         if not ts_ok:
             continue
         if season_filter:
@@ -2346,7 +2419,10 @@ def admin_api_chat_logs_advanced():
 
     # Sorting
     if order_by == 'timestamp':
-        filtered.sort(key=lambda x: x.get('timestamp', ''), reverse=(sort_order == 'desc'))
+        filtered.sort(
+            key=lambda x: _timestamp_epoch(x.get('timestamp')),
+            reverse=(sort_order == 'desc'),
+        )
     else:
         # natural (original file order). If desc, reverse after filtering
         if sort_order == 'desc':
@@ -2369,7 +2445,7 @@ def admin_api_chat_logs_advanced():
     for i, e in enumerate(paginated_entries, start=start_idx):
         items.append({
             'idx': i,
-            'timestamp': e.get('timestamp'),
+            'timestamp': _normalized_timestamp_str(e.get('timestamp')),
             'feedback': e.get('feedback'),
             'user_message': e.get('user_message'),
             'assistant_response': e.get('assistant_response'),
@@ -2427,6 +2503,8 @@ def admin_api_analytics_summary():
     to_dt = _parse_dt(to_s)
     if to_dt and (to_s and len(to_s) == 10):
         to_dt = to_dt.replace(hour=23, minute=59, second=59)
+    from_dt_local = _ensure_local_tz(from_dt)
+    to_dt_local = _ensure_local_tz(to_dt)
 
     stats = {
         'total_events': 0,
@@ -2444,8 +2522,8 @@ def admin_api_analytics_summary():
     sessions_seen = set()
     latency_sum = 0
     latency_count = 0
-    first_ts = None
-    last_ts = None
+    first_ts_local: Optional[datetime] = None
+    last_ts_local: Optional[datetime] = None
 
     # Use chat logs directly for accurate stats (skip NDJSON analytics)
     # NDJSON analytics may be incomplete, so we rely on actual chat log files
@@ -2457,14 +2535,13 @@ def admin_api_analytics_summary():
             for e in entries:
                 # Date filter
                 ts_str = e.get('timestamp')
-                ts = None
-                if ts_str:
-                    try:
-                        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-                    except Exception:
-                        pass
-                
-                if ts and ((from_dt and ts < from_dt) or (to_dt and ts > to_dt)):
+                ts = _parse_chatlog_timestamp(ts_str)
+                ts_local = ts.astimezone(SERVER_LOCAL_TZ) if ts else None
+
+                if ts_local and (
+                    (from_dt_local and ts_local < from_dt_local)
+                    or (to_dt_local and ts_local > to_dt_local)
+                ):
                     continue
                 
                 # Season filter
@@ -2499,16 +2576,16 @@ def admin_api_analytics_summary():
                         s['feedback_dislike'] += 1
                 
                 # Track time range
-                if ts:
-                    if first_ts is None or ts < first_ts:
-                        first_ts = ts
-                    if last_ts is None or ts > last_ts:
-                        last_ts = ts
+                if ts_local:
+                    if first_ts_local is None or ts_local < first_ts_local:
+                        first_ts_local = ts_local
+                    if last_ts_local is None or ts_local > last_ts_local:
+                        last_ts_local = ts_local
 
     stats['unique_sessions'] = len(sessions_seen)
     stats['avg_latency_ms'] = int(latency_sum / latency_count) if latency_count > 0 else 0
-    stats['range']['from'] = first_ts.isoformat(sep=' ') if first_ts else None
-    stats['range']['to'] = last_ts.isoformat(sep=' ') if last_ts else None
+    stats['range']['from'] = _format_chatlog_timestamp(first_ts_local) if first_ts_local else None
+    stats['range']['to'] = _format_chatlog_timestamp(last_ts_local) if last_ts_local else None
     return jsonify(stats)
 
 
@@ -2531,8 +2608,8 @@ def admin_api_chat_stats_summary():
     }
     
     sessions_seen = set()
-    first_ts = None
-    last_ts = None
+    first_ts_local: Optional[datetime] = None
+    last_ts_local: Optional[datetime] = None
     
     for sess in _list_sessions():
         sess_id = sess['session_id'] if isinstance(sess, dict) else sess
@@ -2549,19 +2626,15 @@ def admin_api_chat_stats_summary():
                 
                 # Parse timestamp
                 ts_str = e.get('timestamp')
-                ts = None
-                if ts_str:
-                    try:
-                        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-                    except Exception:
-                        pass
+                ts = _parse_chatlog_timestamp(ts_str)
+                ts_local = ts.astimezone(SERVER_LOCAL_TZ) if ts else None
                 
                 # Track time range
-                if ts:
-                    if first_ts is None or ts < first_ts:
-                        first_ts = ts
-                    if last_ts is None or ts > last_ts:
-                        last_ts = ts
+                if ts_local:
+                    if first_ts_local is None or ts_local < first_ts_local:
+                        first_ts_local = ts_local
+                    if last_ts_local is None or ts_local > last_ts_local:
+                        last_ts_local = ts_local
                 
                 # Feedback stats
                 fb = e.get('feedback')
@@ -2608,8 +2681,8 @@ def admin_api_chat_stats_summary():
     
     stats['unique_sessions'] = len(sessions_seen)
     stats['range'] = {
-        'from': first_ts.isoformat(sep=' ') if first_ts else None,
-        'to': last_ts.isoformat(sep=' ') if last_ts else None
+        'from': _format_chatlog_timestamp(first_ts_local) if first_ts_local else None,
+        'to': _format_chatlog_timestamp(last_ts_local) if last_ts_local else None
     }
     
     return jsonify(stats)
@@ -2642,14 +2715,10 @@ def admin_api_chat_session_messages():
     if not sess:
         return jsonify({'error': 'Bad Request', 'message': 'session param gerekli'}), 400
 
-    def _safe_parse(ts: Optional[str]) -> Tuple[int, str]:
-        if not ts:
-            return (0, '')
-        try:
-            dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
-            return (int(dt.timestamp()), ts)
-        except Exception:
-            return (0, ts)
+    def _safe_parse(ts: Optional[str]) -> Tuple[float, str]:
+        epoch = _timestamp_epoch(ts)
+        normalized = _normalized_timestamp_str(ts) or (ts or '')
+        return (epoch, normalized)
 
     items: List[Dict[str, Any]] = []
     users = [user_id] if user_id else [u['user_id'] for u in _list_user_logs(sess)]
@@ -2660,7 +2729,7 @@ def admin_api_chat_session_messages():
                 'session_id': sess,
                 'user_id': uid,
                 'idx': idx,
-                'timestamp': e.get('timestamp'),
+                'timestamp': _normalized_timestamp_str(e.get('timestamp')),
                 'feedback': e.get('feedback'),
                 'user_message': e.get('user_message'),
                 'assistant_response': e.get('assistant_response'),
@@ -2724,7 +2793,7 @@ def admin_api_chat_logs():
     for i, e in enumerate(entries):
         out.append({
             'idx': i,
-            'timestamp': e.get('timestamp'),
+            'timestamp': _normalized_timestamp_str(e.get('timestamp')),
             'feedback': e.get('feedback'),
             'user_message': e.get('user_message'),
             'assistant_response': e.get('assistant_response'),
@@ -2761,7 +2830,7 @@ def admin_api_chat_search_by_feedback():
                     'session_id': sess_id,
                     'user_id': u['user_id'],
                     'idx': idx,
-                    'timestamp': e.get('timestamp'),
+                    'timestamp': _normalized_timestamp_str(e.get('timestamp')),
                     'feedback': e.get('feedback'),
                     'user_message': e.get('user_message'),
                     'assistant_response': e.get('assistant_response'),
@@ -2777,10 +2846,10 @@ def admin_api_chat_search_by_feedback():
             break
     
     # Sort results by timestamp
-    if sort_order == 'desc':
-        results.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-    else:
-        results.sort(key=lambda x: x.get('timestamp', ''))
+    results.sort(
+        key=lambda x: _timestamp_epoch(x.get('timestamp')),
+        reverse=(sort_order == 'desc'),
+    )
     
     return jsonify(results)
 
@@ -2840,16 +2909,13 @@ def admin_api_chat_global_search():
                 # Date filter
                 ts_ok = True
                 ts_str = e.get('timestamp')
-                if ts_str and (from_dt or to_dt):
-                    try:
-                        ts = datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
-                    except Exception:
-                        ts = None
-                    if ts is not None:
-                        if from_dt and ts < from_dt:
-                            ts_ok = False
-                        if to_dt and ts > to_dt:
-                            ts_ok = False
+                parsed_ts = _parse_chatlog_timestamp(ts_str)
+                ts_local = parsed_ts.astimezone(SERVER_LOCAL_TZ) if parsed_ts else None
+                if ts_local and (from_dt_local or to_dt_local):
+                    if from_dt_local and ts_local < from_dt_local:
+                        ts_ok = False
+                    if to_dt_local and ts_local > to_dt_local:
+                        ts_ok = False
                 if not ts_ok:
                     continue
                 
@@ -2884,7 +2950,7 @@ def admin_api_chat_global_search():
                     'session_id': sess_id,
                     'user_id': u['user_id'],
                     'idx': idx,
-                    'timestamp': e.get('timestamp'),
+                    'timestamp': _normalized_timestamp_str(e.get('timestamp')),
                     'feedback': e.get('feedback'),
                     'user_message': e.get('user_message'),
                     'assistant_response': e.get('assistant_response'),
@@ -2904,10 +2970,10 @@ def admin_api_chat_global_search():
             break
     
     # Sort results
-    if sort_order == 'desc':
-        results.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-    else:
-        results.sort(key=lambda x: x.get('timestamp', ''))
+    results.sort(
+        key=lambda x: _timestamp_epoch(x.get('timestamp')),
+        reverse=(sort_order == 'desc'),
+    )
     
     # Log result count for debugging if needed
     # print(f"Global search found {len(results)} results for range: {rng}")

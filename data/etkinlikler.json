@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "questions": [
+      "Oryantasyon Programı var mı?",
+      "Oryantasyon programının yerini nasıl öğrenirim?",
+      "Oryantasyon takvimi nerede?",
+      "Oryantasyon nerede olacak?"
+    ],
+    "answer": "Oryantasyon bilgisi ve takvimine linkinden ulaşabilirsiniz.\n\nhttps://kariyer.kapadokya.edu.tr/kariyer-type/2025-acilis-haftasi-program-akisi-ve-kariyer-etkinlikleri/"
+  }
+]
