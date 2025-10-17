@@ -1638,6 +1638,26 @@ def feedback():
 admin_bp = Blueprint("admin", __name__)
 
 
+@admin_bp.before_request
+def _enforce_admin_authentication():
+    """Require authentication for admin endpoints by default."""
+    endpoint = request.endpoint or ""
+    if request.method == "OPTIONS":
+        return None
+    # Allow auth status, login/logout and base template without prior auth
+    open_endpoints = {
+        "admin.admin_auth_status",
+        "admin.admin_login_route",
+        "admin.admin_logout_route",
+        "admin.admin_home",
+    }
+    if endpoint in open_endpoints:
+        return None
+    if not _has_qna_access():
+        return _unauthorized()
+    return None
+
+
 def _current_admin_role() -> Optional[str]:
     return session.get("admin_role")
 
@@ -1785,6 +1805,8 @@ def admin_home():
 @admin_bp.route('/api/files', methods=['GET', 'POST'])
 def admin_files_route():
     if request.method == 'GET':
+        if not _has_qna_access():
+            return _unauthorized()
         return jsonify(_list_json_files())
 
     if not _has_qna_access():
@@ -2243,6 +2265,8 @@ def admin_personality_set_default(slug: str):
 def admin_items_collection_route():
     fname = request.args.get('file', DEFAULT_QA_FILE)
     if request.method == 'GET':
+        if not _has_qna_access():
+            return _unauthorized()
         try:
             data = _load_data(fname)
         except ValueError as exc:

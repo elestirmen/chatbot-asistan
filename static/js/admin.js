@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const personalitiesTabEl = document.getElementById('personalities-tab');
   const personalitiesPaneEl = document.getElementById('personalities-pane');
   let qaTable;
+  let initialQaDataLoaded = false;
   const ROLE_ADMIN = 'admin';
   const ROLE_EDITOR = 'editor';
   let adminRole = null;
@@ -1212,16 +1213,29 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#logoutBtn').toggle(qaAccess);
     $('#addBtn').prop('disabled', !qaAccess);
     updateFileActionButtons();
-    if (qaTable) qaTable.draw();
+    if (qaTable) {
+      if (qaAccess) {
+        qaTable.draw();
+      } else {
+        qaTable.clear().draw();
+      }
+    }
 
     if (qaAccess) {
       $('#loginPasswordInput').val('');
       $('#loginError').hide();
       $('#loginForm').removeClass('was-validated');
+      ensureInitialQaDataLoaded();
     } else {
+      initialQaDataLoaded = false;
+      allFiles = [];
+      currentFile = '';
       $('#loginError').hide();
       $('#loginForm').removeClass('was-validated');
       loginModal?.show();
+      if ($fileSel && $fileSel.length) {
+        $fileSel.empty();
+      }
     }
 
     toggleAdminTabs(adminAccess);
@@ -1285,28 +1299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     isAuthenticated = false;
     updateAuthUI();
   });
-
-  reloadFileList(defaultFile)
-    .then(() => {
-      if (!allFiles.length) {
-        alert('data/ klasöründe JSON dosyası bulunamadı.');
-        $('#addBtn').prop('disabled', true);
-        return;
-      }
-      if (currentFile) {
-        if (qaTable) {
-          qaTable.ajax.reload(null, false);
-        } else {
-          initQaTable();
-        }
-      } else {
-        alert('Yüklenecek veri dosyası bulunamadı.');
-        $('#addBtn').prop('disabled', true);
-      }
-    })
-    .catch(() => {
-      alert('JSON dosyaları listelenemedi. Lütfen sayfayı yenileyin.');
-    });
 
   $.fn.dataTable.ext.errMode = 'none';
 
@@ -1382,6 +1374,52 @@ document.addEventListener('DOMContentLoaded', () => {
         reject(xhr);
       });
     });
+  }
+
+  function ensureInitialQaDataLoaded(forceReload = false) {
+    if (!hasQaAccess()) return;
+
+    const shouldReload = forceReload || !initialQaDataLoaded;
+    const preferredFile = currentFile || defaultFile;
+
+    const handleReadyState = () => {
+      if (!allFiles.length) {
+        alert('data/ klasöründe JSON dosyası bulunamadı.');
+        $('#addBtn').prop('disabled', true);
+        return;
+      }
+      if (currentFile) {
+        if (qaTable) {
+          qaTable.ajax.reload(null, false);
+        } else {
+          initQaTable();
+        }
+      } else {
+        alert('Yüklenecek veri dosyası bulunamadı.');
+        $('#addBtn').prop('disabled', true);
+      }
+    };
+
+    if (!shouldReload) {
+      handleReadyState();
+      return;
+    }
+
+    reloadFileList(preferredFile)
+      .then(() => {
+        initialQaDataLoaded = true;
+        handleReadyState();
+      })
+      .catch((xhr) => {
+        initialQaDataLoaded = false;
+        if (xhr?.status === 401) {
+          adminRole = null;
+          isAuthenticated = false;
+          updateAuthUI();
+          return;
+        }
+        alert('JSON dosyaları listelenemedi. Lütfen sayfayı yenileyin.');
+      });
   }
 
   function normalizeFilenameInput(value) {
