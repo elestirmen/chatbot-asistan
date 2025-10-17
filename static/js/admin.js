@@ -645,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const themeLabel = esc(themeNameMap[item.theme] || item.theme || '-');
       const avatarResolved = item.avatar_resolved || resolveAvatarUrl(item.avatar_url);
       const avatarHtml = avatarResolved
-        ? `<img src="${esc(avatarResolved)}" alt="${displayName} avatar" class="rounded-circle border" style="width:48px;height:48px;object-fit:cover;">`
+        ? `<img src="${esc(avatarResolved)}" alt="${displayName} avatar" class="rounded-circle border" style="width:72px;height:72px;object-fit:cover;">`
         : '<span class="text-muted small">-</span>';
       const actionsHtml = `<div class="btn-group btn-group-sm" role="group">
            <button type="button" class="btn btn-warning edit-personality" data-personality="${slug}"><i class="bi bi-pencil"></i></button>
