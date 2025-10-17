@@ -12,10 +12,15 @@ function getPersonalityBadge(personality) {
     const label = personality ? esc(personality) : 'Bilinmiyor';
     return `<span class="badge bg-warning text-dark mb-1"><i class="bi bi-question-circle"></i> ${label}</span>`;
   }
-  const color = esc(entry.badge_color || 'secondary');
-  const icon = esc(entry.badge_icon || 'person-circle');
+  const isActive = entry.active !== false;
+  const color = esc(isActive ? (entry.badge_color || 'secondary') : 'secondary');
+  const icon = esc(isActive ? (entry.badge_icon || 'person-circle') : 'slash-circle');
   const label = esc(entry.name || personality);
-  return `<span class="badge bg-${color} mb-1"><i class="bi bi-${icon}"></i> ${label}</span>`;
+  const baseBadge = `<span class="badge bg-${color} mb-1"><i class="bi bi-${icon}"></i> ${label}</span>`;
+  if (isActive) {
+    return baseBadge;
+  }
+  return `${baseBadge} <span class="badge bg-secondary text-white mb-1">Pasif</span>`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -85,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const personalityWelcomeInput = document.getElementById('personalityWelcome');
   const personalityPromptInput = document.getElementById('personalityPrompt');
   const personalitySetDefaultInput = document.getElementById('personalitySetDefault');
+  const personalityActiveInput = document.getElementById('personalityActive');
   const personalityAvatarInput = document.getElementById('personalityAvatarInput');
   const personalityAvatarPreview = document.getElementById('personalityAvatarPreview');
   const removePersonalityAvatarBtn = document.getElementById('removePersonalityAvatarBtn');
@@ -107,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let avatarRemoveRequested = false;
   let currentAvatarPreviewUrl = null;
   let existingAvatarRelative = null;
-  const personalityEmojiInput = null;
+  const personalityEmojiInput = document.getElementById('personalityEmoji');
 
   const modelSelectInput = document.getElementById('modelSelect');
   const modelCustomInput = document.getElementById('modelCustomInput');
@@ -620,6 +626,19 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<div class="small text-muted text-truncate" style="max-width: 320px;">${esc(promptPreview)}</div>`
         : '<span class="text-muted">-</span>';
       const isDefault = slug === defaultPersonalityId;
+      const isActive = item.active !== false;
+      const statusSwitchId = `personality-status-${slug}`;
+      const statusLabel = isActive ? 'Aktif' : 'Pasif';
+      const statusHtml = `
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input toggle-personality-status" type="checkbox" role="switch"
+            id="${esc(statusSwitchId)}"
+            data-personality="${slugLabel}"
+            data-active="${isActive ? 'true' : 'false'}"
+            ${isActive ? 'checked' : ''}>
+          <label class="form-check-label small" for="${esc(statusSwitchId)}">${esc(statusLabel)}</label>
+        </div>
+      `;
       const defaultHtml = isDefault
         ? '<span class="badge bg-primary"><i class="bi bi-star-fill"></i> Varsayılan</span>'
         : `<button type="button" class="btn btn-outline-primary btn-sm set-default-personality" data-personality="${slug}"><i class="bi bi-star"></i> Varsayılan Yap</button>`;
@@ -645,12 +664,72 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td>${avatarHtml}</td>
         <td><span class="badge bg-light text-dark border">${themeLabel}</span></td>
+        <td>${statusHtml}</td>
         <td>${welcomeHtml}</td>
         <td>${promptHtml}</td>
         <td>${actionsHtml}</td>
       `;
+      row.classList.toggle('opacity-50', !isActive);
       personalitiesTableBody.appendChild(row);
     });
+  }
+
+  function syncStatusSwitchVisual(inputEl, isActive) {
+    if (!inputEl) return;
+    inputEl.checked = !!isActive;
+    inputEl.dataset.active = isActive ? 'true' : 'false';
+    const formCheck = inputEl.closest('.form-check');
+    if (formCheck) {
+      const label = formCheck.querySelector('.form-check-label');
+      if (label) {
+        label.textContent = isActive ? 'Aktif' : 'Pasif';
+      }
+    }
+    const row = inputEl.closest('tr');
+    if (row) {
+      row.classList.toggle('opacity-50', !isActive);
+    }
+  }
+
+  function updatePersonalityStatus(slug, desiredActive, inputEl, previousValue) {
+    if (!slug || !inputEl) return;
+    const previous = typeof previousValue === 'boolean' ? previousValue : !desiredActive;
+    inputEl.disabled = true;
+    fetch(`/admin/api/personalities/${encodeURIComponent(slug)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: desiredActive }),
+    })
+      .then((resp) => {
+        if (resp.status === 401) {
+          loginModal?.show();
+          throw new Error('Bu işlem için giriş yapmalısınız.');
+        }
+        if (!resp.ok) {
+          return resp.json().then((data) => {
+            const message = data?.message || data?.error || 'Durum güncellenemedi.';
+            throw new Error(message);
+          }).catch((err) => {
+            if (err instanceof Error) throw err;
+            throw new Error('Durum güncellenemedi.');
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        if (typeof data?.default === 'string') {
+          defaultPersonalityId = data.default;
+        }
+        syncStatusSwitchVisual(inputEl, desiredActive);
+        loadPersonalities();
+      })
+      .catch((err) => {
+        alert(err.message || 'Kişilik durumu güncellenemedi.');
+        syncStatusSwitchVisual(inputEl, previous);
+      })
+      .finally(() => {
+        inputEl.disabled = false;
+      });
   }
 
   function applyThemeDefaults(theme, force = false) {
@@ -673,6 +752,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (personalityAvatarInput) {
       personalityAvatarInput.value = '';
+    }
+    if (personalityActiveInput) {
+      personalityActiveInput.checked = true;
     }
     existingAvatarRelative = null;
     avatarRemoveRequested = false;
@@ -710,6 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (personalityBadgeIconInput) personalityBadgeIconInput.value = entry.badge_icon || '';
       if (personalityWelcomeInput) personalityWelcomeInput.value = entry.welcome_message || '';
       if (personalityPromptInput) personalityPromptInput.value = entry.prompt || '';
+      if (personalityActiveInput) personalityActiveInput.checked = entry.active !== false;
       existingAvatarRelative = entry.avatar_url || null;
       const resolvedAvatar = entry.avatar_resolved || resolveAvatarUrl(existingAvatarRelative);
       setAvatarPreview(resolvedAvatar);
@@ -724,6 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (personalityNameInput) personalityNameInput.value = '';
       if (personalityThemeInput) personalityThemeInput.value = 'neutral';
       applyThemeDefaults('neutral', true);
+      if (personalityActiveInput) personalityActiveInput.checked = true;
       existingAvatarRelative = null;
       avatarRemoveRequested = false;
       setAvatarPreview(null);
@@ -758,6 +842,17 @@ document.addEventListener('DOMContentLoaded', () => {
       prompt: personalityPromptInput?.value.trim(),
       set_default: Boolean(personalitySetDefaultInput?.checked),
     };
+    const isActive = personalityActiveInput ? Boolean(personalityActiveInput.checked) : true;
+
+    if (editingPersonalityId && editingPersonalityId === defaultPersonalityId && !isActive) {
+      alert('Varsayılan kişilik pasif hale getirilemez.');
+      return;
+    }
+    if (payload.set_default && !isActive) {
+      alert('Varsayılan kişilik varsayılan olarak seçilebilmesi için aktif olmalıdır.');
+      return;
+    }
+    payload.active = isActive;
 
     if (editingPersonalityId) {
       delete payload.id;
@@ -2702,6 +2797,24 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (button.classList.contains('set-default-personality')) {
         handleSetDefaultPersonality(slug);
       }
+    });
+    personalitiesTableBody.addEventListener('change', (event) => {
+      const input = event.target.closest('.toggle-personality-status');
+      if (!input) return;
+      const slug = input.dataset.personality;
+      if (!slug) return;
+      const previous = input.dataset.active !== 'false';
+      const desiredActive = input.checked;
+      if (!requireAdmin()) {
+        syncStatusSwitchVisual(input, previous);
+        return;
+      }
+      if (slug === defaultPersonalityId && !desiredActive) {
+        alert('Varsayılan kişilik pasif hale getirilemez.');
+        syncStatusSwitchVisual(input, true);
+        return;
+      }
+      updatePersonalityStatus(slug, desiredActive, input, previous);
     });
   }
   if (personalityModalEl) {

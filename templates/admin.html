@@ -1111,6 +1111,7 @@
                   <th style="min-width: 200px">Kişilik</th>
                   <th style="width: 120px">Avatar</th>
                   <th style="width: 120px">Tema</th>
+                  <th style="width: 140px">Durum</th>
                   <th style="min-width: 200px">Hoş Geldin</th>
                   <th style="min-width: 260px">Prompt Özeti</th>
                   <th style="width: 180px">İşlemler</th>
@@ -1733,6 +1734,12 @@
                 <label class="form-label" for="personalityPrompt">Prompt</label>
                 <textarea id="personalityPrompt" class="form-control" rows="8" required placeholder="Kişiliği tanımlayan sistem promptunu yazın"></textarea>
                 <div class="invalid-feedback">Prompt zorunludur.</div>
+              </div>
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="personalityActive" checked>
+                  <label class="form-check-label" for="personalityActive">Aktif</label>
+                </div>
               </div>
               <div class="col-12">
                 <div class="form-check">

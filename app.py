@@ -128,7 +128,10 @@ def sync_personality_message():
         session.modified = True
 
     personality = session.get("current_personality", default_personality)
-    if not personality_manager.exists(personality):
+    if (
+        not personality_manager.exists(personality)
+        or not personality_manager.is_active(personality)
+    ):
         personality = default_personality
         session["current_personality"] = personality
         session.modified = True
@@ -244,6 +247,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
             "• Basit bir soruysa iğneleyici bir giriş yap, sonra net ama aşağılayıcı bir cevap ver.\n"
             "• Yardım ederken bile sanki zorunluluktan yapıyormuşsun izlenimi uyandır; asla samimi veya destekleyici olma.\n"
         ),
+        "active": True,
     },
     {
         "id": "notr",
@@ -260,6 +264,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
             "• Kullanıcının iletisi yalnızca teşekkür/onay mesajı ise, kısa ve nazik bir teşekkürle yanıt ver, gereksiz bilgi ekleme.\n"
             "• Normal bir soruysa, **öncelikle** son kullanıcı iletisine odaklan ve net, tarafsız bir yanıt oluştur; geçmişten alman gereken bağlam varsa kısa tut.\n"
         ),
+        "active": True,
     },
     {
         "id": "pozitif",
@@ -276,6 +281,7 @@ DEFAULT_PERSONALITY_ENTRIES = [
             "• Sadece teşekkür/onay mesajı alırsan, neşeli bir şekilde kısa bir teşekkürle karşılık ver, uzun uzadıya yazma.\n"
             "• Cevaplarında **öncelikle** son kullanıcı iletisine odaklan; geçmişten alman gereken bağlam varsa kısa tut.\n"
         ),
+        "active": True,
     },
 ]
 
@@ -303,6 +309,24 @@ def _normalize_avatar_url(value: Optional[str]) -> Optional[str]:
     return avatar or None
 
 
+def _coerce_bool(value: Any, default: bool = True) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    try:
+        text = str(value).strip().lower()
+    except Exception:
+        return default
+    if text in {"1", "true", "yes", "on", "aktif"}:
+        return True
+    if text in {"0", "false", "no", "off", "pasif"}:
+        return False
+    return default
+
+
 class PersonalityManager:
     def __init__(self, path: Path, defaults: List[Dict[str, Any]], default_slug: str):
         self.path = path
@@ -321,15 +345,26 @@ class PersonalityManager:
     def all(self) -> List[Dict[str, Any]]:
         return [self._registry[pid] for pid in self._ordered_ids]
 
+    def active(self) -> List[Dict[str, Any]]:
+        return [
+            self._registry[pid]
+            for pid in self._ordered_ids
+            if self._registry[pid].get("active", True)
+        ]
+
     def exists(self, slug: str) -> bool:
         return slug in self._registry
+
+    def is_active(self, slug: str) -> bool:
+        entry = self._registry.get(slug)
+        return bool(entry and entry.get("active", True))
 
     def get(self, slug: str) -> Optional[Dict[str, Any]]:
         return self._registry.get(slug)
 
     def get_prompt(self, slug: str) -> str:
         entry = self.get(slug)
-        if not entry:
+        if not entry or not entry.get("active", True):
             raise KeyError(slug)
         return entry["prompt"]
 
@@ -345,6 +380,8 @@ class PersonalityManager:
         self._registry[slug] = entry
         if not self._default_slug:
             self._default_slug = slug
+        if self._ensure_default_is_active():
+            entry = self._registry[slug]
         self._persist()
         return entry
 
@@ -354,9 +391,12 @@ class PersonalityManager:
         base = dict(self._registry[slug])
         merged = {**base, **payload, "id": slug}
         entry = self._normalize(merged, self._ordered_ids.index(slug))
+        if slug == self._default_slug and not entry.get("active", True):
+            raise ValueError("Varsayılan kişilik pasif hale getirilemez")
         self._registry[slug] = entry
+        self._ensure_default_is_active()
         self._persist()
-        return entry
+        return self._registry[slug]
 
     def delete(self, slug: str) -> Dict[str, Any]:
         if slug not in self._registry:
@@ -367,12 +407,15 @@ class PersonalityManager:
         self._ordered_ids = [pid for pid in self._ordered_ids if pid != slug]
         if self._default_slug == slug:
             self._default_slug = self._ordered_ids[0]
+        self._ensure_default_is_active()
         self._persist()
         return removed
 
     def set_default(self, slug: str) -> None:
         if slug not in self._registry:
             raise KeyError(slug)
+        if not self._registry[slug].get("active", True):
+            self._registry[slug]["active"] = True
         self._default_slug = slug
         self._persist()
 
@@ -405,9 +448,15 @@ class PersonalityManager:
             self._write(entries, self._default_slug)
         self._ordered_ids = [entry["id"] for entry in entries]
         self._registry = {entry["id"]: entry for entry in entries}
-        if self._default_slug not in self._registry:
+        persist_needed = False
+        if self._default_slug not in self._registry and self._ordered_ids:
             self._default_slug = self._ordered_ids[0]
+            persist_needed = True
+        if self._ensure_default_is_active():
+            persist_needed = True
         self._rebuild_prompt_cache()
+        if persist_needed:
+            self._persist()
 
     def _normalize(self, payload: Dict[str, Any], order_index: int) -> Dict[str, Any]:
         slug_source = str(payload.get("id") or payload.get("slug") or payload.get("name") or "").strip()
@@ -428,6 +477,7 @@ class PersonalityManager:
         welcome = str(payload.get("welcome_message") or "Merhaba, size nasıl yardımcı olabilirim?").strip()
         avatar_url = _normalize_avatar_url(payload.get("avatar_url"))
         css_class = THEME_PRESETS[theme]["css_class"]
+        active = _coerce_bool(payload.get("active"), True)
         return {
             "id": slug,
             "name": name,
@@ -439,10 +489,34 @@ class PersonalityManager:
             "welcome_message": welcome,
             "avatar_url": avatar_url,
             "prompt": prompt,
+            "active": active,
         }
 
     def _rebuild_prompt_cache(self) -> None:
-        self._prompt_map = {pid: self._registry[pid]["prompt"] for pid in self._ordered_ids}
+        self._prompt_map = {
+            pid: self._registry[pid]["prompt"]
+            for pid in self._ordered_ids
+            if self._registry[pid].get("active", True)
+        }
+
+    def _ensure_default_is_active(self) -> bool:
+        if not self._ordered_ids:
+            return False
+        changed = False
+        active_ids = [
+            pid for pid in self._ordered_ids
+            if self._registry[pid].get("active", True)
+        ]
+        if not active_ids:
+            first_id = self._ordered_ids[0]
+            if not self._registry[first_id].get("active", True):
+                self._registry[first_id]["active"] = True
+                changed = True
+            active_ids = [first_id]
+        if self._default_slug not in active_ids:
+            self._default_slug = active_ids[0]
+            changed = True
+        return changed
 
     def _write_defaults(self) -> None:
         self._write(self.defaults, self._default_slug)
@@ -1204,6 +1278,8 @@ def chat():
         if message.startswith("/"):
             cmd = message[1:].strip().lower()
             if personality_manager.exists(cmd):
+                if not personality_manager.is_active(cmd):
+                    return jsonify({"content": "Bu kişilik şu anda pasif durumda olduğu için seçilemez."}), 200
                 session["current_personality"] = cmd
                 session.modified = True
                 persona_name = personality_manager.get(cmd)["name"]
@@ -1490,8 +1566,8 @@ def new_chat():
 @app.route("/set_personality", methods=["POST"])
 def set_personality():
     pers = str((request.json or {}).get("personality", "")).strip().lower()
-    if not personality_manager.exists(pers):
-        return jsonify({"error": "Geçersiz kişilik"}), 400
+    if not personality_manager.exists(pers) or not personality_manager.is_active(pers):
+        return jsonify({"error": "Geçersiz veya pasif kişilik"}), 400
     session["current_personality"] = pers
     session["_default_personality_snapshot"] = personality_manager.default
     session["messages"] = build_system_messages(pers)
@@ -1511,7 +1587,7 @@ def set_personality():
 
 @app.route('/api/personalities', methods=['GET'])
 def public_personalities():
-    items = [_serialize_personality(p) for p in personality_manager.all()]
+    items = [_serialize_personality(p) for p in personality_manager.active()]
     return jsonify({'items': items, 'default': personality_manager.default})
 
 
@@ -1674,6 +1750,7 @@ def _serialize_personality(entry: Dict[str, Any], include_prompt: bool = False) 
         'badge_icon': entry['badge_icon'],
         'welcome_message': entry['welcome_message'],
         'avatar_url': entry.get('avatar_url'),
+        'active': entry.get('active', True),
     }
     if include_prompt:
         payload['prompt'] = entry['prompt']
