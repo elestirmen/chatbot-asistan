@@ -431,6 +431,31 @@
             box-shadow: var(--shadow-md);
         }
 
+        .persona-new-chat {
+            display: none;
+            border: none;
+            background: var(--kun-primary);
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 8px 16px;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .persona-new-chat:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .persona-new-chat__icon {
+            font-size: 16px;
+            line-height: 1;
+        }
+
         .warning-banner {
             background: var(--bg-soft);
             border: 1px solid var(--border-soft);
@@ -867,6 +892,15 @@
                 gap: 10px;
             }
 
+            .persona-new-chat {
+                display: inline-flex;
+                padding: 8px 12px;
+            }
+
+            .persona-new-chat__label {
+                font-size: 14px;
+            }
+
             .persona-dropdown {
                 flex: 1 1 auto;
             }
@@ -1005,6 +1039,14 @@
 
             .input-row .tooltip-li {
                 display: none;
+            }
+
+            .persona-new-chat__label {
+                display: none;
+            }
+
+            .persona-new-chat {
+                padding: 8px;
             }
 
             .asistan-input-cont {
@@ -1150,6 +1192,10 @@
                                 </button>
                                 <div class="persona-dd-menu" id="persona-dd-menu" role="listbox" aria-labelledby="persona-dd-btn"></div>
                             </div>
+                            <button type="button" class="persona-new-chat" id="persona-new-chat" aria-label="Yeni sohbet başlat">
+                                <span class="persona-new-chat__icon" aria-hidden="true">🔄</span>
+                                <span class="persona-new-chat__label">Yeni Sohbet</span>
+                            </button>
                             <select id="personality-select" aria-label="Asistan kişiliğini seçin" onchange="changePersonality()">
                                 <option value="huysuz" selected data-class="angry">😤 Huysuz Asistan</option>
                                 <option value="notr" data-class="neutral">😐 Nötr Asistan</option>
@@ -1577,7 +1623,7 @@
                 });
             }
 
-            ['header-new-chat', 'sidebar-new-chat', 'mobile-new-chat'].forEach((id) => {
+            ['header-new-chat', 'sidebar-new-chat', 'mobile-new-chat', 'persona-new-chat'].forEach((id) => {
                 const btn = document.getElementById(id);
                 if (!btn) return;
                 btn.addEventListener('click', () => {
