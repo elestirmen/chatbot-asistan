@@ -277,9 +277,12 @@
       "Uzaktan Öğretim Sistemine nasıl giriş yaparım?",
       "Uzaktan eğitim platformuna erişmek için ne yapmalıyım?",
       "Sisteme uzaktan bağlamak için hangi adımları izlemeliyim?",
-      "Uzaktan Öğretim Sistemine ulaşmak için gerekli olan süreç nedir?"
+      "Uzaktan Öğretim Sistemine ulaşmak için gerekli olan süreç nedir?",
+      "Uzaktan Öğretim nedir?",
+      "Uzaktan eğitim nedir?",
+      "Uzaktan eğitim sistemine nasıl girerim?"
     ],
-    "answer": "https://uzaktanogretim.kapadokya.edu.tr adresi üzerinden Kullanıcı Adı/Mail satırına Öğrenci Numaranızı, şifre satırına TC Kimlik Numaranızı yazarak giriş yapabilirsiniz "
+    "answer": "https://uzaktanogretim.kapadokya.edu.tr adresi üzerinden Kullanıcı Adı/Mail satırına Öğrenci Numaranızı, şifre satırına TC Kimlik Numaranızı yazarak giriş yapabilirsiniz"
   },
   {
     "questions": [

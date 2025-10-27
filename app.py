@@ -63,6 +63,26 @@ def _getenv_strip(key: str, default: Optional[str] = None) -> Optional[str]:
     return value.strip()
 
 
+def _getenv_float(
+    key: str,
+    default: float,
+    minimum: Optional[float] = None,
+    maximum: Optional[float] = None,
+) -> float:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return default
+    if minimum is not None:
+        value = max(minimum, value)
+    if maximum is not None:
+        value = min(maximum, value)
+    return value
+
+
 OPENAI_API_KEY = _getenv_strip("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY env değişkeni tanımlı değil!")
@@ -78,6 +98,8 @@ except ValueError:
 
 DEFAULT_OPENAI_COMPLETION_MODEL = _getenv_strip("OPENAI_MODEL") or "gpt-4.1-mini"
 OPENAI_SUMMARY_OVERRIDE = _getenv_strip("OPENAI_SUMMARY_MODEL")
+DEFAULT_OPENAI_TEMPERATURE = _getenv_float("OPENAI_TEMPERATURE", 0.75, 0.0, 2.0)
+DEFAULT_OPENAI_TOP_P = _getenv_float("OPENAI_TOP_P", 0.9, 0.0, 1.0)
 
 ADMIN_PASSWORD = _getenv_strip("ADMIN_PASSWORD")
 APP_PASSWORD = _getenv_strip("APP_PASSWORD")
@@ -543,6 +565,8 @@ class ModelConfigManager:
         default_completion_model: str,
         summary_override: Optional[str],
         suggestions: List[Dict[str, str]],
+        default_temperature: float,
+        default_top_p: float,
     ):
         self.path = path
         self.default_completion_model = (default_completion_model or "gpt-4.1-mini").strip() or "gpt-4.1-mini"
@@ -550,6 +574,10 @@ class ModelConfigManager:
         self.suggestions = suggestions
         self._lock = FileLock(str(path) + ".lock")
         self._completion_model = self.default_completion_model
+        self.default_temperature = float(f"{max(0.0, min(2.0, default_temperature)):.4f}")
+        self.default_top_p = float(f"{max(0.0, min(1.0, default_top_p)):.4f}")
+        self._temperature: float = self.default_temperature
+        self._top_p: float = self.default_top_p
         self._updated_at: Optional[str] = None
         self.reload()
 
@@ -557,56 +585,144 @@ class ModelConfigManager:
     def _iso_now() -> str:
         return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
+    @staticmethod
+    def _round4(value: float) -> float:
+        return float(f"{value:.4f}")
+
+    @staticmethod
+    def _parse_temperature(candidate: Any) -> Optional[float]:
+        try:
+            value = float(candidate)
+        except (TypeError, ValueError):
+            return None
+        if not 0.0 <= value <= 2.0:
+            return None
+        return ModelConfigManager._round4(value)
+
+    @staticmethod
+    def _parse_top_p(candidate: Any) -> Optional[float]:
+        try:
+            value = float(candidate)
+        except (TypeError, ValueError):
+            return None
+        if not 0.0 <= value <= 1.0:
+            return None
+        return ModelConfigManager._round4(value)
+
     def reload(self) -> None:
         with self._lock:
             if not self.path.exists():
-                self._write_unlocked(self.default_completion_model)
+                self._write_unlocked(self.default_completion_model, self.default_temperature, self.default_top_p)
                 return
             try:
                 raw = json.loads(self.path.read_text("utf-8"))
             except Exception:
-                self._write_unlocked(self.default_completion_model)
+                self._write_unlocked(self.default_completion_model, self.default_temperature, self.default_top_p)
                 return
 
             completion = str(raw.get("completion_model") or "").strip()
             updated_at = raw.get("updated_at")
+            raw_temperature = raw.get("temperature")
+            raw_top_p = raw.get("top_p")
+            temperature = self._parse_temperature(raw_temperature)
+            top_p = self._parse_top_p(raw_top_p)
+            needs_rewrite = False
+            if temperature is None:
+                temperature = self.default_temperature
+                if raw_temperature is not None:
+                    needs_rewrite = True
+            if top_p is None:
+                top_p = self.default_top_p
+                if raw_top_p is not None:
+                    needs_rewrite = True
+
             if not completion:
-                self._write_unlocked(self.default_completion_model)
+                self._write_unlocked(self.default_completion_model, temperature, top_p)
+                return
+
+            if needs_rewrite or "temperature" not in raw or "top_p" not in raw:
+                self._write_unlocked(completion, temperature, top_p)
                 return
 
             self._completion_model = completion
+            self._temperature = temperature
+            self._top_p = top_p
             if isinstance(updated_at, str) and updated_at.strip():
                 self._updated_at = updated_at.strip()
             else:
                 self._updated_at = self._iso_now()
 
-    def _write_unlocked(self, model: str) -> None:
+    def _write_unlocked(self, model: str, temperature: Optional[float], top_p: Optional[float]) -> None:
         normalized = (model or "").strip()
         if not normalized:
             normalized = self.default_completion_model
+        temperature_value = (
+            self.default_temperature if temperature is None else self._round4(max(0.0, min(2.0, float(temperature))))
+        )
+        top_p_value = (
+            self.default_top_p if top_p is None else self._round4(max(0.0, min(1.0, float(top_p))))
+        )
         payload = {
             "completion_model": normalized,
+            "temperature": temperature_value,
+            "top_p": top_p_value,
             "updated_at": self._iso_now(),
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         self._completion_model = normalized
+        self._temperature = temperature_value
+        self._top_p = top_p_value
         self._updated_at = payload["updated_at"]
 
-    def set(self, model: str) -> None:
+    def _require_temperature(self, value: Any) -> float:
+        parsed = self._parse_temperature(value)
+        if parsed is None:
+            raise ValueError("Temperature değeri 0 ile 2 arasında olmalıdır.")
+        return parsed
+
+    def _require_top_p(self, value: Any) -> float:
+        parsed = self._parse_top_p(value)
+        if parsed is None:
+            raise ValueError("Top-p değeri 0 ile 1 arasında olmalıdır.")
+        return parsed
+
+    def set(
+        self,
+        model: Optional[str],
+        *,
+        temperature: Optional[Any] = None,
+        top_p: Optional[Any] = None,
+    ) -> None:
         normalized = (model or "").strip()
         if not normalized:
             raise ValueError("Model adı boş olamaz.")
+        next_temperature = self._temperature if temperature is None else self._require_temperature(temperature)
+        next_top_p = self._top_p if top_p is None else self._require_top_p(top_p)
+        if (
+            normalized == self._completion_model
+            and self._round4(next_temperature) == self._round4(self._temperature)
+            and self._round4(next_top_p) == self._round4(self._top_p)
+        ):
+            return
         with self._lock:
-            self._write_unlocked(normalized)
+            self._write_unlocked(normalized, next_temperature, next_top_p)
 
     def reset(self) -> None:
         with self._lock:
-            self._write_unlocked(self.default_completion_model)
+            self._write_unlocked(self.default_completion_model, self.default_temperature, self.default_top_p)
 
     @property
     def completion_model(self) -> str:
         return self._completion_model or self.default_completion_model
+
+    @property
+    def temperature(self) -> float:
+        return self._temperature if self._temperature is not None else self.default_temperature
+
+    @property
+    def top_p(self) -> float:
+        return self._top_p if self._top_p is not None else self.default_top_p
 
     @property
     def summary_model(self) -> str:
@@ -621,6 +737,10 @@ class ModelConfigManager:
             "completion_model": self.completion_model,
             "default_model": self.default_completion_model,
             "summary_model": self.summary_model,
+            "temperature": self.temperature,
+            "default_temperature": self.default_temperature,
+            "top_p": self.top_p,
+            "default_top_p": self.default_top_p,
             "updated_at": self.updated_at,
             "suggestions": self.suggestions,
         }
@@ -714,6 +834,8 @@ model_config_manager = ModelConfigManager(
     DEFAULT_OPENAI_COMPLETION_MODEL,
     OPENAI_SUMMARY_OVERRIDE,
     OPENAI_MODEL_SUGGESTIONS,
+    DEFAULT_OPENAI_TEMPERATURE,
+    DEFAULT_OPENAI_TOP_P,
 )
 system_prompt_manager = SystemPromptManager(SYSTEM_PROMPT_FILE, DEFAULT_SYSTEM_PROMPT)
 PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", PERSONALITIES_DEFAULT_FALLBACK).strip().lower() or PERSONALITIES_DEFAULT_FALLBACK
@@ -1392,12 +1514,12 @@ def chat():
                     "messages": session["messages"],
                     "stream": True,
                 }
-                
+
                 # GPT-4 için temperature ve top_p ekle
                 if not is_gpt5:
-                    params["temperature"] = 0.75
-                    params["top_p"] = 0.9
-                
+                    params["temperature"] = model_config_manager.temperature
+                    params["top_p"] = model_config_manager.top_p
+
                 completion = client.chat.completions.create(**params)
                 
                 for chunk in completion:
@@ -2034,9 +2156,14 @@ def admin_openai_model():
         return jsonify(model_config_manager.to_payload())
 
     payload = request.get_json(force=True) or {}
-    new_model = str(payload.get('completion_model') or '').strip()
+    if 'completion_model' in payload:
+        new_model = str(payload.get('completion_model') or '').strip()
+    else:
+        new_model = model_config_manager.completion_model
+    temperature = payload.get('temperature') if 'temperature' in payload else None
+    top_p = payload.get('top_p') if 'top_p' in payload else None
     try:
-        model_config_manager.set(new_model)
+        model_config_manager.set(new_model, temperature=temperature, top_p=top_p)
     except ValueError as exc:
         return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
     except Exception:

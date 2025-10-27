@@ -124,8 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const samplingControlsWrapper = document.getElementById('samplingControls');
   const temperatureInput = document.getElementById('temperatureInput');
   const topPInput = document.getElementById('topPInput');
+  const FALLBACK_TEMPERATURE = 0.75;
+  const FALLBACK_TOP_P = 0.9;
+  const NUMBER_EPSILON = 0.00005;
   let persistedModelValue = '';
   let defaultModelValue = '';
+  let persistedTemperature = FALLBACK_TEMPERATURE;
+  let defaultTemperature = FALLBACK_TEMPERATURE;
+  let persistedTopP = FALLBACK_TOP_P;
+  let defaultTopP = FALLBACK_TOP_P;
   let modelSuggestions = [];
 
   function hasQaAccess() {
@@ -309,6 +316,120 @@ document.addEventListener('DOMContentLoaded', () => {
     if (topPInput) topPInput.disabled = shouldDisable;
   }
 
+  function clampAndRound(value, min, max) {
+    if (!Number.isFinite(value)) {
+      return Math.round(min * 10000) / 10000;
+    }
+    const clamped = Math.min(Math.max(value, min), max);
+    return Math.round(clamped * 10000) / 10000;
+  }
+
+  function approxEqual(a, b, epsilon = NUMBER_EPSILON) {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+    return Math.abs(a - b) <= epsilon;
+  }
+
+  function formatNumber(value, digits = 4) {
+    if (!Number.isFinite(value)) return '';
+    const rounded = Math.round(value * 10 ** digits) / 10 ** digits;
+    return rounded.toFixed(digits).replace(/\.?0+$/, '');
+  }
+
+  function setSamplingInputs(temperature, topP) {
+    if (temperatureInput) {
+      temperatureInput.value = formatNumber(temperature ?? persistedTemperature);
+    }
+    if (topPInput) {
+      topPInput.value = formatNumber(topP ?? persistedTopP);
+    }
+  }
+
+  function parseSamplingInput(inputEl, min, max, label, fallbackValue) {
+    if (!inputEl) {
+      return { value: clampAndRound(fallbackValue, min, max), error: null };
+    }
+    if (inputEl.disabled) {
+      return { value: clampAndRound(fallbackValue, min, max), error: null };
+    }
+    const raw = (inputEl.value ?? '').trim();
+    if (!raw) {
+      return { value: clampAndRound(fallbackValue, min, max), error: `${label} alanı boş olamaz.` };
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) {
+      return { value: clampAndRound(fallbackValue, min, max), error: `${label} için geçerli bir sayı girin.` };
+    }
+    if (parsed < min || parsed > max) {
+      return {
+        value: clampAndRound(parsed, min, max),
+        error: `${label} değeri ${formatNumber(min, 2)} ile ${formatNumber(max, 2)} aralığında olmalıdır.`,
+      };
+    }
+    return { value: clampAndRound(parsed, min, max), error: null };
+  }
+
+  function collectSamplingState() {
+    const temperatureState = parseSamplingInput(temperatureInput, 0, 2, 'Temperature', persistedTemperature);
+    if (temperatureState.error) {
+      return {
+        valid: false,
+        message: temperatureState.error,
+        temperature: temperatureState.value,
+        top_p: persistedTopP,
+        dirtyTemperature: false,
+        dirtyTopP: false,
+      };
+    }
+    const topPState = parseSamplingInput(topPInput, 0, 1, 'Top-p', persistedTopP);
+    if (topPState.error) {
+      return {
+        valid: false,
+        message: topPState.error,
+        temperature: temperatureState.value,
+        top_p: topPState.value,
+        dirtyTemperature: false,
+        dirtyTopP: false,
+      };
+    }
+    return {
+      valid: true,
+      message: null,
+      temperature: temperatureState.value,
+      top_p: topPState.value,
+      dirtyTemperature: !approxEqual(temperatureState.value, persistedTemperature),
+      dirtyTopP: !approxEqual(topPState.value, persistedTopP),
+    };
+  }
+
+  function applyModelConfigData(data) {
+    modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+    persistedModelValue = typeof data?.completion_model === 'string' ? data.completion_model.trim() : '';
+    const previousDefaultModel = defaultModelValue;
+    defaultModelValue = typeof data?.default_model === 'string'
+      ? data.default_model.trim()
+      : (previousDefaultModel || persistedModelValue);
+    const defaultTempCandidate = (typeof data?.default_temperature === 'number' && Number.isFinite(data?.default_temperature))
+      ? data?.default_temperature
+      : FALLBACK_TEMPERATURE;
+    const persistedTempCandidate = (typeof data?.temperature === 'number' && Number.isFinite(data?.temperature))
+      ? data?.temperature
+      : defaultTempCandidate;
+    const defaultTopCandidate = (typeof data?.default_top_p === 'number' && Number.isFinite(data?.default_top_p))
+      ? data?.default_top_p
+      : FALLBACK_TOP_P;
+    const persistedTopCandidate = (typeof data?.top_p === 'number' && Number.isFinite(data?.top_p))
+      ? data?.top_p
+      : defaultTopCandidate;
+
+    defaultTemperature = clampAndRound(defaultTempCandidate, 0, 2);
+    persistedTemperature = clampAndRound(persistedTempCandidate, 0, 2);
+    defaultTopP = clampAndRound(defaultTopCandidate, 0, 1);
+    persistedTopP = clampAndRound(persistedTopCandidate, 0, 1);
+
+    populateModelOptions(persistedModelValue);
+    setSamplingInputs(persistedTemperature, persistedTopP);
+  }
+
   function populateModelOptions(selectedValue) {
     if (!modelSelectInput) return;
     const suggestions = Array.isArray(modelSuggestions) ? modelSuggestions : [];
@@ -355,14 +476,26 @@ document.addEventListener('DOMContentLoaded', () => {
       saveModelBtn.disabled = true;
       return;
     }
+    const samplingState = collectSamplingState();
+    if (!samplingState.valid) {
+      showModelStatus(samplingState.message || 'Geçersiz değer.', 'danger');
+      saveModelBtn.disabled = true;
+      return;
+    }
     const candidate = getSelectedModelValue();
     if (!candidate) {
       showModelStatus('Model adı boş olamaz.', 'warning');
       saveModelBtn.disabled = true;
       return;
     }
-    if (candidate === persistedModelValue) {
-      const suffix = candidate ? ` (${candidate})` : '';
+    const dirtyModel = candidate !== persistedModelValue;
+    const hasChanges = dirtyModel || samplingState.dirtyTemperature || samplingState.dirtyTopP;
+    if (!hasChanges) {
+      const parts = [];
+      if (candidate) parts.push(candidate);
+      if (Number.isFinite(persistedTemperature)) parts.push(`T=${formatNumber(persistedTemperature, 3)}`);
+      if (Number.isFinite(persistedTopP)) parts.push(`top-p=${formatNumber(persistedTopP, 3)}`);
+      const suffix = parts.length ? ` (${parts.join(', ')})` : '';
       showModelStatus(`Kaydedildi.${suffix}`, 'success');
       saveModelBtn.disabled = true;
     } else {
@@ -418,20 +551,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return resp.json();
       })
       .then((data) => {
-        modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
-        persistedModelValue = data?.completion_model || '';
-        defaultModelValue = data?.default_model || persistedModelValue;
-        populateModelOptions(persistedModelValue);
+        applyModelConfigData(data);
         setModelControlsEnabled(true);
-        handleModelInputChange();
         updateSamplingControlsState(getSelectedModelValue());
+        handleModelInputChange();
         return data;
       })
       .catch((err) => {
         setModelControlsEnabled(true);
-        handleModelInputChange();
         showModelStatus(err.message || 'Model bilgisi alınamadı.', 'danger');
         updateSamplingControlsState(getSelectedModelValue());
+        handleModelInputChange();
         throw err;
       });
   }
@@ -443,6 +573,16 @@ document.addEventListener('DOMContentLoaded', () => {
       showModelStatus('Model adı boş olamaz.', 'warning');
       if (modelSelectInput.value === '__custom__') {
         modelCustomInput?.focus();
+      }
+      return;
+    }
+    const samplingState = collectSamplingState();
+    if (!samplingState.valid) {
+      showModelStatus(samplingState.message || 'Geçersiz değer.', 'danger');
+      if (samplingState.message?.includes('Temperature') && temperatureInput && !temperatureInput.disabled) {
+        temperatureInput.focus();
+      } else if (samplingState.message?.includes('Top-p') && topPInput && !topPInput.disabled) {
+        topPInput.focus();
       }
       return;
     }
@@ -458,7 +598,11 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('/admin/api/openai/model', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completion_model: nextValue }),
+      body: JSON.stringify({
+        completion_model: nextValue,
+        temperature: samplingState.temperature,
+        top_p: samplingState.top_p,
+      }),
     })
       .then((resp) => {
         if (resp.status === 401) {
@@ -477,13 +621,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return resp.json();
       })
       .then((data) => {
-        modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : modelSuggestions;
-        persistedModelValue = data?.completion_model || nextValue;
-        defaultModelValue = data?.default_model || defaultModelValue;
-        populateModelOptions(persistedModelValue);
+        applyModelConfigData(data);
         setModelControlsEnabled(true);
+        updateSamplingControlsState(getSelectedModelValue());
         handleModelInputChange();
-        updateSamplingControlsState(persistedModelValue);
       })
       .catch((err) => {
         setModelControlsEnabled(true);
@@ -524,13 +665,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return resp.json();
       })
       .then((data) => {
-        modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : modelSuggestions;
-        persistedModelValue = data?.completion_model || defaultModelValue;
-        defaultModelValue = data?.default_model || defaultModelValue;
-        populateModelOptions(persistedModelValue);
+        applyModelConfigData(data);
         setModelControlsEnabled(true);
+        updateSamplingControlsState(getSelectedModelValue());
         handleModelInputChange();
-        updateSamplingControlsState(persistedModelValue);
       })
       .catch((err) => {
         setModelControlsEnabled(true);
@@ -2808,6 +2946,28 @@ document.addEventListener('DOMContentLoaded', () => {
     modelCustomInput.addEventListener('input', () => {
       updateSamplingControlsState(getSelectedModelValue());
       handleModelInputChange();
+    });
+  }
+  if (temperatureInput) {
+    temperatureInput.addEventListener('input', () => {
+      handleModelInputChange();
+    });
+    temperatureInput.addEventListener('blur', () => {
+      const state = parseSamplingInput(temperatureInput, 0, 2, 'Temperature', persistedTemperature);
+      if (!state.error) {
+        temperatureInput.value = formatNumber(state.value);
+      }
+    });
+  }
+  if (topPInput) {
+    topPInput.addEventListener('input', () => {
+      handleModelInputChange();
+    });
+    topPInput.addEventListener('blur', () => {
+      const state = parseSamplingInput(topPInput, 0, 1, 'Top-p', persistedTopP);
+      if (!state.error) {
+        topPInput.value = formatNumber(state.value);
+      }
     });
   }
   if (saveModelBtn) {

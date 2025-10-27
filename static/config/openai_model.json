@@ -1,4 +1,6 @@
 {
   "completion_model": "gpt-4.1",
-  "updated_at": "2025-10-15T08:50:41Z"
+  "temperature": 0.7,
+  "top_p": 0.9,
+  "updated_at": "2025-10-27T12:07:27Z"
 }
