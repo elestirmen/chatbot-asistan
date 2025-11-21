@@ -1645,6 +1645,6 @@ Bu proje ile birlikte gelen `LICENSE` dosyasına bakın.
 
 ---
 
-**Son Güncelleme:** 2024  
+**Son Güncelleme:** 2025  
 **Versiyon:** Stabil RAG v3.3  
 **Dokümantasyon:** Kapsamlı Tutorial
