@@ -1,7 +1,7 @@
 # Kapadokya Üniversitesi Chatbot - Kapsamlı Kullanım Kılavuzu
 
 **Versiyon:** Stabil RAG v3.3  
-**Son Güncelleme:** 2024
+**Son Güncelleme:** 2025
 
 Flask tabanlı, RAG (Retrieval-Augmented Generation) destekli ve SSE (Server-Sent Events) ile akışlı cevaplar veren gelişmiş bir sohbet uygulaması. Sunucu tarafı oturum yönetimi Redis ile yapılır; vektör arama için SentenceTransformers ve hibrit BM25 arama, yanıt üretimi için OpenAI kullanılır.
 
@@ -18,13 +18,34 @@ Flask tabanlı, RAG (Retrieval-Augmented Generation) destekli ve SSE (Server-Sen
 5. [Yapılandırma](#yapılandırma)
 6. [Kullanıcı Kılavuzu](#kullanıcı-kılavuzu)
 7. [Admin Panel Kılavuzu](#admin-panel-kılavuzu)
+   - [Giriş](#giriş)
+   - [Soru-Cevap Yönetimi](#1-soru-cevap-yönetimi)
+   - [Chat Logları](#2-chat-logları)
+   - [Dil Modelleri](#3-dil-modelleri)
+   - [Kişilikler](#4-kişilikler)
+   - [Sistem Promptu Yönetimi](#sistem-promptu-yönetimi)
+   - [İstatistikler ve Analitik](#istatistikler-ve-analitik)
 8. [Geliştirici Kılavuzu](#geliştirici-kılavuzu)
+   - [API Endpoints](#api-endpoints)
+   - [Kod Yapısı](#kod-yapısı)
 9. [RAG Sistemi Detayları](#rag-sistemi-detayları)
+   - [Hibrit Arama Algoritması](#hibrit-arama-algoritması)
+   - [Dinamik Eşik Hesaplama](#dinamik-eşik-hesaplama)
+   - [RAG Context Formatı](#rag-context-formatı)
+   - [Özetleme Mekanizması](#özetleme-mekanizması)
 10. [Sorun Giderme](#sorun-giderme)
+    - [Yaygın Hatalar ve Çözümleri](#yaygın-hatalar-ve-çözümleri)
+    - [Log Kontrolü](#log-kontrolü)
+    - [Performans Optimizasyonu](#performans-optimizasyonu)
+11. [Ek Kaynaklar](#ek-kaynaklar)
+12. [Sürüm Notları](#sürüm-notları)
+13. [Katkıda Bulunma](#katkıda-bulunma)
+14. [Lisans](#lisans)
+15. [Teşekkürler](#teşekkürler)
 
 ---
 
-## 🎯 Genel Bakış
+## 🎯 Genel Bakış {#genel-bakış}
 
 Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap desteği sağlamak için geliştirilmiştir. Sistem, önceden tanımlanmış soru-cevap veritabanından en uygun cevapları bulmak için hibrit arama (vektör + keyword) kullanır ve OpenAI GPT modelleri ile doğal dil işleme yapar.
 
@@ -39,7 +60,7 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 
 ---
 
-## ✨ Özellikler
+## ✨ Özellikler {#özellikler}
 
 ### Kullanıcı Özellikleri
 
@@ -69,7 +90,7 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 
 ---
 
-## 🏗️ Mimari ve Teknoloji
+## 🏗️ Mimari ve Teknoloji {#mimari-ve-teknoloji}
 
 ### Backend Stack
 
@@ -99,9 +120,9 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 
 ---
 
-## 🚀 Kurulum Rehberi
+## 🚀 Kurulum Rehberi {#kurulum-rehberi}
 
-### Yerel Geliştirme Ortamı
+### Yerel Geliştirme Ortamı {#yerel-geliştirme-ortamı}
 
 #### Adım 1: Önkoşullar
 
@@ -265,7 +286,7 @@ gunicorn -w 2 -k gthread --threads 8 -b 0.0.0.0:5000 app:app
 
 ---
 
-### Sunucuya Kurulum
+### Sunucuya Kurulum {#sunucuya-kurulum}
 
 #### Otomatik Kurulum Scripti
 
@@ -391,7 +412,7 @@ sudo systemctl start kun-chatbot.service
 
 ---
 
-## ⚙️ Yapılandırma
+## ⚙️ Yapılandırma {#yapılandırma}
 
 ### Çevre Değişkenleri Detayları
 
@@ -448,7 +469,7 @@ sudo systemctl start kun-chatbot.service
 
 ---
 
-## 👤 Kullanıcı Kılavuzu
+## 👤 Kullanıcı Kılavuzu {#kullanıcı-kılavuzu}
 
 ### İlk Kullanım
 
@@ -539,9 +560,9 @@ Uzun sohbetlerde sistem otomatik olarak özetleme yapar:
 
 ---
 
-## 🔧 Admin Panel Kılavuzu
+## 🔧 Admin Panel Kılavuzu {#admin-panel-kılavuzu}
 
-### Giriş
+### Giriş {#giriş}
 
 1. **Admin Paneline Erişim:** `http://localhost:5000/admin` (veya sunucu adresiniz)
 2. **Giriş Yap:** Sağ üstteki "Giriş Yap" butonuna tıklayın
@@ -552,7 +573,7 @@ Uzun sohbetlerde sistem otomatik olarak özetleme yapar:
 - **Admin:** Tüm özelliklere erişim (kişilikler, sistem promptu, model ayarları, loglar)
 - **Editor:** Sadece soru-cevap yönetimi (Q&A ekleme/düzenleme/silme)
 
-### Sekmeler
+### Sekmeler {#sekmeler}
 
 Admin panel 4 ana sekmeye sahiptir:
 
@@ -563,7 +584,7 @@ Admin panel 4 ana sekmeye sahiptir:
 
 ---
 
-### 1. Soru-Cevap Yönetimi
+### 1. Soru-Cevap Yönetimi {#1-soru-cevap-yönetimi}
 
 #### Dosya Seçimi
 
@@ -622,7 +643,7 @@ Admin panel 4 ana sekmeye sahiptir:
 
 ---
 
-### 2. Chat Logları
+### 2. Chat Logları {#2-chat-logları}
 
 #### Oturum Listesi
 
@@ -679,7 +700,7 @@ Bir oturuma tıklayarak detayları görebilirsiniz:
 
 ---
 
-### 3. Dil Modelleri
+### 3. Dil Modelleri {#3-dil-modelleri}
 
 #### Model Seçimi
 
@@ -724,7 +745,7 @@ değerlerine döner.
 
 ---
 
-### 4. Kişilikler
+### 4. Kişilikler {#4-kişilikler}
 
 #### Kişilik Listesi
 
@@ -794,7 +815,7 @@ Tüm kişilikler tabloda listelenir:
 
 ---
 
-### Sistem Promptu Yönetimi
+### Sistem Promptu Yönetimi {#sistem-promptu-yönetimi}
 
 **Erişim:** Admin panelinde "Sistem Promptu" sekmesi (bazı versiyonlarda)
 
@@ -818,7 +839,7 @@ Talimatlar:
 
 ---
 
-### İstatistikler ve Analitik
+### İstatistikler ve Analitik {#istatistikler-ve-analitik}
 
 #### Genel İstatistikler
 
@@ -843,9 +864,9 @@ Admin panel ana sayfasında gösterilir:
 
 ---
 
-## 💻 Geliştirici Kılavuzu
+## 💻 Geliştirici Kılavuzu {#geliştirici-kılavuzu}
 
-### API Endpoints
+### API Endpoints {#api-endpoints}
 
 #### Kullanıcı Endpoints
 
@@ -1231,7 +1252,7 @@ Admin panel ana sayfasında gösterilir:
 
 ---
 
-### Kod Yapısı
+### Kod Yapısı {#kod-yapısı}
 
 #### Ana Modüller
 
@@ -1290,9 +1311,9 @@ Loglama ve Analitik
 
 ---
 
-## 🔍 RAG Sistemi Detayları
+## 🔍 RAG Sistemi Detayları {#rag-sistemi-detayları}
 
-### Hibrit Arama Algoritması
+### Hibrit Arama Algoritması {#hibrit-arama-algoritması}
 
 Sistem iki farklı arama yöntemini birleştirir:
 
@@ -1311,7 +1332,7 @@ Sistem iki farklı arama yöntemini birleştirir:
 hybrid_score = (vector_similarity × 0.7) + (bm25_score × 0.3)
 ```
 
-### Dinamik Eşik Hesaplama
+### Dinamik Eşik Hesaplama {#dinamik-eşik-hesaplama}
 
 Soru uzunluğuna göre otomatik eşik:
 
@@ -1327,7 +1348,7 @@ threshold = max(0.75, 0.90 - 0.1 * log10(word_count + 1))
 
 **Mantık:** Kısa sorular daha spesifik olduğu için yüksek eşik, uzun sorular daha genel olduğu için düşük eşik.
 
-### RAG Context Formatı
+### RAG Context Formatı {#rag-context-formatı}
 
 Eşik aşıldığında sistem mesajı olarak eklenir:
 
@@ -1341,7 +1362,7 @@ Benzer Soru 2 (Benzerlik: 0.823): Kayıt tarihleri nedir?
 Örnek Cevap 2: Kayıt tarihleri üniversite web sitesinde duyurulur...
 ```
 
-### Özetleme Mekanizması
+### Özetleme Mekanizması {#özetleme-mekanizması}
 
 **Tetikleyici:** Mesaj sayısı `MAX_HISTORY_MESSAGES` (varsayılan: 50) aştığında
 
@@ -1358,9 +1379,9 @@ Benzer Soru 2 (Benzerlik: 0.823): Kayıt tarihleri nedir?
 
 ---
 
-## 🐛 Sorun Giderme
+## 🐛 Sorun Giderme {#sorun-giderme}
 
-### Yaygın Hatalar ve Çözümleri
+### Yaygın Hatalar ve Çözümleri {#yaygın-hatalar-ve-çözümleri}
 
 #### 1. `OPENAI_API_KEY env değişkeni tanımlı değil!`
 
@@ -1528,7 +1549,7 @@ ADMIN_PASSWORD="şifre-özel-karakterlerle"
 sudo systemctl restart kun-chatbot.service
 ```
 
-### Log Kontrolü
+### Log Kontrolü {#log-kontrolü}
 
 **Uygulama Logları:**
 ```bash
@@ -1557,7 +1578,7 @@ sudo tail -f /var/log/nginx/error.log
 sudo journalctl -u redis-server -f
 ```
 
-### Performans Optimizasyonu
+### Performans Optimizasyonu {#performans-optimizasyonu}
 
 **Embedding Önbelleği:**
 - İlk çalıştırmada embedding hesaplama yavaş olabilir (normal)
@@ -1585,7 +1606,7 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 
 ---
 
-## 📚 Ek Kaynaklar
+## 📚 Ek Kaynaklar {#ek-kaynaklar}
 
 ### İlgili Dosyalar
 
@@ -1603,7 +1624,7 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 
 ---
 
-## 📝 Sürüm Notları
+## 📝 Sürüm Notları {#sürüm-notları}
 
 ### Stabil RAG v3.3
 
@@ -1625,19 +1646,19 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 
 ---
 
-## 👥 Katkıda Bulunma
+## 👥 Katkıda Bulunma {#katkıda-bulunma}
 
 Bu proje Kapadokya Üniversitesi için geliştirilmiştir. Sorularınız ve önerileriniz için lütfen iletişime geçin.
 
 ---
 
-## 📄 Lisans
+## 📄 Lisans {#lisans}
 
 Bu proje ile birlikte gelen `LICENSE` dosyasına bakın.
 
 ---
 
-## 🙏 Teşekkürler
+## 🙏 Teşekkürler {#teşekkürler}
 
 - SentenceTransformers ve OpenAI topluluğuna
 - Flask ve Python ekosistemine
