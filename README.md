@@ -399,8 +399,8 @@ Type=notify
 User=www-data
 Group=www-data
 WorkingDirectory=/opt/chatbot
-Environment="PATH=/opt/chatbot/venv/bin"
-ExecStart=/opt/chatbot/venv/bin/gunicorn -w 2 -k gthread --threads 8 -b 127.0.0.1:5000 app:app
+Environment="PATH=/opt/chatbot/.venv/bin"
+ExecStart=/opt/chatbot/.venv/bin/gunicorn -w 2 -k gthread --threads 8 -b 127.0.0.1:5000 app:app
 Restart=always
 RestartSec=10
 
@@ -440,6 +440,7 @@ sudo systemctl start kun-chatbot.service
 | `DEFAULT_PERSONALITY` | ❌ | `huysuz` | Varsayılan kişilik |
 | `AVATAR_MAX_BYTES` | ❌ | `2097152` | Maksimum avatar boyutu (2MB) |
 | `EDITOR_PASSWORD` | ❌ | - | Editor şifresi (sadece Q&A) |
+| `DUZENLEYICI_PASSWORD` | ❌ | - | `EDITOR_PASSWORD` için alternatif anahtar |
 
 ### Dosya Yapısı
 
@@ -519,9 +520,7 @@ Chatbot: Kişiliği 'Huysuz Asistan' olarak ayarladım.
 
 #### Sohbet Geçmişi
 
-- "Geçmiş" butonuna tıklayarak tüm sohbetlerinizi görebilirsiniz
-- Her oturum ayrı ayrı listelenir
-- İstediğiniz oturumu seçerek devam edebilirsiniz
+Son kullanıcı arayüzünde geçmiş listeleme bulunmuyor; geçmiş kayıtlarını yalnızca admin panelindeki log ekranından inceleyebilirsiniz.
 
 #### Geri Bildirim Verme
 
