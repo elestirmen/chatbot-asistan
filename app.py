@@ -1454,7 +1454,11 @@ def chat():
         rag_hits: List[Dict[str, Any]] = []
         rag_applied = False
         similarity_threshold = dynamic_threshold(word_count)
+        soft_threshold = max(0.4, similarity_threshold - 0.15)
+        max_similarity = 0.0
+
         if top_sims:
+            max_similarity = max(float(item.get("similarity", 0.0)) for item in top_sims)
             filtered_hits = [
                 {
                     "question": sim_item["question"],
@@ -1478,6 +1482,33 @@ def chat():
                     + "\n\n".join(rag_parts)
                 )
                 session["messages"].append({"role": "system", "content": rag_content})
+            else:
+                # Benzer ama veri tabanında tam kayıt yok: temkinli cevap iste
+                if max_similarity >= soft_threshold:
+                    no_data_msg = (
+                        "[RAG] Uyarı: Bu soru öğrenci işleri / üniversite konularına benziyor, "
+                        "ancak elimde bu soruyu doğrudan cevaplayan net bir kayıt bulunmuyor. "
+                        "Kayıtlarda olmayan tarih, ücret, şart vb. ayrıntılar hakkında kesin bilgi verme; "
+                        "yalnızca genel çerçeveyi özetle ve mutlaka resmi web sitesi veya ilgili birime yönlendir. "
+                        "Emin değilsen 'bilmiyorum' demekten çekinme."
+                    )
+                    session["messages"].append({"role": "system", "content": no_data_msg})
+                else:
+                    # Muhtemelen kapsam dışı genel bir soru
+                    outside_msg = (
+                        "[RAG] Bu soru, elimdeki Kapadokya Üniversitesi öğrenci işleri verilerinin doğrudan kapsamı dışında görünüyor. "
+                        "Kullanıcıya bunun resmi veya bağlayıcı bir öğrenci işleri cevabı olmadığını açıkça belirt. "
+                        "Genel bilgi veya açıklama verirsen, bunun üniversitenin resmi görüşü olmadığını özellikle vurgula."
+                    )
+                    session["messages"].append({"role": "system", "content": outside_msg})
+        else:
+            # Hiç benzer kayıt yok: büyük ihtimalle kapsam dışı veya verisiz
+            outside_msg = (
+                "[RAG] Bu soru için elimde hiç benzer kayıt yok. "
+                "Kullanıcıya bu konuda kayıtlı veri bulunmadığını söyle; öğrenci işleriyle ilgili somut tarih/ücret/şart uydurma. "
+                "Genel bir açıklama yapacaksan da bunun resmi, doğrulanmış bilgi olmadığını net belirt."
+            )
+            session["messages"].append({"role": "system", "content": outside_msg})
 
         session["messages"].append({"role": "user", "content": message})
         if len(session["messages"]) > MAX_CONTEXT_MESSAGES:
@@ -1508,7 +1539,7 @@ def chat():
             try:
                 # GPT-5 için temperature/top_p parametrelerini kontrol et
                 is_gpt5 = completion_model_name.lower().startswith("gpt-5")
-                
+
                 params = {
                     "model": completion_model_name,
                     "messages": session["messages"],
@@ -1517,11 +1548,18 @@ def chat():
 
                 # GPT-4 için temperature ve top_p ekle
                 if not is_gpt5:
-                    params["temperature"] = model_config_manager.temperature
-                    params["top_p"] = model_config_manager.top_p
+                    base_temp = model_config_manager.temperature
+                    base_top_p = model_config_manager.top_p
+                    if rag_applied:
+                        params["temperature"] = base_temp
+                        params["top_p"] = base_top_p
+                    else:
+                        # RAG uygulanmadığında daha temkinli bir dağılım kullan
+                        params["temperature"] = min(base_temp, 0.3)
+                        params["top_p"] = min(base_top_p, 0.5)
 
                 completion = client.chat.completions.create(**params)
-                
+
                 for chunk in completion:
                     delta = chunk.choices[0].delta.content
                     if delta:

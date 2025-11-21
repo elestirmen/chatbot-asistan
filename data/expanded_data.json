@@ -2040,5 +2040,26 @@
       "Ders kayıtlı olduğum yaz okulunun notu, dönem sonu sınavıma yansıtılır mı?"
     ],
     "answer": "Evet, eğer yaz okuluna kayıtlıysanız sadece o dersin dönem sonu sınavına girebilirsiniz. Yönergeye göre, yaz okulunda açılan derslerin dönem sonu sınavına yalnızca yaz okuluna kayıtlı öğrenciler girebilir."
+  },
+  {
+    "questions": [
+      "Kapadokya Üniversitesinin Kayseri Yerleşkesi var mı?",
+      "Kayseri'de yerleşke var mı?",
+      "Kayseri'de yaşıyorum Üniversiteye nasıl ulaşabilirim?"
+    ],
+    "answer": "Üniversitenin ana yerleşkesi Nevşehir Ürgüp'te yer almaktadır. Kayseri'de ise bir öğrenci merkezimiz bulunmaktadır. İletişim: Mimarsinan, Tarsus Sk. No:88/A, 38020, Kocasinan / Kayseri\nT: (352) 233 3768\ninfo@kapadokya.edu.tr"
+  },
+  {
+    "questions": [
+      "Kapadokya Üniversite Öğrenci işleri nerede?",
+      "Öğrenci işleri nerede?"
+    ],
+    "answer": "Kapadokya Üniversite öğrenci işleri Mustafapaşa Yerleşkesi, Sağlık Yerleşkesi ve İstanbul Sabiha Gökçen Yerleşkesinde bulunmaktadır. Bilgi için info@kapadokya.edu.tr mail adresine e-posta yollayabilir ya da 0 0384 353 50 09 numaradan iletişime geçebilirsiniz."
+  },
+  {
+    "questions": [
+      "Kapadokya Meslek Yüksekokulu Müdürü/sorumlusu kimdir?"
+    ],
+    "answer": "KMYO müdürü Dr. Öğr. Üyesi Buket Köremezli'dir."
   }
 ]
