@@ -45,7 +45,8 @@ Flask tabanlı, RAG (Retrieval-Augmented Generation) destekli ve SSE (Server-Sen
 
 ---
 
-## 🎯 Genel Bakış {#genel-bakış}
+<a id="genel-bakış"></a>
+## 🎯 Genel Bakış
 
 Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap desteği sağlamak için geliştirilmiştir. Sistem, önceden tanımlanmış soru-cevap veritabanından en uygun cevapları bulmak için hibrit arama (vektör + keyword) kullanır ve OpenAI GPT modelleri ile doğal dil işleme yapar.
 
@@ -60,7 +61,8 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 
 ---
 
-## ✨ Özellikler {#özellikler}
+<a id="özellikler"></a>
+## ✨ Özellikler
 
 ### Kullanıcı Özellikleri
 
@@ -90,7 +92,8 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 
 ---
 
-## 🏗️ Mimari ve Teknoloji {#mimari-ve-teknoloji}
+<a id="mimari-ve-teknoloji"></a>
+## 🏗️ Mimari ve Teknoloji
 
 ### Backend Stack
 
@@ -120,9 +123,11 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 
 ---
 
-## 🚀 Kurulum Rehberi {#kurulum-rehberi}
+<a id="kurulum-rehberi"></a>
+## 🚀 Kurulum Rehberi
 
-### Yerel Geliştirme Ortamı {#yerel-geliştirme-ortamı}
+<a id="yerel-geliştirme-ortamı"></a>
+### Yerel Geliştirme Ortamı
 
 #### Adım 1: Önkoşullar
 
@@ -286,7 +291,8 @@ gunicorn -w 2 -k gthread --threads 8 -b 0.0.0.0:5000 app:app
 
 ---
 
-### Sunucuya Kurulum {#sunucuya-kurulum}
+<a id="sunucuya-kurulum"></a>
+### Sunucuya Kurulum
 
 #### Otomatik Kurulum Scripti
 
@@ -412,7 +418,8 @@ sudo systemctl start kun-chatbot.service
 
 ---
 
-## ⚙️ Yapılandırma {#yapılandırma}
+<a id="yapılandırma"></a>
+## ⚙️ Yapılandırma
 
 ### Çevre Değişkenleri Detayları
 
@@ -469,7 +476,8 @@ sudo systemctl start kun-chatbot.service
 
 ---
 
-## 👤 Kullanıcı Kılavuzu {#kullanıcı-kılavuzu}
+<a id="kullanıcı-kılavuzu"></a>
+## 👤 Kullanıcı Kılavuzu
 
 ### İlk Kullanım
 
@@ -560,9 +568,11 @@ Uzun sohbetlerde sistem otomatik olarak özetleme yapar:
 
 ---
 
-## 🔧 Admin Panel Kılavuzu {#admin-panel-kılavuzu}
+<a id="admin-panel-kılavuzu"></a>
+## 🔧 Admin Panel Kılavuzu
 
-### Giriş {#giriş}
+<a id="giriş"></a>
+### Giriş
 
 1. **Admin Paneline Erişim:** `http://localhost:5000/admin` (veya sunucu adresiniz)
 2. **Giriş Yap:** Sağ üstteki "Giriş Yap" butonuna tıklayın
@@ -584,7 +594,8 @@ Admin panel 4 ana sekmeye sahiptir:
 
 ---
 
-### 1. Soru-Cevap Yönetimi {#1-soru-cevap-yönetimi}
+<a id="1-soru-cevap-yönetimi"></a>
+### 1. Soru-Cevap Yönetimi
 
 #### Dosya Seçimi
 
@@ -643,7 +654,8 @@ Admin panel 4 ana sekmeye sahiptir:
 
 ---
 
-### 2. Chat Logları {#2-chat-logları}
+<a id="2-chat-logları"></a>
+### 2. Chat Logları
 
 #### Oturum Listesi
 
@@ -700,7 +712,8 @@ Bir oturuma tıklayarak detayları görebilirsiniz:
 
 ---
 
-### 3. Dil Modelleri {#3-dil-modelleri}
+<a id="3-dil-modelleri"></a>
+### 3. Dil Modelleri
 
 #### Model Seçimi
 
@@ -745,7 +758,8 @@ değerlerine döner.
 
 ---
 
-### 4. Kişilikler {#4-kişilikler}
+<a id="4-kişilikler"></a>
+### 4. Kişilikler
 
 #### Kişilik Listesi
 
@@ -815,7 +829,8 @@ Tüm kişilikler tabloda listelenir:
 
 ---
 
-### Sistem Promptu Yönetimi {#sistem-promptu-yönetimi}
+<a id="sistem-promptu-yönetimi"></a>
+### Sistem Promptu Yönetimi
 
 **Erişim:** Admin panelinde "Sistem Promptu" sekmesi (bazı versiyonlarda)
 
@@ -839,7 +854,8 @@ Talimatlar:
 
 ---
 
-### İstatistikler ve Analitik {#istatistikler-ve-analitik}
+<a id="istatistikler-ve-analitik"></a>
+### İstatistikler ve Analitik
 
 #### Genel İstatistikler
 
@@ -864,9 +880,11 @@ Admin panel ana sayfasında gösterilir:
 
 ---
 
-## 💻 Geliştirici Kılavuzu {#geliştirici-kılavuzu}
+<a id="geliştirici-kılavuzu"></a>
+## 💻 Geliştirici Kılavuzu
 
-### API Endpoints {#api-endpoints}
+<a id="api-endpoints"></a>
+### API Endpoints
 
 #### Kullanıcı Endpoints
 
@@ -1252,7 +1270,8 @@ Admin panel ana sayfasında gösterilir:
 
 ---
 
-### Kod Yapısı {#kod-yapısı}
+<a id="kod-yapısı"></a>
+### Kod Yapısı
 
 #### Ana Modüller
 
@@ -1311,9 +1330,11 @@ Loglama ve Analitik
 
 ---
 
-## 🔍 RAG Sistemi Detayları {#rag-sistemi-detayları}
+<a id="rag-sistemi-detayları"></a>
+## 🔍 RAG Sistemi Detayları
 
-### Hibrit Arama Algoritması {#hibrit-arama-algoritması}
+<a id="hibrit-arama-algoritması"></a>
+### Hibrit Arama Algoritması
 
 Sistem iki farklı arama yöntemini birleştirir:
 
@@ -1332,7 +1353,8 @@ Sistem iki farklı arama yöntemini birleştirir:
 hybrid_score = (vector_similarity × 0.7) + (bm25_score × 0.3)
 ```
 
-### Dinamik Eşik Hesaplama {#dinamik-eşik-hesaplama}
+<a id="dinamik-eşik-hesaplama"></a>
+### Dinamik Eşik Hesaplama
 
 Soru uzunluğuna göre otomatik eşik:
 
@@ -1348,7 +1370,8 @@ threshold = max(0.75, 0.90 - 0.1 * log10(word_count + 1))
 
 **Mantık:** Kısa sorular daha spesifik olduğu için yüksek eşik, uzun sorular daha genel olduğu için düşük eşik.
 
-### RAG Context Formatı {#rag-context-formatı}
+<a id="rag-context-formatı"></a>
+### RAG Context Formatı
 
 Eşik aşıldığında sistem mesajı olarak eklenir:
 
@@ -1362,7 +1385,8 @@ Benzer Soru 2 (Benzerlik: 0.823): Kayıt tarihleri nedir?
 Örnek Cevap 2: Kayıt tarihleri üniversite web sitesinde duyurulur...
 ```
 
-### Özetleme Mekanizması {#özetleme-mekanizması}
+<a id="özetleme-mekanizması"></a>
+### Özetleme Mekanizması
 
 **Tetikleyici:** Mesaj sayısı `MAX_HISTORY_MESSAGES` (varsayılan: 50) aştığında
 
@@ -1379,9 +1403,11 @@ Benzer Soru 2 (Benzerlik: 0.823): Kayıt tarihleri nedir?
 
 ---
 
-## 🐛 Sorun Giderme {#sorun-giderme}
+<a id="sorun-giderme"></a>
+## 🐛 Sorun Giderme
 
-### Yaygın Hatalar ve Çözümleri {#yaygın-hatalar-ve-çözümleri}
+<a id="yaygın-hatalar-ve-çözümleri"></a>
+### Yaygın Hatalar ve Çözümleri
 
 #### 1. `OPENAI_API_KEY env değişkeni tanımlı değil!`
 
@@ -1549,7 +1575,8 @@ ADMIN_PASSWORD="şifre-özel-karakterlerle"
 sudo systemctl restart kun-chatbot.service
 ```
 
-### Log Kontrolü {#log-kontrolü}
+<a id="log-kontrolü"></a>
+### Log Kontrolü
 
 **Uygulama Logları:**
 ```bash
@@ -1578,7 +1605,8 @@ sudo tail -f /var/log/nginx/error.log
 sudo journalctl -u redis-server -f
 ```
 
-### Performans Optimizasyonu {#performans-optimizasyonu}
+<a id="performans-optimizasyonu"></a>
+### Performans Optimizasyonu
 
 **Embedding Önbelleği:**
 - İlk çalıştırmada embedding hesaplama yavaş olabilir (normal)
@@ -1606,7 +1634,8 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 
 ---
 
-## 📚 Ek Kaynaklar {#ek-kaynaklar}
+<a id="ek-kaynaklar"></a>
+## 📚 Ek Kaynaklar
 
 ### İlgili Dosyalar
 
@@ -1624,7 +1653,8 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 
 ---
 
-## 📝 Sürüm Notları {#sürüm-notları}
+<a id="sürüm-notları"></a>
+## 📝 Sürüm Notları
 
 ### Stabil RAG v3.3
 
@@ -1646,19 +1676,22 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 
 ---
 
-## 👥 Katkıda Bulunma {#katkıda-bulunma}
+<a id="katkıda-bulunma"></a>
+## 👥 Katkıda Bulunma
 
 Bu proje Kapadokya Üniversitesi için geliştirilmiştir. Sorularınız ve önerileriniz için lütfen iletişime geçin.
 
 ---
 
-## 📄 Lisans {#lisans}
+<a id="lisans"></a>
+## 📄 Lisans
 
 Bu proje ile birlikte gelen `LICENSE` dosyasına bakın.
 
 ---
 
-## 🙏 Teşekkürler {#teşekkürler}
+<a id="teşekkürler"></a>
+## 🙏 Teşekkürler
 
 - SentenceTransformers ve OpenAI topluluğuna
 - Flask ve Python ekosistemine
