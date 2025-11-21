@@ -210,7 +210,7 @@ ADMIN_PASSWORD=güvenli-şifre-buraya
 # veya
 APP_PASSWORD=güvenli-şifre-buraya
 
-# Flask secret key (güvenlik için önerilir)
+# Flask secret key (mutlaka gerekli)
 FLASK_SECRET_KEY=rastgele-uzun-string-buraya
 ```
 
@@ -428,7 +428,7 @@ sudo systemctl start kun-chatbot.service
 | `OPENAI_API_KEY` | ✅ | - | OpenAI API anahtarı |
 | `REDIS_URL` | ✅ | - | Redis bağlantı URL'i |
 | `ADMIN_PASSWORD` veya `APP_PASSWORD` | ✅ | - | Admin panel şifresi |
-| `FLASK_SECRET_KEY` | ❌ | Rastgele üretilir | Flask session güvenliği |
+| `FLASK_SECRET_KEY` | ✅ | - | Flask session imzası (tanımlı olmazsa uygulama başlatılmaz) |
 | `OPENAI_MODEL` | ❌ | `gpt-4.1-mini` | OpenAI chat modeli |
 | `OPENAI_SUMMARY_MODEL` | ❌ | `OPENAI_MODEL` | Özetleme için model |
 | `OPENAI_REQUEST_TIMEOUT` | ❌ | `30` | İstek zaman aşımı (saniye) |
@@ -462,8 +462,7 @@ sudo systemctl start kun-chatbot.service
 │   │   └── openai_model.json
 │   └── avatars/          # Kişilik avatar dosyaları
 ├── templates/            # HTML şablonları
-│   ├── admin.html        # Admin panel
-│   └── analytics.html    # Analitik sayfası
+│   └── admin.html        # Admin panel
 ├── chat_logs/            # Sohbet logları
 │   └── <session_id>/
 │       └── chat_log_<user_id>.json
@@ -516,7 +515,6 @@ Chatbot: Kişiliği 'Huysuz Asistan' olarak ayarladım.
 #### Yeni Sohbet Başlatma
 
 - "Yeni Sohbet" butonuna tıklayın
-- Veya `/new_chat` komutunu kullanın
 - Önceki sohbet geçmişi temizlenir, yeni bir oturum başlar
 
 #### Sohbet Geçmişi
@@ -616,7 +614,7 @@ Admin panel 4 ana sekmeye sahiptir:
 
 **Adım 3:** "Kaydet" butonuna tıklayın
 
-**Not:** Kayıt sonrası embedding önbelleği otomatik yenilenir.
+**Not:** Embedding önbelleği otomatik yenilenmez; değişikliklerin aramaya yansıması için uygulamayı yeniden başlatın veya admin panelinden sistemi yeniden başlatıp önbelleği rebuild edin.
 
 #### Soru-Cevap Düzenleme
 
@@ -628,7 +626,7 @@ Admin panel 4 ana sekmeye sahiptir:
 
 1. Tabloda silmek istediğiniz satırın "Sil" butonuna tıklayın
 2. Onaylayın
-3. Embedding önbelleği otomatik yenilenir
+3. Değişikliğin aramaya yansıması için yeniden başlat/deploy sonrası embedding önbelleğini yeniden oluşturun
 
 #### Dosya İşlemleri
 
@@ -902,38 +900,44 @@ Admin panel ana sayfasında gösterilir:
   ```
 - Response: SSE stream
   ```
-  data: {"content": "Kayıt", "done": false}
-  data: {"content": " işlemleri", "done": false}
+  data: {"content": "Kayıt"}
+  data: {"content": " işlemleri"}
   ...
-  data: {"content": "", "done": true}
+  data: {"event": "end"}
   ```
 
 **`GET /chat_history`**
 - Mevcut oturumun geçmişi
 - Response:
   ```json
-  {
-    "session_id": "...",
-    "user_id": "...",
-    "logs": [...]
-  }
+  [
+    {
+      "timestamp": "2024-01-01 10:00:00",
+      "user_message": "...",
+      "assistant_response": "...",
+      "feedback": null,
+      "assistant_personality": "huysuz",
+      "retrieval_hits": [...]
+    }
+  ]
   ```
 
 **`GET /all_sessions`**
 - Kullanıcının tüm oturumları
 - Response:
   ```json
-  {
-    "sessions": [
-      {
-        "session_id": "...",
-        "user_id": "...",
-        "message_count": 10,
-        "first_message": "2024-01-01T10:00:00Z",
-        "last_message": "2024-01-01T10:30:00Z"
-      }
-    ]
-  }
+  [
+    {
+      "session_id": "sess_20240101_...",
+      "logs": [
+        {
+          "timestamp": "2024-01-01 10:00:00",
+          "user_message": "...",
+          "assistant_response": "..."
+        }
+      ]
+    }
+  ]
   ```
 
 **`POST /new_chat`**
@@ -941,9 +945,7 @@ Admin panel ana sayfasında gösterilir:
 - Response:
   ```json
   {
-    "status": "ok",
-    "session_id": "...",
-    "user_id": "..."
+    "message": "Yeni sohbet başlatıldı"
   }
   ```
 
@@ -958,8 +960,7 @@ Admin panel ana sayfasında gösterilir:
 - Response:
   ```json
   {
-    "status": "ok",
-    "personality": "huysuz"
+    "message": "Asistan kişiliği 'Huysuz Asistan' olarak değiştirildi"
   }
   ```
 
@@ -984,7 +985,7 @@ Admin panel ana sayfasında gösterilir:
 - Response:
   ```json
   {
-    "personalities": [
+    "items": [
       {
         "id": "huysuz",
         "name": "Huysuz Asistan",
@@ -992,7 +993,8 @@ Admin panel ana sayfasında gösterilir:
         "welcome_message": "...",
         "avatar_url": "..."
       }
-    ]
+    ],
+    "default": "huysuz"
   }
   ```
 
@@ -1611,7 +1613,7 @@ sudo journalctl -u redis-server -f
 **Embedding Önbelleği:**
 - İlk çalıştırmada embedding hesaplama yavaş olabilir (normal)
 - Sonraki çalıştırmalarda önbellek kullanılır (hızlı)
-- Veri dosyaları değiştiğinde otomatik yenilenir
+- Veri dosyaları değiştiğinde önbellek otomatik yenilenmez; değişikliklerin yansıması için uygulamayı yeniden başlatıp cache'i yeniden oluşturun
 
 **Redis Optimizasyonu:**
 ```bash

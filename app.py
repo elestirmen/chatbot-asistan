@@ -127,7 +127,10 @@ CORS(app)
 app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_USE_SIGNER"] = True
-app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
+FLASK_SECRET_KEY = _getenv_strip("FLASK_SECRET_KEY")
+if not FLASK_SECRET_KEY:
+    raise RuntimeError("FLASK_SECRET_KEY env değişkeni tanımlı değil!")
+app.config["SECRET_KEY"] = FLASK_SECRET_KEY
 
 REDIS_URL = os.getenv("REDIS_URL")
 if not REDIS_URL:
@@ -1753,6 +1756,7 @@ def new_chat():
     pers = session.get("current_personality", personality_manager.default)
     session["session_id"] = generate_session_id()
     session["messages"] = build_system_messages(pers)
+    session["turn_index"] = 0
     session.modified = True
     try:
         event_logger.append(_make_event(
@@ -1773,6 +1777,7 @@ def set_personality():
     session["current_personality"] = pers
     session["_default_personality_snapshot"] = personality_manager.default
     session["messages"] = build_system_messages(pers)
+    session["turn_index"] = 0
     session.modified = True
     persona_name = personality_manager.get(pers)["name"]
     try:
@@ -2464,6 +2469,7 @@ def admin_personality_set_default(slug: str):
     session['_default_personality_snapshot'] = DEFAULT_PERSONALITY
     session['current_personality'] = DEFAULT_PERSONALITY
     session['messages'] = build_system_messages(DEFAULT_PERSONALITY)
+    session["turn_index"] = 0
     session.modified = True
     return jsonify({'default': personality_manager.default})
 
@@ -2920,8 +2926,53 @@ def admin_api_analytics_summary():
                     if last_ts_local is None or ts_local > last_ts_local:
                         last_ts_local = ts_local
 
+    # NDJSON event dosyalarından toplam olay, hata ve latency bilgilerini topla
+    for fpath in _iter_event_files():
+        try:
+            with fpath.open("r", encoding="utf-8") as fp:
+                for line in fp:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        evt = json.loads(line)
+                    except Exception:
+                        continue
+
+                    ts_local = None
+                    ts = _parse_iso_z(evt.get("ts"))
+                    if ts:
+                        ts_local = ts.replace(tzinfo=timezone.utc).astimezone(SERVER_LOCAL_TZ)
+                        if from_dt_local and ts_local < from_dt_local:
+                            continue
+                        if to_dt_local and ts_local > to_dt_local:
+                            continue
+                    if season_filter:
+                        season_value = str(evt.get("season") or "").strip()
+                        if season_value != season_filter:
+                            continue
+
+                    stats['total_events'] += 1
+
+                    etype = evt.get("event_type")
+                    if etype == "assistant_error":
+                        stats['errors'] += 1
+                        err_type = str(evt.get("error_type") or "unknown")
+                        stats['errors_by_type'][err_type] = stats['errors_by_type'].get(err_type, 0) + 1
+                    if etype == "assistant_response":
+                        latency_val = evt.get("latency_ms")
+                        if isinstance(latency_val, (int, float)):
+                            latency_sum += float(latency_val)
+                            latency_count += 1
+        except Exception:
+            app.logger.exception("analytics summary event file could not be read: %s", fpath)
+
+    # Eğer event dosyası yoksa total_events'i chat loglarından türet
+    if stats['total_events'] == 0:
+        stats['total_events'] = stats['user_messages'] + stats['assistant_responses']
+
     stats['unique_sessions'] = len(sessions_seen)
-    stats['avg_latency_ms'] = int(latency_sum / latency_count) if latency_count > 0 else 0
+    stats['avg_latency_ms'] = int(latency_sum / latency_count) if latency_count > 0 else None
     stats['range']['from'] = _format_chatlog_timestamp(first_ts_local) if first_ts_local else None
     stats['range']['to'] = _format_chatlog_timestamp(last_ts_local) if last_ts_local else None
     return jsonify(stats)
