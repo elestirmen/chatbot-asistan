@@ -49,6 +49,7 @@ from openai import APIError, APITimeoutError, OpenAI, RateLimitError
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from werkzeug.utils import secure_filename
+from rank_bm25 import BM25Okapi
 
 # -----------------------------------------------------------------------------
 # Ortam Değişkenleri ve OpenAI Client
@@ -1022,15 +1023,17 @@ class EmbeddingManager:
         self.lock = FileLock(str(cache_file) + ".lock")
         self._memory_cache: Optional[Tuple[List[Dict[str, Any]], np.ndarray]] = None
         self._memory_cache_mtime: float = -1.0
+        self._bm25: Optional[BM25Okapi] = None
 
-    def load_or_create(self) -> Tuple[List[Dict[str, Any]], np.ndarray]:
+    def load_or_create(self) -> Tuple[List[Dict[str, Any]], np.ndarray, Optional[BM25Okapi]]:
         with self.lock:
             latest_mtime = self._dir_modified_time()
             if (
                 self._memory_cache is not None
+                and self._bm25 is not None
                 and math.isclose(self._memory_cache_mtime, latest_mtime)
             ):
-                return self._memory_cache
+                return self._memory_cache[0], self._memory_cache[1], self._bm25
 
             if self.cache_file.exists():
                 try:
@@ -1045,7 +1048,8 @@ class EmbeddingManager:
                         embeddings = np.array(cached["embeddings"], dtype=np.float32)
                         self._memory_cache = (data, embeddings)
                         self._memory_cache_mtime = latest_mtime
-                        return self._memory_cache
+                        self._build_bm25(data)
+                        return data, embeddings, self._bm25
                 except Exception as e:
                     print("[Embedding] cache okunamadı:", e)
             print("[Embedding] hesaplanıyor…")
@@ -1054,7 +1058,21 @@ class EmbeddingManager:
             self._save_cache(data, embeddings)
             self._memory_cache = (data, embeddings)
             self._memory_cache_mtime = latest_mtime
-            return self._memory_cache
+            self._build_bm25(data)
+            return data, embeddings, self._bm25
+
+    def _build_bm25(self, data: List[Dict[str, Any]]) -> None:
+        tokenized_corpus = []
+        for item in data:
+            q = item.get("question") or " ".join(item.get("questions", []))
+            a = item.get("answer", "")
+            text = preprocess(f"{q} {a}".strip())
+            tokenized_corpus.append(text.split())
+        if tokenized_corpus:
+            self._bm25 = BM25Okapi(tokenized_corpus)
+        else:
+            self._bm25 = None
+
 
     def _load_data(self) -> List[Dict[str, Any]]:
         all_items: list[dict[str, Any]] = []
@@ -1100,7 +1118,7 @@ class EmbeddingManager:
         mtimes = [fp.stat().st_mtime for fp in self.data_dir.glob("*.json")]
         return max(mtimes) if mtimes else 0.0
 
-    def rebuild_cache(self) -> Tuple[List[Dict[str, Any]], np.ndarray]:
+    def rebuild_cache(self) -> Tuple[List[Dict[str, Any]], np.ndarray, Optional[BM25Okapi]]:
         with self.lock:
             print("[Embedding] manuel rebuild tetiklendi")
             data = self._load_data()
@@ -1108,7 +1126,8 @@ class EmbeddingManager:
             self._save_cache(data, embeddings)
             self._memory_cache = (data, embeddings)
             self._memory_cache_mtime = self._dir_modified_time()
-            return self._memory_cache
+            self._build_bm25(data)
+            return data, embeddings, self._bm25
 
 embedding_manager = EmbeddingManager(DATA_DIR, EMBEDDING_CACHE, MODEL)
 embedding_manager.load_or_create()
@@ -1265,18 +1284,39 @@ def _extract_text_from_response(resp: Any) -> str:
 def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
     if k <= 0:
         return []
-    data, embeddings = embedding_manager.load_or_create()
+    data, embeddings, bm25 = embedding_manager.load_or_create()
     if not data or embeddings.size == 0:
         return []
-    q_emb = MODEL.encode(["query: " + preprocess(query)], normalize_embeddings=True)
-    sims = cosine_similarity(q_emb, embeddings)[0]
+    
+    # --- HİBRİT ARAMA BAŞLANGICI ---
+    # 1. Vektör Benzerliği
+    preprocessed_query = preprocess(query)
+    q_emb = MODEL.encode(["query: " + preprocessed_query], normalize_embeddings=True)
+    vector_sims = cosine_similarity(q_emb, embeddings)[0]
+    
+    # 2. BM25 Benzerliği
+    bm25_scores = np.zeros(len(data))
+    if bm25:
+        tokenized_query = preprocessed_query.split()
+        bm25_scores = np.array(bm25.get_scores(tokenized_query))
+        # Normalize BM25 scores (0-1 arası)
+        if bm25_scores.max() > 0:
+            bm25_scores = bm25_scores / bm25_scores.max()
+
+    # 3. Hibrit Skor (Reciprocal Rank Fusion - Basitleştirilmiş Ağırlıklı Toplam)
+    # Alpha: Vektörün ağırlığı (0.7 = %70 Vektör, %30 Keyword)
+    alpha = 0.7
+    hybrid_scores = (vector_sims * alpha) + (bm25_scores * (1 - alpha))
+    
+    # 4. Sıralama
     num_data = len(data)
     actual_k = min(k, num_data)
     if actual_k == num_data:
-        top_idxs = np.argsort(sims)
+        top_idxs = np.argsort(hybrid_scores)
     else:
-        top_idxs = np.argsort(sims)[-actual_k:]
+        top_idxs = np.argsort(hybrid_scores)[-actual_k:]
     top_idxs = top_idxs[::-1]
+    
     results = []
     for idx in top_idxs:
         idx = int(idx)
@@ -1285,7 +1325,9 @@ def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
         results.append({
             "question": question_text,
             "answer": item["answer"],
-            "similarity": float(sims[idx]),
+            "similarity": float(hybrid_scores[idx]), # Hibrit skor
+            "vector_score": float(vector_sims[idx]),
+            "bm25_score": float(bm25_scores[idx]),
         })
     return results
 
