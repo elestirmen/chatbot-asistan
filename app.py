@@ -894,7 +894,7 @@ CHATLOG_TZ = _load_chatlog_timezone(SERVER_LOCAL_TZ)
 # -----------------------------------------------------------------------------
 def preprocess(text: str) -> str:
     text = unicodedata.normalize("NFC", text)
-    text = text.lower()
+    text = text.replace("İ", "i").replace("I", "ı").lower()
     return " ".join(text.split())
 
 # -----------------------------------------------------------------------------
@@ -1268,7 +1268,7 @@ def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
     data, embeddings = embedding_manager.load_or_create()
     if not data or embeddings.size == 0:
         return []
-    q_emb = MODEL.encode([preprocess(query)], normalize_embeddings=True)
+    q_emb = MODEL.encode(["query: " + preprocess(query)], normalize_embeddings=True)
     sims = cosine_similarity(q_emb, embeddings)[0]
     num_data = len(data)
     actual_k = min(k, num_data)
