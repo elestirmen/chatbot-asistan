@@ -1040,18 +1040,18 @@
               <div class="col-md-6">
                 <label for="temperatureInput" class="form-label mb-1">Temperature</label>
                 <input type="number" class="form-control" id="temperatureInput" name="temperature" step="0.01" min="0" max="2" value="0.75">
-                <div class="form-text">Yanıtların çeşitliliğini belirler; 0 ise deterministik, 1+ ise daha yaratıcı sonuçlar üretir. Çoğu üretim için 0.6–0.85 aralığı dengeli kabul edilir.</div>
+                <div class="form-text">Yanıtların ne kadar çeşitli ve yaratıcı olacağını belirler: 0&apos;a yakın değerler daha tutarlı ve tahmin edilebilir, 0.6-0.85 arası çoğu senaryo için dengeli, 0.8 ve üzeri ise daha yaratıcı ama daha değişken yanıtlar üretir. Özetle, Temperature yanıtların rastlantısallığını kontrol eder; Top-p ise modelin seçim yaptığı kelime havuzunun genişliğini belirler.</div>
               </div>
               <div class="col-md-6">
                 <label for="topPInput" class="form-label mb-1">Top-p</label>
                 <input type="number" class="form-control" id="topPInput" name="top_p" step="0.01" min="0" max="1" value="0.90">
-                <div class="form-text">Çekirdek örnekleme olasılık eşiği; 0.90 değeri toplam olasılığın %90’ını kapsayan kelime havuzunu kullanır. Değeri düşürmek daha güvenli ama daha kısıtlı yanıtlar üretir.</div>
+                <div class="form-text">Modelin kelime seçerken kullandığı olasılık havuzunun (çekirdek örnekleme) genişliğini belirler: 0.7 gibi düşük değerler daha dar ve güvenli, 0.9-0.95 gibi yüksek değerler daha geniş ve yaratıcı ama daha az öngörülebilir yanıtlar üretir. Top-p, Temperature&apos;dan farklı olarak tek tek kelimelerin olasılık sıralamasına göre hangi kelimelerin kullanılabileceğini sınırlar ve genellikle Temperature ile birlikte ayarlanır.</div>
               </div>
             </div>
             <div class="alert alert-secondary mt-3 mb-0">
               <ul class="mb-0 small ps-3">
-                <li>Temperature ve Top-p birlikte çalışır; biri yükseltilirken diğeri makul seviyede tutulmalıdır.</li>
-                <li>Değerleri değiştirdikten sonra sohbeti test edin; beklenmedik davranış görürseniz <em>Kaydet</em> yerine <em>Resetle</em> butonuyla varsayılan ayarlara dönün.</li>
+                <li><strong>Temperature ve Top-p birlikte çalışır:</strong> Her ikisi de modelin yanıt üretme davranışını etkiler. İkisini de aynı anda çok yüksek tutmak (örn. Temperature 1.5 + Top-p 0.99) tutarsız ve öngörülemeyen sonuçlara yol açabilir. İkisini de çok düşük tutmak (örn. Temperature 0.1 + Top-p 0.1) ise tekrarlayan ve kısıtlı yanıtlar üretebilir. <strong>Önerilen yaklaşım:</strong> Birini yükseltirken diğerini makul seviyede tutun. Örneğin, daha yaratıcı yanıtlar için Temperature'ı 0.9'a çıkarıp Top-p'yi 0.85'te bırakabilirsiniz.</li>
+                <li><strong>Test ve geri alma:</strong> Ayarları değiştirdikten sonra mutlaka sohbeti test edin. Farklı soru tipleriyle deneyin (açık uçlu sorular, teknik sorular, yaratıcı görevler). Beklenmedik davranışlar görürseniz (yanıtların çok tutarsız olması, konudan sapması, tekrarlayan ifadeler) <em>Kaydet</em> butonuna basmadan önce <em>Resetle</em> butonuyla varsayılan ayarlara (Temperature: 0.75, Top-p: 0.90) dönün ve küçük adımlarla tekrar deneyin.</li>
               </ul>
             </div>
           </div>
