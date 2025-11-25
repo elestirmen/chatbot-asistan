@@ -184,6 +184,9 @@ pip install -r requirements.txt
 - redis>=4.0.0
 - gunicorn>=20.1.0
 - rank_bm25 (BM25 arama için)
+- fastapi>=0.100.0 (opsiyonel, şu anda kullanılmıyor)
+- uvicorn>=0.23.0 (opsiyonel, şu anda kullanılmıyor)
+- python-multipart>=0.0.6 (opsiyonel, şu anda kullanılmıyor)
 
 #### Adım 4: Çevre Değişkenlerini Ayarlayın
 
@@ -889,6 +892,14 @@ Admin panel ana sayfasında gösterilir:
 - Ana sayfa (statik HTML)
 - Response: HTML
 
+**`GET /ar` veya `GET /ar/`**
+- AR (Augmented Reality) görüntüleme sayfası
+- Response: HTML (static/ar/index.html)
+
+**`GET /ar/assets/<path:filename>`**
+- AR varlıkları (GLTF, BIN, JPG, PNG, USDZ dosyaları)
+- Response: Binary dosya
+
 **`POST /chat`**
 - SSE ile akışlı yanıt
 - Request Body:
@@ -1152,6 +1163,23 @@ Admin panel ana sayfasında gösterilir:
 **`DELETE /admin/api/files/<filename>`**
 - Dosyayı siler
 
+**`POST /admin/api/files/merge`**
+- İki dosyayı birleştirir
+- Request Body:
+  ```json
+  {
+    "source_file": "kaynak_dosya.json",
+    "target_file": "hedef_dosya.json"
+  }
+  ```
+- Response:
+  ```json
+  {
+    "ok": true,
+    "message": "Dosyalar başarıyla birleştirildi"
+  }
+  ```
+
 **`GET /admin/api/items?file=expanded_data.json`**
 - Dosyadaki tüm öğeleri getirir
 - Response:
@@ -1201,6 +1229,10 @@ Admin panel ana sayfasında gösterilir:
 **`GET /admin/api/chat/logs`**
 - Logları getirir
 - Query Parameters: `session`, `user_id`, `from`, `to`, `season`, `feedback`
+
+**`GET /admin/api/chat/logs_advanced`**
+- Gelişmiş log sorgulama
+- Query Parameters: `session`, `from`, `to`, `season`, `feedback`
 
 **`GET /admin/api/chat/search_by_feedback`**
 - Geri bildirime göre arama
@@ -1276,7 +1308,7 @@ Admin panel ana sayfasında gösterilir:
 
 #### Ana Modüller
 
-**`app.py`** - Ana uygulama dosyası (3407 satır)
+**`app.py`** - Ana uygulama dosyası (3683 satır)
 
 **Önemli Sınıflar:**
 
@@ -1297,6 +1329,11 @@ Admin panel ana sayfasında gösterilir:
 4. **`ModelConfigManager`**
    - OpenAI model yapılandırması
    - Temperature ve top_p ayarları
+
+5. **`EventLogger`**
+   - Analitik event kayıt sistemi
+   - NDJSON formatında günlük dosyalarına kayıt
+   - Thread-safe dosya yazma işlemleri
 
 **Önemli Fonksiyonlar:**
 
@@ -1389,7 +1426,7 @@ Benzer Soru 2 (Benzerlik: 0.823): Kayıt tarihleri nedir?
 <a id="özetleme-mekanizması"></a>
 ### Özetleme Mekanizması
 
-**Tetikleyici:** Mesaj sayısı `MAX_HISTORY_MESSAGES` (varsayılan: 50) aştığında
+**Tetikleyici:** Mesaj sayısı `MAX_HISTORY_MESSAGES` (varsayılan: 22) aştığında
 
 **İşlem:**
 1. İlk N sistem mesajı korunur
