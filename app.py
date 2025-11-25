@@ -752,8 +752,9 @@ class ModelConfigManager:
 
 DEFAULT_SYSTEM_PROMPT = (
     "Sen Kapadokya Üniversitesi öğrenci işleri için görev yapan bir asistanısın. "
-    "Elindeki güvenilir kaynaklar dışında bilgi uydurma. Emin olmadığın veya kayıtta bulunmayan her durumda "
-    "kullanıcıya net biçimde bilgi eksikliğini belirt ve gerekirse yönlendirme yap."
+    "Elindeki güvenilir kaynaklar dışında bilgi uydurma. İletişim bilgisi (telefon, e-posta, adres, web bağlantısı) "
+    "yalnızca kaynakta açıkça geçiyorsa paylaş; yoksa 'kayıtlı iletişim bilgisi bulunamadı' de ve resmi siteye yönlendir. "
+    "Emin olmadığın veya kayıtta bulunmayan her durumda kullanıcıya net biçimde bilgi eksikliğini belirt ve gerekirse yönlendirme yap."
 )
 # Not: Yukarıda CONFIG_DIR altında SYSTEM_PROMPT_FILE zaten tanımlandı
 # Buradaki atama, yeni konumu teyit etmek için aynı değeri korur
@@ -900,6 +901,41 @@ def preprocess(text: str) -> str:
     text = unicodedata.normalize("NFC", text)
     text = text.replace("İ", "i").replace("I", "ı").lower()
     return " ".join(text.split())
+
+EMAIL_REGEX = re.compile(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}", re.IGNORECASE)
+PHONE_REGEX = re.compile(r"\b(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{2,4})\b")
+
+
+def _looks_like_contact_query(text: str) -> bool:
+    """E-posta/telefon isteyen veya içeren kısa sorguları sıkı eşiğe sokmak için hafif dedektör."""
+    lowered = (text or "").strip().lower()
+    if not lowered:
+        return False
+    if EMAIL_REGEX.search(lowered) or PHONE_REGEX.search(lowered):
+        return True
+    if re.search(r"\b(tel|telefon|iletisim|iletişim|email|e-?posta|mail|numara)\b", lowered):
+        return True
+    digit_count = len(re.findall(r"\d", lowered))
+    if digit_count >= 7 and len(lowered) <= 80:
+        return True
+    return False
+
+
+def _extract_contact_whitelist(data_dir: Path) -> Set[str]:
+    contacts: Set[str] = set()
+    if not data_dir.exists():
+        return contacts
+    for path in data_dir.glob("*.json"):
+        try:
+            text = path.read_text("utf-8", errors="ignore")
+        except Exception:
+            continue
+        for match in EMAIL_REGEX.finditer(text):
+            contacts.add(match.group(0).lower())
+    return contacts
+
+
+CONTACT_WHITELIST = _extract_contact_whitelist(DATA_DIR)
 
 # -----------------------------------------------------------------------------
 # Yardımcı Fonksiyonlar
@@ -1439,6 +1475,9 @@ def chat():
         _turn_started_at = time.perf_counter()
         turn_index = int(session.get("turn_index", 0))
         word_count = len(message.split())
+        is_contact_query = _looks_like_contact_query(message)
+        is_short_query = word_count <= 3 or len(message.strip()) <= 20
+        hard_gate = is_contact_query or is_short_query
         completion_model_name = model_config_manager.completion_model
         summary_model_name = model_config_manager.summary_model
 
@@ -1499,11 +1538,28 @@ def chat():
         rag_hits: List[Dict[str, Any]] = []
         rag_applied = False
         similarity_threshold = dynamic_threshold(word_count)
+        if hard_gate:
+            similarity_threshold = max(similarity_threshold, 0.90)
         soft_threshold = max(0.4, similarity_threshold - 0.15)
         max_similarity = 0.0
+        max_bm25 = 0.0
+        whitelist_hint = ""
+        if is_contact_query and CONTACT_WHITELIST:
+            preview_contacts = sorted(CONTACT_WHITELIST)[:10]
+            whitelist_hint = (
+                " Yalnızca şu kayıtlı adresleri kullanabilirsin: "
+                + ", ".join(preview_contacts)
+                + ". Bunlar dışına çıkma."
+            )
+        contact_guard_msg = (
+            "[RAG] İletişim bilgisi isteyen bu soru için kayıtlı bir veri bulamadım. "
+            "Kaynakta olmayan telefon/e-posta/URL üretme; bilmiyorsan 'kayıtlı iletişim bilgisi bulunamadı' de "
+            "ve resmi web sitesine yönlendir."
+        ) + whitelist_hint
 
         if top_sims:
             max_similarity = max(float(item.get("similarity", 0.0)) for item in top_sims)
+            max_bm25 = max(float(item.get("bm25_score", 0.0)) for item in top_sims)
             filtered_hits = [
                 {
                     "question": sim_item["question"],
@@ -1513,6 +1569,9 @@ def chat():
                 for sim_item in top_sims
                 if float(sim_item.get("similarity", 0.0)) >= similarity_threshold
             ]
+            if hard_gate and max_bm25 < 0.05:
+                # Kısa/iletişim sorgularında BM25 eşleşmesi yoksa uydurma riskini azaltmak için RAG'i kapat
+                filtered_hits = []
             if filtered_hits:
                 rag_hits = filtered_hits
                 rag_applied = True
@@ -1529,7 +1588,9 @@ def chat():
                 session["messages"].append({"role": "system", "content": rag_content})
             else:
                 # Benzer ama veri tabanında tam kayıt yok: temkinli cevap iste
-                if max_similarity >= soft_threshold:
+                if is_contact_query:
+                    session["messages"].append({"role": "system", "content": contact_guard_msg})
+                elif max_similarity >= soft_threshold:
                     no_data_msg = (
                         "[RAG] Uyarı: Bu soru öğrenci işleri / üniversite konularına benziyor, "
                         "ancak elimde bu soruyu doğrudan cevaplayan net bir kayıt bulunmuyor. "
@@ -1548,12 +1609,15 @@ def chat():
                     session["messages"].append({"role": "system", "content": outside_msg})
         else:
             # Hiç benzer kayıt yok: büyük ihtimalle kapsam dışı veya verisiz
-            outside_msg = (
-                "[RAG] Bu soru için elimde hiç benzer kayıt yok. "
-                "Kullanıcıya bu konuda kayıtlı veri bulunmadığını söyle; öğrenci işleriyle ilgili somut tarih/ücret/şart uydurma. "
-                "Genel bir açıklama yapacaksan da bunun resmi, doğrulanmış bilgi olmadığını net belirt."
-            )
-            session["messages"].append({"role": "system", "content": outside_msg})
+            if is_contact_query:
+                session["messages"].append({"role": "system", "content": contact_guard_msg})
+            else:
+                outside_msg = (
+                    "[RAG] Bu soru için elimde hiç benzer kayıt yok. "
+                    "Kullanıcıya bu konuda kayıtlı veri bulunmadığını söyle; öğrenci işleriyle ilgili somut tarih/ücret/şart uydurma. "
+                    "Genel bir açıklama yapacaksan da bunun resmi, doğrulanmış bilgi olmadığını net belirt."
+                )
+                session["messages"].append({"role": "system", "content": outside_msg})
 
         session["messages"].append({"role": "user", "content": message})
         if len(session["messages"]) > MAX_CONTEXT_MESSAGES:
