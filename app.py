@@ -46,7 +46,7 @@ from flask import (
 )
 from flask_cors import CORS
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import CrossEncoder, SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from werkzeug.utils import secure_filename
 from rank_bm25 import BM25Okapi
@@ -190,8 +190,34 @@ EMBEDDING_CACHE = Path("embeddings.pkl.bz2")
 MODEL_NAME = os.getenv("MODEL_NAME", "intfloat/multilingual-e5-base")
 MODEL_PATH = os.getenv("MODEL_PATH")
 MODEL = SentenceTransformer(MODEL_PATH) if MODEL_PATH else SentenceTransformer(MODEL_NAME)
+EMBEDDING_SCHEMA_VERSION = 3  # embedding yapısı değiştiğinde cache'i yenilemek için
 DEFAULT_QA_FILE = "expanded_data.json"
 APP_VERSION = "stabil-rag-3.3"
+CROSS_ENCODER_MODEL_NAME = _getenv_strip("CROSS_ENCODER_MODEL") or "cross-encoder/ms-marco-mMiniLM-L-6-v2"
+try:
+    CROSS_ENCODER_POOL_SIZE = max(3, int(os.getenv("RERANK_POOL_SIZE", "10")))
+except ValueError:
+    CROSS_ENCODER_POOL_SIZE = 10
+_cross_encoder_lock = threading.Lock()
+_cross_encoder: Optional[CrossEncoder] = None
+
+
+def _get_cross_encoder() -> Optional[CrossEncoder]:
+    """Lazy-load cross-encoder; çevresel değişkenlerle devre dışı bırakılabilir."""
+    global _cross_encoder
+    if not CROSS_ENCODER_MODEL_NAME or CROSS_ENCODER_MODEL_NAME.lower() in {"none", "off", "disabled"}:
+        return None
+    if _cross_encoder is not None:
+        return _cross_encoder
+    with _cross_encoder_lock:
+        if _cross_encoder is not None:
+            return _cross_encoder
+        try:
+            _cross_encoder = CrossEncoder(CROSS_ENCODER_MODEL_NAME)
+        except Exception as exc:
+            print(f"[Rerank] Cross-encoder yüklenemedi: {exc}", flush=True)
+            _cross_encoder = None
+    return _cross_encoder
 
 STATIC_DIR = Path("static")
 STATIC_DIR.mkdir(exist_ok=True)
@@ -937,6 +963,111 @@ def _extract_contact_whitelist(data_dir: Path) -> Set[str]:
 
 CONTACT_WHITELIST = _extract_contact_whitelist(DATA_DIR)
 
+
+def _normalize_phone_number(text: str) -> str:
+    return re.sub(r"\D", "", text or "")
+
+
+def _extract_contacts_from_text(text: str) -> Tuple[Set[str], Set[str]]:
+    emails: Set[str] = set()
+    phones: Set[str] = set()
+    if not text:
+        return emails, phones
+    for match in EMAIL_REGEX.finditer(text):
+        emails.add(match.group(0).lower())
+    for match in PHONE_REGEX.finditer(text):
+        normalized = _normalize_phone_number(match.group(0))
+        if normalized:
+            phones.add(normalized)
+    return emails, phones
+
+
+def _build_contact_allowlist(rag_hits: List[Dict[str, Any]]) -> Tuple[Set[str], Set[str]]:
+    allowed_emails: Set[str] = set(CONTACT_WHITELIST)
+    allowed_phones: Set[str] = set()
+    for hit in rag_hits:
+        ans = hit.get("answer", "")
+        hit_emails, hit_phones = _extract_contacts_from_text(ans)
+        allowed_emails.update(hit_emails)
+        allowed_phones.update(hit_phones)
+    return allowed_emails, allowed_phones
+
+
+def _enforce_contact_policy(response_text: str, rag_hits: List[Dict[str, Any]]) -> Tuple[str, bool]:
+    """İletişim bilgisi uydurulmasını önlemek için yanıtı denetler."""
+    allowed_emails, allowed_phones = _build_contact_allowlist(rag_hits)
+    found_emails, found_phones = _extract_contacts_from_text(response_text)
+    unknown_emails = [e for e in found_emails if e not in allowed_emails]
+    unknown_phones = [p for p in found_phones if p not in allowed_phones]
+    if unknown_emails or unknown_phones:
+        safe_msg = (
+            "Kayıtlı iletişim bilgisi bulunamadı. Güncel telefon, e-posta veya adres bilgisi için "
+            "lütfen resmi web sitesini ziyaret edin ya da ilgili birime başvurun."
+        )
+        return safe_msg, True
+    return response_text, False
+
+
+def _recent_user_messages(messages: List[Dict[str, Any]], latest_user_message: str, limit: int = 3) -> List[str]:
+    """Son kullanıcı iletisini ve önceki kullanıcı mesajlarını (sistem/assistant hariç) döndür."""
+    collected: List[str] = [latest_user_message]
+    for msg in reversed(messages):
+        if msg.get("role") != "user":
+            continue
+        content = str(msg.get("content") or "").strip()
+        if not content:
+            continue
+        collected.append(content)
+        if len(collected) >= limit:
+            break
+    collected.reverse()
+    return collected
+
+
+def _build_contextual_query(
+    history: List[Dict[str, Any]],
+    latest_user_message: str,
+    model_name: str,
+) -> str:
+    """Önceki kullanıcı iletilerini kullanarak RAG için tekil, anlaşılır bir sorgu oluşturur."""
+    recent = _recent_user_messages(history, latest_user_message, limit=3)
+    if len(recent) <= 1:
+        return latest_user_message
+
+    convo_lines = []
+    for idx, text in enumerate(recent, start=1):
+        convo_lines.append(f"Kullanıcı {idx}: {text}")
+    convo_text = "\n".join(convo_lines)
+
+    prompt = [
+        {
+            "role": "system",
+            "content": (
+                "Görev: Aşağıdaki kullanıcı mesajlarını incele ve son soruyu tek başına anlaşılır, "
+                "kısa bir sorgu cümlesi olarak yeniden yaz. Önceki mesajlarda verilen ders/konu/bağlamı ekle. "
+                "Yeni bilgi ekleme, yalnızca kullanıcının söylediklerini birleştir."
+            ),
+        },
+        {"role": "user", "content": convo_text},
+    ]
+
+    try:
+        completion = client.chat.completions.create(
+            model=model_name,
+            messages=prompt,
+            temperature=0.2,
+            max_tokens=120,
+        )
+        rewritten = completion.choices[0].message.content if completion.choices else ""
+        rewritten = (rewritten or "").strip()
+        return rewritten or latest_user_message
+    except Exception:
+        try:
+            app.logger.exception("Contextual query rewrite failed")
+        except Exception:
+            pass
+        return latest_user_message
+
 # -----------------------------------------------------------------------------
 # Yardımcı Fonksiyonlar
 # -----------------------------------------------------------------------------
@@ -945,7 +1076,8 @@ def generate_session_id() -> str:
     return f"sess_{ts}_{secrets.token_hex(4)}"
 
 def dynamic_threshold(n_words: int) -> float:
-    return max(0.75, 0.90 - 0.1 * math.log10(n_words + 1))
+    # Kısa sorgular için daha yumuşak eşik; uydurma riskini azaltırken hit kaçırmayı önler
+    return max(0.60, 0.82 - 0.08 * math.log10(n_words + 1))
 
 def strip_old_rag(msgs: List[Dict[str, str]]) -> List[Dict[str, str]]:
     return [
@@ -1081,6 +1213,7 @@ class EmbeddingManager:
                     if (
                         cached["data_modified_time"] == latest_mtime
                         and cached.get("model_name") == MODEL_NAME
+                        and cached.get("schema_version") == EMBEDDING_SCHEMA_VERSION
                     ):
                         print("[Embedding] cache kullanıldı")
                         data = cached["data"]
@@ -1103,8 +1236,8 @@ class EmbeddingManager:
     def _build_bm25(self, data: List[Dict[str, Any]]) -> None:
         tokenized_corpus = []
         for item in data:
-            q = item.get("question") or " ".join(item.get("questions", []))
-            a = item.get("answer", "")
+            q = (item.get("question") or " ".join(item.get("questions", [])) or "").strip()
+            a = str(item.get("answer") or "").strip()
             text = preprocess(f"{q} {a}".strip())
             tokenized_corpus.append(text.split())
         if tokenized_corpus:
@@ -1131,9 +1264,9 @@ class EmbeddingManager:
             return np.zeros((0, dim), dtype=np.float32)
         texts: List[str] = []
         for item in data:
-            q = item.get("question") or " ".join(item.get("questions", []))
-            a = item.get("answer", "")
-            texts.append(preprocess(f"{q} {a}".strip()))
+            q = (item.get("question") or " ".join(item.get("questions", [])) or "").strip()
+            a = str(item.get("answer") or "").strip()
+            texts.append(f"passage: {preprocess(q)} answer: {preprocess(a)}")
         embs = self.model.encode(
             texts,
             batch_size=32,
@@ -1148,6 +1281,7 @@ class EmbeddingManager:
             "embeddings": embeddings.tolist(),
             "data_modified_time": self._dir_modified_time(),
             "model_name": MODEL_NAME,
+            "schema_version": EMBEDDING_SCHEMA_VERSION,
         }
         with bz2.open(self.cache_file, "wb") as fp:
             fp.write(json.dumps(payload).encode("utf-8"))
@@ -1330,7 +1464,7 @@ def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
     # --- HİBRİT ARAMA BAŞLANGICI ---
     # 1. Vektör Benzerliği
     preprocessed_query = preprocess(query)
-    q_emb = MODEL.encode(["query: " + preprocessed_query], normalize_embeddings=True)
+    q_emb = MODEL.encode([f"query: {preprocessed_query}"], normalize_embeddings=True)
     vector_sims = cosine_similarity(q_emb, embeddings)[0]
     
     # 2. BM25 Benzerliği
@@ -1347,24 +1481,37 @@ def find_most_similar(query: str, k: int = 3) -> List[Dict[str, Any]]:
     alpha = 0.7
     hybrid_scores = (vector_sims * alpha) + (bm25_scores * (1 - alpha))
     
-    # 4. Sıralama
+    # 4. İlk geri çağırma (pool) ve yeniden sıralama
     num_data = len(data)
-    actual_k = min(k, num_data)
-    if actual_k == num_data:
-        top_idxs = np.argsort(hybrid_scores)
-    else:
-        top_idxs = np.argsort(hybrid_scores)[-actual_k:]
-    top_idxs = top_idxs[::-1]
-    
+    final_k = min(k, num_data)
+    pool_k = min(num_data, max(final_k, CROSS_ENCODER_POOL_SIZE))
+    sorted_pool_idxs = np.argsort(hybrid_scores)[-pool_k:][::-1]
+    top_idxs = list(sorted_pool_idxs[:final_k])
+
+    cross_encoder = _get_cross_encoder()
+    if cross_encoder and len(sorted_pool_idxs) > 1:
+        pair_inputs = []
+        for idx in sorted_pool_idxs:
+            item = data[int(idx)]
+            question_text = item.get("question") or " ".join(item.get("questions", [])) or ""
+            passage = f"Soru: {question_text}\nCevap: {item.get('answer', '')}"
+            pair_inputs.append((query, passage))
+        try:
+            rerank_scores = cross_encoder.predict(pair_inputs)
+            reranked = sorted(zip(sorted_pool_idxs, rerank_scores), key=lambda x: x[1], reverse=True)
+            top_idxs = [int(idx) for idx, _ in reranked[:final_k]]
+        except Exception as exc:
+            print(f"[Rerank] Cross-encoder tahmini başarısız: {exc}", flush=True)
+
     results = []
     for idx in top_idxs:
         idx = int(idx)
         item = data[idx]
-        question_text = item.get("question") or " ".join(item.get("questions", []))
+        question_text = item.get("question") or " ".join(item.get("questions", [])) or ""
         results.append({
             "question": question_text,
             "answer": item["answer"],
-            "similarity": float(hybrid_scores[idx]), # Hibrit skor
+            "similarity": float(hybrid_scores[idx]),  # Hibrit skor
             "vector_score": float(vector_sims[idx]),
             "bm25_score": float(bm25_scores[idx]),
         })
@@ -1476,10 +1623,17 @@ def chat():
         turn_index = int(session.get("turn_index", 0))
         word_count = len(message.split())
         is_contact_query = _looks_like_contact_query(message)
-        is_short_query = word_count <= 3 or len(message.strip()) <= 20
-        hard_gate = is_contact_query or is_short_query
         completion_model_name = model_config_manager.completion_model
         summary_model_name = model_config_manager.summary_model
+        # Geçmişe bakarak RAG sorgusunu yeniden yaz
+        contextual_query = _build_contextual_query(
+            session.get("messages", [])[SYSTEM_PREFIX_LENGTH:],
+            message,
+            model_name=summary_model_name,
+        )
+        rag_word_count = len(contextual_query.split())
+        is_short_query = rag_word_count <= 3 or len(contextual_query.strip()) <= 20
+        hard_gate = is_contact_query or is_short_query
 
         if message.startswith("/"):
             cmd = message[1:].strip().lower()
@@ -1531,16 +1685,16 @@ def chat():
                 session.modified = True
 
         try:
-            top_sims = find_most_similar(message, k=3)
+            top_sims = find_most_similar(contextual_query, k=3)
         except Exception:
             app.logger.exception("RAG benzerlik araması başarısız oldu")
             top_sims = []
         rag_hits: List[Dict[str, Any]] = []
         rag_applied = False
-        similarity_threshold = dynamic_threshold(word_count)
+        similarity_threshold = dynamic_threshold(rag_word_count)
         if hard_gate:
-            similarity_threshold = max(similarity_threshold, 0.90)
-        soft_threshold = max(0.4, similarity_threshold - 0.15)
+            similarity_threshold = max(similarity_threshold, 0.70)
+        soft_threshold = max(0.35, similarity_threshold - 0.15)
         max_similarity = 0.0
         max_bm25 = 0.0
         whitelist_hint = ""
@@ -1569,9 +1723,6 @@ def chat():
                 for sim_item in top_sims
                 if float(sim_item.get("similarity", 0.0)) >= similarity_threshold
             ]
-            if hard_gate and max_bm25 < 0.05:
-                # Kısa/iletişim sorgularında BM25 eşleşmesi yoksa uydurma riskini azaltmak için RAG'i kapat
-                filtered_hits = []
             if filtered_hits:
                 rag_hits = filtered_hits
                 rag_applied = True
@@ -1645,14 +1796,16 @@ def chat():
         
         def generate(current_session_id: str, current_user_id: str):
             collected: list[str] = []
+            full_resp: str = ""
             try:
                 # GPT-5 için temperature/top_p parametrelerini kontrol et
                 is_gpt5 = completion_model_name.lower().startswith("gpt-5")
+                should_stream = not is_contact_query
 
                 params = {
                     "model": completion_model_name,
                     "messages": session["messages"],
-                    "stream": True,
+                    "stream": should_stream,
                 }
 
                 # GPT-4 için temperature ve top_p ekle
@@ -1667,13 +1820,21 @@ def chat():
                         params["temperature"] = min(base_temp, 0.3)
                         params["top_p"] = min(base_top_p, 0.5)
 
-                completion = client.chat.completions.create(**params)
-
-                for chunk in completion:
-                    delta = chunk.choices[0].delta.content
-                    if delta:
-                        collected.append(delta)
-                        yield f"data: {json.dumps({'content': delta})}\n\n"
+                if should_stream:
+                    completion = client.chat.completions.create(**params)
+                    for chunk in completion:
+                        delta = chunk.choices[0].delta.content
+                        if delta:
+                            collected.append(delta)
+                            yield f"data: {json.dumps({'content': delta})}\n\n"
+                    full_resp = "".join(collected)
+                else:
+                    params["stream"] = False
+                    completion = client.chat.completions.create(**params)
+                    full_resp = completion.choices[0].message.content if completion.choices else ""
+                    guarded_resp, replaced = _enforce_contact_policy(full_resp or "", rag_hits)
+                    full_resp = guarded_resp
+                    yield f"data: {json.dumps({'content': full_resp})}\n\n"
             except APITimeoutError:
                 app.logger.warning(
                     "OpenAI zaman aşımı: session=%s user=%s", current_session_id, current_user_id
@@ -1751,7 +1912,8 @@ def chat():
                 yield f"data: {json.dumps(payload)}\n\n"
                 return
 
-            full_resp = "".join(collected)
+            if not full_resp:
+                full_resp = "".join(collected)
             session["messages"].append({"role": "assistant", "content": full_resp})
             session.modified = True
             

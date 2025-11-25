@@ -2061,5 +2061,13 @@
       "Kapadokya Meslek Yüksekokulu Müdürü/sorumlusu kimdir?"
     ],
     "answer": "KMYO müdürü Dr. Öğr. Üyesi Buket Köremezli'dir."
+  },
+  {
+    "questions": [
+      "üniversitenin telefon numarası ne peki?",
+      "Telefon numarası ne?",
+      "hangi numarayı arayacağım?"
+    ],
+    "answer": "0(384) 353 5009 numarasından ulaşabilirsiniz."
   }
 ]
