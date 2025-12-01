@@ -3485,13 +3485,22 @@ def admin_api_chat_global_search():
     sort_order = request.args.get('sort', 'desc').lower()
     
     try:
-        limit = int(request.args.get('limit', '100'))
         page = max(1, int(request.args.get('page', 1)))
         per_page = min(100, max(10, int(request.args.get('per_page', 25))))
     except ValueError:
-        limit = 100
         page = 1
         per_page = 25
+
+    # Optional hard cap for callers that explicitly request it; default is no cap
+    max_results: Optional[int] = None
+    limit_param = request.args.get('limit')
+    if limit_param:
+        try:
+            parsed_limit = int(limit_param)
+            if parsed_limit > 0:
+                max_results = parsed_limit
+        except ValueError:
+            max_results = None
     
     # Parse date range - use local time instead of UTC
     now = datetime.now(SERVER_LOCAL_TZ)
@@ -3577,14 +3586,14 @@ def admin_api_chat_global_search():
                     'season': _season_from_ts(e.get('timestamp')),
                 })
                 
-                # Early break for efficiency
-                if len(results) >= limit:
+                # Early break for optional caller-provided cap
+                if max_results and len(results) >= max_results:
                     break
             
-            if len(results) >= limit:
+            if max_results and len(results) >= max_results:
                 break
         
-        if len(results) >= limit:
+        if max_results and len(results) >= max_results:
             break
     
     # Sort results

@@ -2777,23 +2777,90 @@ document.addEventListener('DOMContentLoaded', () => {
     // Loading state will be updated by updateResultsDisplay
   }
 
-  function exportResults(format) {
+  async function fetchAllForExport() {
+    // If no filter context, fall back to currentResults snapshot
+    if (!currentFilter || !currentFilter.mode) {
+      return currentResults.slice();
+    }
+
+    const filter = Object.assign({}, currentFilter);
+    const mode = filter.mode;
+    delete filter.limit; // export tüm sonuçları alsın
+
+    // Feedback endpoint returns a flat array; request a high limit
+    if (mode === 'feedback') {
+      const params = Object.assign({}, filter, { limit: 10000 });
+      const url = buildSearchUrl(params);
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('Export isteği başarısız oldu (feedback).');
+      return await resp.json();
+    }
+
+    // Paginated endpoints (global and session)
+    const perPageCap = mode === 'session' ? 1000 : 100;
+    filter.per_page = perPageCap;
+    filter.page = 1;
+
+    const allItems = [];
+    let guard = 0;
+
+    while (true) {
+      const url = buildSearchUrl(filter);
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Export isteği başarısız oldu (sayfa ${filter.page}).`);
+      const data = await resp.json();
+      const pageItems = Array.isArray(data) ? data : (data.items || []);
+      allItems.push(...pageItems);
+
+      const pagination = data.pagination || {};
+      const hasNext =
+        pagination.has_next === true ||
+        (pagination.pages && filter.page < pagination.pages) ||
+        pageItems.length === perPageCap;
+
+      if (!hasNext) break;
+      filter.page += 1;
+      guard += 1;
+      if (guard > 200) break; // safety guard
+    }
+
+    return allItems;
+  }
+
+  async function exportResults(format) {
     if (!currentResults.length) {
       alert('Dışa aktarılacak veri bulunamadı.');
       return;
     }
+
+    const $exportBtns = $('#exportResultsJson, #exportResultsXlsx, #exportResultsCsv, #exportResultsTxt');
+    const prevInfoHtml = $('#resultsInfo').html();
+    $exportBtns.prop('disabled', true);
+    $('#resultsInfo').html('<small><i class="bi bi-hourglass-split"></i> Export hazırlanıyor...</small>');
     
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    
-    if (format === 'json') {
-      const jsonData = JSON.stringify(currentResults, null, 2);
-      downloadFile(`chat_logs_${timestamp}.json`, jsonData, 'application/json');
-    } else if (format === 'csv') {
-      const csvContent = convertToCSV(currentResults);
-      downloadFile(`chat_logs_${timestamp}.csv`, csvContent, 'text/csv');
-    } else if (format === 'txt') {
-      const txtContent = convertToTXT(currentResults);
-      downloadFile(`chat_logs_${timestamp}.txt`, txtContent, 'text/plain');
+    try {
+      const exportData = await fetchAllForExport();
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      
+      if (format === 'json') {
+        const jsonData = JSON.stringify(exportData, null, 2);
+        downloadFile(`chat_logs_${timestamp}.json`, jsonData, 'application/json');
+      } else if (format === 'xlsx') {
+        const xlsxContent = convertToXlsx(exportData);
+        downloadFile(`chat_logs_${timestamp}.xlsx`, xlsxContent, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      } else if (format === 'csv') {
+        const csvContent = convertToCSV(exportData);
+        downloadFile(`chat_logs_${timestamp}.csv`, csvContent, 'text/csv', { addBom: true });
+      } else if (format === 'txt') {
+        const txtContent = convertToTXT(exportData);
+        downloadFile(`chat_logs_${timestamp}.txt`, txtContent, 'text/plain', { addBom: true });
+      }
+    } catch (err) {
+      console.error('Export failed', err);
+      alert('Export hazırlanırken bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      $exportBtns.prop('disabled', false);
+      $('#resultsInfo').html(prevInfoHtml);
     }
   }
 
@@ -2817,6 +2884,189 @@ document.addEventListener('DOMContentLoaded', () => {
     return csvContent.join('\n');
   }
 
+  function convertToXlsx(data) {
+    const headers = ['Timestamp', 'Season', 'Session', 'User', 'Feedback', 'User Message', 'Assistant Response'];
+    const escapeXml = (value) => {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    const sheetRows = [];
+    const addRow = (cells, isHeader = false) => {
+      const cellXml = cells.map(val => {
+        const text = escapeXml(val);
+        return `<c t="inlineStr"><is><t>${text}</t></is></c>`;
+      }).join('');
+      sheetRows.push(`<row>${cellXml}</row>`);
+    };
+
+    addRow(headers, true);
+    data.forEach(row => {
+      addRow([
+        row.timestamp || '',
+        row.season || '',
+        row.session_id || '',
+        row.user_id || '',
+        row.feedback || '',
+        row.user_message || '',
+        row.assistant_response || ''
+      ]);
+    });
+
+    const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetData>
+    ${sheetRows.join('')}
+  </sheetData>
+</worksheet>`;
+
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Chat Logs" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`;
+
+    const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`;
+
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`;
+
+    const files = {
+      '[Content_Types].xml': contentTypesXml,
+      '_rels/.rels': relsXml,
+      'xl/workbook.xml': workbookXml,
+      'xl/_rels/workbook.xml.rels': workbookRelsXml,
+      'xl/worksheets/sheet1.xml': sheetXml
+    };
+
+    return buildZip(files);
+  }
+
+  // Minimal ZIP builder (store mode) for XLSX
+  function buildZip(files) {
+    const encoder = new TextEncoder();
+    const fileEntries = [];
+    let offset = 0;
+
+    Object.entries(files).forEach(([name, content]) => {
+      const data = typeof content === 'string' ? encoder.encode(content) : new Uint8Array(content);
+      const crc = crc32(data);
+      const size = data.length;
+      const fname = encoder.encode(name);
+
+      // Local file header
+      const localHeader = new Uint8Array(30 + fname.length);
+      const view = new DataView(localHeader.buffer);
+      view.setUint32(0, 0x04034b50, true); // signature
+      view.setUint16(4, 20, true); // version needed
+      view.setUint16(6, 0, true); // flags
+      view.setUint16(8, 0, true); // compression (store)
+      view.setUint16(10, 0, true); // mod time
+      view.setUint16(12, 0, true); // mod date
+      view.setUint32(14, crc >>> 0, true);
+      view.setUint32(18, size, true);
+      view.setUint32(22, size, true);
+      view.setUint16(26, fname.length, true);
+      view.setUint16(28, 0, true); // extra length
+      localHeader.set(fname, 30);
+
+      fileEntries.push({ name, fname, data, crc, size, offset, localHeader });
+      offset += localHeader.length + size;
+    });
+
+    // Central directory
+    const centralParts = [];
+    let centralSize = 0;
+    fileEntries.forEach(entry => {
+      const { fname, crc, size, offset: locOffset } = entry;
+      const cd = new Uint8Array(46 + fname.length);
+      const view = new DataView(cd.buffer);
+      view.setUint32(0, 0x02014b50, true); // signature
+      view.setUint16(4, 20, true); // version made by
+      view.setUint16(6, 20, true); // version needed
+      view.setUint16(8, 0, true); // flags
+      view.setUint16(10, 0, true); // compression
+      view.setUint16(12, 0, true); // mod time
+      view.setUint16(14, 0, true); // mod date
+      view.setUint32(16, crc >>> 0, true);
+      view.setUint32(20, size, true);
+      view.setUint32(24, size, true);
+      view.setUint16(28, fname.length, true);
+      view.setUint16(30, 0, true); // extra length
+      view.setUint16(32, 0, true); // comment length
+      view.setUint16(34, 0, true); // disk number
+      view.setUint16(36, 0, true); // internal attrs
+      view.setUint32(38, 0, true); // external attrs
+      view.setUint32(42, locOffset, true); // relative offset
+      cd.set(fname, 46);
+      centralParts.push(cd);
+      centralSize += cd.length;
+    });
+
+    // End of central directory
+    const end = new Uint8Array(22);
+    const endView = new DataView(end.buffer);
+    endView.setUint32(0, 0x06054b50, true); // signature
+    endView.setUint16(4, 0, true); // disk
+    endView.setUint16(6, 0, true); // start disk
+    endView.setUint16(8, fileEntries.length, true); // entries this disk
+    endView.setUint16(10, fileEntries.length, true); // total entries
+    endView.setUint32(12, centralSize, true); // size of central dir
+    endView.setUint32(16, offset, true); // offset of central dir
+    endView.setUint16(20, 0, true); // comment length
+
+    // Concatenate all parts
+    const totalSize = offset + centralSize + end.length;
+    const zip = new Uint8Array(totalSize);
+    let cursor = 0;
+    fileEntries.forEach(entry => {
+      zip.set(entry.localHeader, cursor); cursor += entry.localHeader.length;
+      zip.set(entry.data, cursor); cursor += entry.data.length;
+    });
+    centralParts.forEach(part => { zip.set(part, cursor); cursor += part.length; });
+    zip.set(end, cursor);
+    return zip;
+  }
+
+  // CRC32 for ZIP
+  const CRC_TABLE = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) {
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+
+  function crc32(buf) {
+    let c = 0 ^ (-1);
+    for (let i = 0; i < buf.length; i++) {
+      c = (c >>> 8) ^ CRC_TABLE[(c ^ buf[i]) & 0xFF];
+    }
+    return (c ^ (-1)) >>> 0;
+  }
+
   function convertToTXT(data) {
     let txtContent = `Chat Logs Export - ${new Date().toLocaleString('tr-TR')}\n`;
     txtContent += '='.repeat(60) + '\n\n';
@@ -2837,8 +3087,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return txtContent;
   }
 
-  function downloadFile(filename, content, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
+  function downloadFile(filename, content, mimeType, options = {}) {
+    // content string veya Uint8Array olabilir
+    const addBom = options.addBom === true;
+    let payload;
+    if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+      payload = content;
+    } else {
+      payload = addBom ? '\uFEFF' + content : content;
+    }
+    const blob = new Blob([payload], { type: `${mimeType};charset=utf-8` });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
@@ -3078,8 +3336,7 @@ document.addEventListener('DOMContentLoaded', () => {
       from: fromDate,
       to: toDate,
       page: 1,
-      per_page: perPage,
-      limit: (fromDate || toDate) ? 200 : 100
+      per_page: perPage
     };
     
     console.log('Global search clicked. Params:', searchParams);
@@ -3248,8 +3505,7 @@ document.addEventListener('DOMContentLoaded', () => {
       q: $('#sessionSearch').val(),
       feedback: $('#sessionFeedbackFilter').val(),
       page: 1,
-      per_page: 50,
-      limit: 200
+      per_page: 50
     };
     
     // Add session filtering (we need to enhance the backend for this)
@@ -3332,8 +3588,7 @@ document.addEventListener('DOMContentLoaded', () => {
       season: $('#seasonFilterGlobal').val(),
       sort: $('#globalSortOrder').val(),
       page: 1,
-      per_page: perPage,
-      limit: range === 'today' ? 50 : 200  // Lower limit for today
+      per_page: perPage
     };
     
     console.log('Quick filter clicked:', range, 'Search params:', searchParams);
@@ -3435,6 +3690,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Export handlers
   $('#exportResultsJson').on('click', (e) => { e.preventDefault(); exportResults('json'); });
+  $('#exportResultsXlsx').on('click', (e) => { e.preventDefault(); exportResults('xlsx'); });
   $('#exportResultsCsv').on('click', (e) => { e.preventDefault(); exportResults('csv'); });
   $('#exportResultsTxt').on('click', (e) => { e.preventDefault(); exportResults('txt'); });
 
