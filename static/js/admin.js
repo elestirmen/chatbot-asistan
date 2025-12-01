@@ -198,6 +198,16 @@ document.addEventListener('DOMContentLoaded', () => {
     positive: 'Pozitif',
   };
 
+  function formatPersonalityLabel(personality) {
+    if (!personality) return '';
+    const meta = personalityMetaCache[personality];
+    if (meta) {
+      return meta.name || personality;
+    }
+    if (themeNameMap[personality]) return themeNameMap[personality];
+    return personality;
+  }
+
   // Treat backend timestamps (e.g., 'YYYY-MM-DD HH:MM:SS') as UTC
   function parseUtcLike(ts) {
     if (!ts) return null;
@@ -2980,18 +2990,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function convertToCSV(data) {
-    const headers = ['Timestamp', 'Season', 'Session', 'User', 'Feedback', 'User Message', 'Assistant Response'];
+    const headers = [
+      'Timestamp',
+      'Season',
+      'Session',
+      'User',
+      'Assistant Personality',
+      'Feedback',
+      'User Message',
+      'Assistant Response',
+    ];
     const csvContent = [headers.join(',')];
+    const escapeCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
     
     data.forEach(row => {
       const csvRow = [
-        `"${row.timestamp || ''}"`,
-        `"${row.season || ''}"`,
-        `"${row.session_id || ''}"`,
-        `"${row.user_id || ''}"`,
-        `"${row.feedback || ''}"`,
-        `"${(row.user_message || '').replace(/"/g, '""')}"`,
-        `"${(row.assistant_response || '').replace(/"/g, '""')}"`
+        escapeCell(row.timestamp),
+        escapeCell(row.season),
+        escapeCell(row.session_id),
+        escapeCell(row.user_id),
+        escapeCell(formatPersonalityLabel(row.assistant_personality)),
+        escapeCell(row.feedback),
+        escapeCell(row.user_message),
+        escapeCell(row.assistant_response),
       ];
       csvContent.push(csvRow.join(','));
     });
@@ -3000,7 +3021,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function convertToXlsx(data) {
-    const headers = ['Timestamp', 'Season', 'Session', 'User', 'Feedback', 'User Message', 'Assistant Response'];
+    const headers = [
+      'Timestamp',
+      'Season',
+      'Session',
+      'User',
+      'Assistant Personality',
+      'Feedback',
+      'User Message',
+      'Assistant Response',
+    ];
     const escapeXml = (value) => {
       return String(value || '')
         .replace(/&/g, '&amp;')
@@ -3026,6 +3056,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.season || '',
         row.session_id || '',
         row.user_id || '',
+        formatPersonalityLabel(row.assistant_personality) || '',
         row.feedback || '',
         row.user_message || '',
         row.assistant_response || ''
@@ -3193,6 +3224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       txtContent += `Sezon: ${row.season || 'Bilinmiyor'}\n`;
       txtContent += `Oturum: ${row.session_id || 'Bilinmiyor'}\n`;
       txtContent += `Kullanıcı: ${row.user_id || 'Bilinmiyor'}\n`;
+      txtContent += `Asistan Rolü: ${formatPersonalityLabel(row.assistant_personality) || 'Bilinmiyor'}\n`;
       txtContent += `Geri Bildirim: ${row.feedback || 'Değerlendirmesiz'}\n\n`;
       txtContent += `Kullanıcı Mesajı:\n${row.user_message || 'Boş'}\n\n`;
       txtContent += `Asistan Yanıtı:\n${row.assistant_response || 'Boş'}\n\n`;
