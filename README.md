@@ -616,7 +616,14 @@ Admin panel 4 ana sekmeye sahiptir:
 
 **Adım 3:** "Kaydet" butonuna tıklayın
 
-**Not:** Embedding önbelleği otomatik yenilenmez; değişikliklerin aramaya yansıması için uygulamayı yeniden başlatın veya admin panelinden sistemi yeniden başlatıp önbelleği rebuild edin.
+**Not:** Embedding önbelleği ve iletişim bilgisi whitelist'leri otomatik yenilenmez. Değişikliklerin aramaya yansıması için:
+- Admin panelinden **"Rebuild Cache"** butonuna basın (önerilen)
+- Veya uygulamayı yeniden başlatın
+
+Rebuild Cache işlemi şunları yapar:
+- Embedding'leri yeniden oluşturur
+- BM25 indeks'i yeniler
+- Email ve telefon whitelist'lerini otomatik günceller
 
 #### Soru-Cevap Düzenleme
 
@@ -1343,6 +1350,10 @@ Admin panel ana sayfasında gösterilir:
 - `build_system_messages(personality)` - Sistem mesajları oluşturma
 - `trim_history(messages)` - Sohbet geçmişi özetleme
 - `save_chat_log(...)` - Log kaydetme
+- `_extract_contact_whitelist(data_dir)` - Email whitelist çıkarma
+- `_extract_phone_whitelist(data_dir)` - Telefon whitelist çıkarma
+- `_build_contact_allowlist(rag_hits)` - RAG hit'lerinden izinli iletişim bilgileri oluşturma
+- `_enforce_contact_policy(response, rag_hits)` - Yanıtta uydurulmuş iletişim bilgisi kontrolü
 
 #### Veri Akışı
 
@@ -1397,14 +1408,16 @@ hybrid_score = (vector_similarity × 0.7) + (bm25_score × 0.3)
 Soru uzunluğuna göre otomatik eşik:
 
 ```python
-threshold = max(0.75, 0.90 - 0.1 * log10(word_count + 1))
+threshold = max(0.60, 0.82 - 0.08 * log10(word_count + 1))
 ```
 
 **Örnekler:**
-- 1 kelime: `0.90`
-- 5 kelime: `~0.83`
-- 10 kelime: `~0.80`
-- 100 kelime: `0.75` (alt limit)
+- 1 kelime: `~0.82`
+- 5 kelime: `~0.76`
+- 10 kelime: `~0.74`
+- 100 kelime: `0.60` (alt limit)
+
+**Hard Gate:** İletişim sorguları veya çok kısa sorgular (≤3 kelime veya ≤20 karakter) için minimum eşik `0.70`'e yükseltilir.
 
 **Mantık:** Kısa sorular daha spesifik olduğu için yüksek eşik, uzun sorular daha genel olduğu için düşük eşik.
 
@@ -1422,6 +1435,84 @@ Benzer Soru 1 (Benzerlik: 0.856): Kayıt ne zaman başlıyor?
 Benzer Soru 2 (Benzerlik: 0.823): Kayıt tarihleri nedir?
 Örnek Cevap 2: Kayıt tarihleri üniversite web sitesinde duyurulur...
 ```
+
+<a id="rag-cevap-stratejisi"></a>
+### RAG Cevap Stratejisi
+
+Sistem, RAG sonuçlarına göre farklı stratejiler uygular:
+
+#### 1. Kesin Eşleşme (Eşik Aşıldı)
+- RAG context doğrudan eklenir
+- Bot kaynaklardan bilgi verir
+
+#### 2. Soft Threshold Durumu (Benzer ama Kesin Değil)
+**Tetiklenme:** `max_similarity >= soft_threshold` ama `< similarity_threshold`
+
+**Yaklaşım:**
+- Genel bilgi ve çerçeve açıklanır
+- "Genellikle", "çoğunlukla" gibi belirsizlik ifadeleri kullanılır
+- Sonunda resmi kaynağa yönlendirme yapılır (Öğrenci İşleri veya ois.kapadokya.edu.tr)
+
+#### 3. Kapsam Dışı Soru
+**Tetiklenme:** `max_similarity < soft_threshold` (ama top_sims var)
+
+**Yaklaşım:**
+- Yine de yardımcı olmaya çalışılır
+- Genel hatlarıyla bilgi paylaşılır
+- Kişisel açıklama olduğu belirtilir
+- İlgili birime yönlendirme yapılır
+
+#### 4. Hiç Kayıt Yok
+**Tetiklenme:** `top_sims` boş
+
+**Yaklaşım:**
+- Genel bilgi verilebilir (kesin bilgi olmadığı belirtilir)
+- Somut tarih/ücret/şart tahmininden kaçınılır
+- Resmi kaynağa yönlendirme yapılır
+
+**Felsefe:** "Bilmiyorum" demek yerine yapıcı yardım + resmi kaynak yönlendirmesi
+
+<a id="iletişim-bilgisi-güvenliği"></a>
+### İletişim Bilgisi Güvenliği (Contact Policy)
+
+Sistem, yanlış iletişim bilgisi (telefon/e-posta) üretimini önlemek için katmanlı bir güvenlik mekanizması kullanır:
+
+#### Whitelist Sistemi
+
+**Email Whitelist (`CONTACT_WHITELIST`):**
+- Tüm JSON dosyalarından otomatik çıkarılır
+- Uygulama başlatıldığında yüklenir
+- Rebuild cache ile yenilenir
+
+**Telefon Whitelist (`PHONE_WHITELIST`):**
+- Tüm JSON dosyalarından otomatik çıkarılır
+- Normalize edilmiş format (sadece rakamlar)
+- Uygulama başlatıldığında yüklenir
+- Rebuild cache ile yenilenir
+
+#### Policy Enforcement
+
+**`_enforce_contact_policy()` Fonksiyonu:**
+- GPT yanıtından iletişim bilgileri çıkarılır
+- Whitelist'te olmayan bilgiler tespit edilir
+- Uydurulmuş bilgi bulunursa güvenli mesaj gösterilir:
+  ```
+  "Kayıtlı iletişim bilgisi bulunamadı. Güncel telefon, e-posta veya adres bilgisi için 
+  lütfen resmi web sitesini ziyaret edin ya da ilgili birime başvurun."
+  ```
+
+#### Rebuild Cache ile Yenileme
+
+Admin panelinden **"Rebuild Cache"** butonuna basıldığında:
+1. Embedding'ler yeniden oluşturulur
+2. BM25 indeks yenilenir
+3. **Email ve telefon whitelist'leri otomatik yenilenir**
+4. Log mesajı: `[Whitelist] Yenilendi: X email, Y telefon`
+
+**Kullanım:**
+- JSON dosyalarına yeni telefon/e-posta eklendiğinde
+- Admin panelinden "Rebuild Cache" butonuna basın
+- Whitelist otomatik güncellenir (sunucu restart gerekmez)
 
 <a id="özetleme-mekanizması"></a>
 ### Özetleme Mekanizması
@@ -1649,7 +1740,12 @@ sudo journalctl -u redis-server -f
 **Embedding Önbelleği:**
 - İlk çalıştırmada embedding hesaplama yavaş olabilir (normal)
 - Sonraki çalıştırmalarda önbellek kullanılır (hızlı)
-- Veri dosyaları değiştiğinde önbellek otomatik yenilenmez; değişikliklerin yansıması için uygulamayı yeniden başlatıp cache'i yeniden oluşturun
+- Veri dosyaları değiştiğinde önbellek otomatik yenilenmez
+- **Yenileme:** Admin panelinden "Rebuild Cache" butonuna basın
+  - Embedding'ler yeniden oluşturulur
+  - BM25 indeks yenilenir
+  - Email ve telefon whitelist'leri otomatik güncellenir
+- Alternatif: Uygulamayı yeniden başlatın
 
 **Redis Optimizasyonu:**
 ```bash
