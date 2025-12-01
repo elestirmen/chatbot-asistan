@@ -665,6 +665,9 @@
                   <li><button class="dropdown-item" id="createFileBtn" disabled>
                     <i class="bi bi-file-earmark-plus text-success"></i> Yeni JSON Dosyası
                   </button></li>
+                  <li><button class="dropdown-item" id="renameFileBtn" disabled>
+                    <i class="bi bi-pencil-square text-primary"></i> Dosyayı Yeniden Adlandır
+                  </button></li>
                   <li><button class="dropdown-item" id="deleteFileBtn" disabled>
                     <i class="bi bi-trash text-danger"></i> Aktif Dosyayı Sil
                   </button></li>
@@ -901,6 +904,35 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
             <button type="submit" class="btn btn-primary" id="createFileSubmitBtn" disabled><i class="bi bi-check-lg me-1"></i>Oluştur</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Rename JSON Modal -->
+    <div class="modal fade" id="renameFileModal" tabindex="-1" aria-labelledby="renameFileModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content needs-validation" id="renameFileForm" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title" id="renameFileModalLabel"><i class="bi bi-pencil-square me-2 text-primary"></i>JSON Dosyasını Yeniden Adlandır</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Mevcut dosya</label>
+              <div class="p-2 bg-light border rounded" id="renameCurrentName"></div>
+            </div>
+            <div class="mb-3">
+              <label for="renameFilenameInput" class="form-label">Yeni dosya adı</label>
+              <input type="text" class="form-control" id="renameFilenameInput" name="new_filename" placeholder="ornek_dosya.json" pattern="^[A-Za-z0-9_.-]+(?:\\.json)?$" required>
+              <div class="invalid-feedback">Lütfen yalnızca harf, rakam, nokta, alt çizgi veya tire içeren bir ad girin.</div>
+              <div class="form-text">Uzantı `.json` değilse otomatik eklenecek.</div>
+            </div>
+            <small id="renameFileStatus" class="form-text text-muted"></small>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+            <button type="submit" class="btn btn-primary" id="renameFileSubmitBtn" disabled><i class="bi bi-check-lg me-1"></i>Kaydet</button>
           </div>
         </form>
       </div>

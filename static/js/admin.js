@@ -48,6 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const createCopySelect = document.getElementById('createCopySelect');
   const createFileStatus = document.getElementById('createFileStatus');
   const createInitialModeInputs = document.querySelectorAll('input[name="createInitialMode"]');
+  const renameFileBtn = document.getElementById('renameFileBtn');
+  const renameFileModalEl = document.getElementById('renameFileModal');
+  const renameFileModal = renameFileModalEl ? new bootstrap.Modal(renameFileModalEl) : null;
+  const renameFileForm = document.getElementById('renameFileForm');
+  const renameFilenameInput = document.getElementById('renameFilenameInput');
+  const renameCurrentName = document.getElementById('renameCurrentName');
+  const renameFileStatus = document.getElementById('renameFileStatus');
+  const renameFileSubmitBtn = document.getElementById('renameFileSubmitBtn');
   const mergeFileModalEl = document.getElementById('mergeFileModal');
   const mergeFileModal = mergeFileModalEl ? new bootstrap.Modal(mergeFileModalEl) : null;
   const mergeFileForm = document.getElementById('mergeFileForm');
@@ -1457,6 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // New buttons in dropdown
+    $('#renameFileBtn').prop('disabled', !qaAccess || !canSelect || !currentFile);
     $('#deleteFileBtn').prop('disabled', !qaAccess || !canSelect || !currentFile);
     $('#importJsonBtn').prop('disabled', !qaAccess || !canSelect || !currentFile);
     $('#exportJsonBtn').prop('disabled', !canSelect || !currentFile);
@@ -1907,6 +1916,112 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch((err) => {
         setInlineStatus(createFileStatus, err.message || 'Dosya oluşturulamadı.', 'danger');
         handleCreateFormChange();
+      });
+  }
+
+  function prepareRenameFileModal() {
+    if (!renameFileForm) return;
+    renameFileForm.reset();
+    renameFileForm.classList.remove('was-validated');
+    setInlineStatus(renameFileStatus, '');
+    if (renameCurrentName) {
+      renameCurrentName.textContent = currentFile || '-';
+    }
+    if (renameFilenameInput) {
+      renameFilenameInput.value = currentFile || '';
+      setTimeout(() => renameFilenameInput.focus(), 150);
+    }
+    if (renameFileSubmitBtn) renameFileSubmitBtn.disabled = true;
+    handleRenameFormChange();
+  }
+
+  function handleRenameFormChange() {
+    if (!renameFileSubmitBtn) return;
+    if (!hasQaAccess()) {
+      renameFileSubmitBtn.disabled = true;
+      return;
+    }
+    const raw = (renameFilenameInput?.value || '').trim();
+    const normalized = raw ? normalizeFilenameInput(raw) : '';
+    let valid = Boolean(normalized);
+    let message = '';
+    let tone = 'muted';
+
+    if (!currentFile) {
+      valid = false;
+      message = 'Önce bir dosya seçin.';
+      tone = 'warning';
+    } else if (!normalized) {
+      valid = false;
+      message = raw ? 'Geçersiz dosya adı.' : '';
+    } else if (normalized === currentFile) {
+      valid = false;
+      message = 'Yeni ad mevcut adla aynı olamaz.';
+      tone = 'warning';
+    } else {
+      const existing = matchExistingFile(normalized);
+      if (existing) {
+        valid = false;
+        message = 'Bu isimde bir dosya zaten var.';
+        tone = 'warning';
+      }
+    }
+
+    setInlineStatus(renameFileStatus, message, tone);
+    renameFileSubmitBtn.disabled = !valid;
+  }
+
+  function handleRenameFileSubmit(event) {
+    event.preventDefault();
+    if (!hasQaAccess()) {
+      if (!isAuthenticated) {
+        loginModal?.show();
+      }
+      return;
+    }
+    if (!renameFileForm || !renameFileSubmitBtn) return;
+    renameFileForm.classList.add('was-validated');
+    handleRenameFormChange();
+    if (renameFileSubmitBtn.disabled) return;
+
+    const sourceName = currentFile;
+    const raw = (renameFilenameInput?.value || '').trim();
+    const normalized = normalizeFilenameInput(raw);
+    renameFileSubmitBtn.disabled = true;
+    setInlineStatus(renameFileStatus, 'Yeniden adlandırılıyor...', 'muted');
+
+    fetch(`/admin/api/files/${encodeURIComponent(sourceName)}/rename`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_name: normalized }),
+    })
+      .then((resp) => {
+        if (!resp.ok) {
+          return resp.json().catch(() => ({})).then((data) => {
+            const message = data?.message || data?.error || 'Yeniden adlandırma başarısız.';
+            throw new Error(message);
+          });
+        }
+        return resp.json();
+      })
+      .then((data) => {
+        const newName = data?.new_name || normalized;
+        return reloadFileList(newName).then(() => {
+          if (qaTable) {
+            qaTable.ajax.reload(null, false);
+          }
+          setInlineStatus(renameFileStatus, 'Dosya adı güncellendi.', 'success');
+          setTimeout(() => {
+            renameFileModal?.hide();
+            setInlineStatus(renameFileStatus, '');
+          }, 600);
+        });
+      })
+      .catch((err) => {
+        setInlineStatus(renameFileStatus, err.message || 'Yeniden adlandırılamadı.', 'danger');
+      })
+      .finally(() => {
+        renameFileSubmitBtn.disabled = false;
       });
   }
 
@@ -3091,12 +3206,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // content string veya Uint8Array olabilir
     const addBom = options.addBom === true;
     let payload;
+    let type = mimeType;
     if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
       payload = content;
     } else {
       payload = addBom ? '\uFEFF' + content : content;
+      type = `${mimeType};charset=utf-8`;
     }
-    const blob = new Blob([payload], { type: `${mimeType};charset=utf-8` });
+    const blob = new Blob([payload], { type });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
@@ -4431,6 +4548,41 @@ document.addEventListener('DOMContentLoaded', () => {
       URL.revokeObjectURL(url);
     });
   });
+
+  // ===============================
+  // RENAME FILE FUNCTIONALITY
+  // ===============================
+
+  $('#renameFileBtn').on('click', function() {
+    if (!hasQaAccess()) {
+      if (!isAuthenticated) loginModal?.show();
+      return;
+    }
+    if (!currentFile) {
+      alert('Önce bir dosya seçin.');
+      return;
+    }
+    if (currentFile === defaultFile) {
+      alert('Varsayılan dosya yeniden adlandırılamaz.');
+      return;
+    }
+    prepareRenameFileModal();
+    renameFileModal?.show();
+  });
+
+  if (renameFilenameInput) {
+    renameFilenameInput.addEventListener('input', handleRenameFormChange);
+  }
+
+  if (renameFileForm) {
+    renameFileForm.addEventListener('submit', handleRenameFileSubmit);
+  }
+
+  if (renameFileModalEl) {
+    renameFileModalEl.addEventListener('hidden.bs.modal', () => {
+      setInlineStatus(renameFileStatus, '');
+    });
+  }
 
   // ===============================
   // DELETE FILE FUNCTIONALITY

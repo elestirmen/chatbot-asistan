@@ -2281,6 +2281,41 @@ def admin_files_route():
     return jsonify({'filename': target_path.name, 'count': len(data)}), 201
 
 
+@admin_bp.route('/api/files/<filename>/rename', methods=['POST'])
+def admin_rename_file(filename: str):
+    """Rename a QA JSON file."""
+    if not _has_qna_access():
+        return _unauthorized()
+
+    payload = request.get_json(force=True) or {}
+    new_name = payload.get('new_name') or payload.get('target') or payload.get('filename')
+    if not new_name:
+        return jsonify({'error': 'Bad Request', 'message': 'Yeni dosya adı gerekli.'}), 400
+
+    try:
+        source_path = _resolve_data_file(filename)
+        target_path = _resolve_data_file(new_name)
+    except ValueError as exc:
+        return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
+
+    if source_path.name == target_path.name:
+        return jsonify({'error': 'Bad Request', 'message': 'Yeni dosya adı farklı olmalıdır.'}), 400
+
+    if not source_path.exists():
+        return jsonify({'error': 'Not Found', 'message': 'Kaynak dosya bulunamadı.'}), 404
+
+    if target_path.exists():
+        return jsonify({'error': 'Conflict', 'message': 'Bu isimde bir dosya zaten var.'}), 409
+
+    try:
+        source_path.rename(target_path)
+    except Exception:
+        app.logger.exception('Dosya yeniden adlandırılamadı: %s -> %s', source_path, target_path)
+        return jsonify({'error': 'Internal Server Error', 'message': 'Dosya yeniden adlandırılamadı.'}), 500
+
+    return jsonify({'old_name': source_path.name, 'new_name': target_path.name})
+
+
 @admin_bp.route('/api/files/merge', methods=['POST'])
 def admin_files_merge():
     if not _has_qna_access():
