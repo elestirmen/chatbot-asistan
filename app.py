@@ -968,6 +968,26 @@ def _normalize_phone_number(text: str) -> str:
     return re.sub(r"\D", "", text or "")
 
 
+def _extract_phone_whitelist(data_dir: Path) -> Set[str]:
+    """DATA_DIR'daki JSON dosyalarından tüm telefon numaralarını çıkarır."""
+    phones: Set[str] = set()
+    if not data_dir.exists():
+        return phones
+    for path in data_dir.glob("*.json"):
+        try:
+            text = path.read_text("utf-8", errors="ignore")
+        except Exception:
+            continue
+        for match in PHONE_REGEX.finditer(text):
+            normalized = _normalize_phone_number(match.group(0))
+            if normalized:
+                phones.add(normalized)
+    return phones
+
+
+PHONE_WHITELIST = _extract_phone_whitelist(DATA_DIR)
+
+
 def _extract_contacts_from_text(text: str) -> Tuple[Set[str], Set[str]]:
     emails: Set[str] = set()
     phones: Set[str] = set()
@@ -984,7 +1004,7 @@ def _extract_contacts_from_text(text: str) -> Tuple[Set[str], Set[str]]:
 
 def _build_contact_allowlist(rag_hits: List[Dict[str, Any]]) -> Tuple[Set[str], Set[str]]:
     allowed_emails: Set[str] = set(CONTACT_WHITELIST)
-    allowed_phones: Set[str] = set()
+    allowed_phones: Set[str] = set(PHONE_WHITELIST)
     for hit in rag_hits:
         ans = hit.get("answer", "")
         hit_emails, hit_phones = _extract_contacts_from_text(ans)
@@ -1292,6 +1312,7 @@ class EmbeddingManager:
         return max(mtimes) if mtimes else 0.0
 
     def rebuild_cache(self) -> Tuple[List[Dict[str, Any]], np.ndarray, Optional[BM25Okapi]]:
+        global CONTACT_WHITELIST, PHONE_WHITELIST
         with self.lock:
             print("[Embedding] manuel rebuild tetiklendi")
             data = self._load_data()
@@ -1300,6 +1321,10 @@ class EmbeddingManager:
             self._memory_cache = (data, embeddings)
             self._memory_cache_mtime = self._dir_modified_time()
             self._build_bm25(data)
+            # İletişim whitelist'lerini de yenile
+            CONTACT_WHITELIST = _extract_contact_whitelist(self.data_dir)
+            PHONE_WHITELIST = _extract_phone_whitelist(self.data_dir)
+            print(f"[Whitelist] Yenilendi: {len(CONTACT_WHITELIST)} email, {len(PHONE_WHITELIST)} telefon")
             return data, embeddings, self._bm25
 
 embedding_manager = EmbeddingManager(DATA_DIR, EMBEDDING_CACHE, MODEL)
@@ -1743,19 +1768,24 @@ def chat():
                     session["messages"].append({"role": "system", "content": contact_guard_msg})
                 elif max_similarity >= soft_threshold:
                     no_data_msg = (
-                        "[RAG] Uyarı: Bu soru öğrenci işleri / üniversite konularına benziyor, "
-                        "ancak elimde bu soruyu doğrudan cevaplayan net bir kayıt bulunmuyor. "
-                        "Kayıtlarda olmayan tarih, ücret, şart vb. ayrıntılar hakkında kesin bilgi verme; "
-                        "yalnızca genel çerçeveyi özetle ve mutlaka resmi web sitesi veya ilgili birime yönlendir. "
-                        "Emin değilsen 'bilmiyorum' demekten çekinme."
+                        "[RAG] Uyarı: Bu soru öğrenci işleri konularına benziyor ancak elimde bu soruyu "
+                        "doğrudan cevaplayan kesin bir kayıt yok. Şu yaklaşımı izle: "
+                        "1) Konuyla ilgili genel bilgi ve çerçeveyi açıkla (örn: süreç nasıl işler, neler gerekebilir). "
+                        "2) Somut tarih, ücret veya şart belirtirken 'genellikle', 'çoğunlukla' gibi ifadeler kullan. "
+                        "3) Yanıtın sonunda güncel ve kesin bilgi için Öğrenci İşleri Daire Başkanlığı'na veya "
+                        "ois.kapadokya.edu.tr adresine yönlendir. "
+                        "Kullanıcıya yardımcı ol, ama kesinlik gerektiren detaylarda resmi kaynağa başvurmasını öner."
                     )
                     session["messages"].append({"role": "system", "content": no_data_msg})
                 else:
                     # Muhtemelen kapsam dışı genel bir soru
                     outside_msg = (
-                        "[RAG] Bu soru, elimdeki Kapadokya Üniversitesi öğrenci işleri verilerinin doğrudan kapsamı dışında görünüyor. "
-                        "Kullanıcıya bunun resmi veya bağlayıcı bir öğrenci işleri cevabı olmadığını açıkça belirt. "
-                        "Genel bilgi veya açıklama verirsen, bunun üniversitenin resmi görüşü olmadığını özellikle vurgula."
+                        "[RAG] Bu soru öğrenci işleri veritabanımın doğrudan kapsamı dışında görünüyor. "
+                        "Yine de yardımcı olmaya çalış: "
+                        "1) Konu hakkında bildiklerini genel hatlarıyla paylaş. "
+                        "2) Bunun kişisel bir açıklama olduğunu ve resmi bilgi için ilgili birime "
+                        "başvurulması gerektiğini belirt. "
+                        "3) Eğer konu üniversiteyle ilgiliyse Öğrenci İşleri veya ilgili birime yönlendir."
                     )
                     session["messages"].append({"role": "system", "content": outside_msg})
         else:
@@ -1764,9 +1794,12 @@ def chat():
                 session["messages"].append({"role": "system", "content": contact_guard_msg})
             else:
                 outside_msg = (
-                    "[RAG] Bu soru için elimde hiç benzer kayıt yok. "
-                    "Kullanıcıya bu konuda kayıtlı veri bulunmadığını söyle; öğrenci işleriyle ilgili somut tarih/ücret/şart uydurma. "
-                    "Genel bir açıklama yapacaksan da bunun resmi, doğrulanmış bilgi olmadığını net belirt."
+                    "[RAG] Bu soru için veritabanımda benzer bir kayıt bulamadım. "
+                    "Yine de kullanıcıya yardımcı ol: "
+                    "1) Konu hakkında genel bilgi verebilirsin, ancak bunun kesin bilgi olmadığını belirt. "
+                    "2) Öğrenci işleriyle ilgili somut tarih, ücret veya şart konusunda tahminde bulunma. "
+                    "3) Güncel ve doğru bilgi için Öğrenci İşleri Daire Başkanlığı'na veya "
+                    "ois.kapadokya.edu.tr adresine başvurmalarını öner."
                 )
                 session["messages"].append({"role": "system", "content": outside_msg})
 
@@ -1817,7 +1850,7 @@ def chat():
                         params["top_p"] = base_top_p
                     else:
                         # RAG uygulanmadığında daha temkinli bir dağılım kullan
-                        params["temperature"] = min(base_temp, 0.3)
+                        params["temperature"] = min(base_temp, 0.4)
                         params["top_p"] = min(base_top_p, 0.5)
 
                 if should_stream:
