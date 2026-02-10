@@ -1067,6 +1067,11 @@
           <select id="modelSelect" class="form-select" disabled></select>
           <input type="text" id="modelCustomInput" class="form-control mt-2 d-none" placeholder="Özel model kimliğini girin" disabled>
           <div class="form-text">Model kimliği OpenAI API hesabınızda etkin olmalıdır.</div>
+          <div id="modelInfoCard" class="alert alert-info mt-3 mb-0 py-2 px-3 d-none" aria-live="polite">
+            <div id="modelInfoTitle" class="fw-semibold small">Model Bilgisi</div>
+            <div id="modelInfoSummary" class="small text-muted mt-1"></div>
+            <ul id="modelInfoFacts" class="small mb-0 mt-2 ps-3"></ul>
+          </div>
           <div id="samplingControls" class="mt-3" aria-hidden="false">
             <div class="row g-3">
               <div class="col-md-6">

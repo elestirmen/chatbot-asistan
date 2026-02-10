@@ -1849,6 +1849,7 @@
 
                 let buffer = '';
                 let fullBotText = '';
+                let streamEnded = false;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -1865,7 +1866,21 @@
                         try {
                             const data = JSON.parse(part.slice(6));
 
-                            if (data.event === 'end') break;
+                            if (data.event === 'error') {
+                                const errorText = (typeof data.message === 'string' && data.message.trim())
+                                    ? data.message.trim()
+                                    : 'Yanıt alınamadı. Lütfen farklı bir model seçip tekrar deneyin.';
+                                fullBotText = errorText;
+                                botMessageElement.innerHTML = linkify(escapeHTML(fullBotText));
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                streamEnded = true;
+                                break;
+                            }
+
+                            if (data.event === 'end') {
+                                streamEnded = true;
+                                break;
+                            }
 
                             if (data.content) {
                                 fullBotText += data.content;
@@ -1876,11 +1891,21 @@
                             console.error('JSON parse hatası:', jsonError, part);
                         }
                     }
+
+                    if (streamEnded) break;
                 }
 
                 if (buffer.startsWith('data: ')) {
                     try {
                         const data = JSON.parse(buffer.slice(6));
+
+                        if (data.event === 'error') {
+                            const errorText = (typeof data.message === 'string' && data.message.trim())
+                                ? data.message.trim()
+                                : 'Yanıt alınamadı. Lütfen farklı bir model seçip tekrar deneyin.';
+                            fullBotText = errorText;
+                            botMessageElement.innerHTML = linkify(escapeHTML(fullBotText));
+                        }
 
                         if (data.content) {
                             fullBotText += data.content;
@@ -1889,6 +1914,10 @@
                     } catch (jsonError) {
                         console.error('Son JSON parse hatası:', jsonError, buffer);
                     }
+                }
+
+                if (!fullBotText.trim()) {
+                    botMessageElement.textContent = 'Yanıt üretilemedi. Lütfen modeli değiştirip tekrar deneyin.';
                 }
 
                 addFeedbackButtons(botMessageElement);

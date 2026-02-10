@@ -2069,5 +2069,18 @@
       "hangi numarayı arayacağım?"
     ],
     "answer": "0(384) 353 5009 numarasından ulaşabilirsiniz."
+  },
+  {
+    "questions": [
+      "Kapadokya Üniversitesi Genel Sekreteri kimdir?"
+    ],
+    "answer": "Kapadokya Üniversitesi Genel Sekreteri Halil İbrahim Ünser'dir."
+  },
+  {
+    "questions": [
+      "Bilgi paketine nasıl ulaşabilirim?",
+      "Bilgi paketine nereden ulaşabilirim?"
+    ],
+    "answer": "adresinden ulaşabilirsiniz. https://sis.kapadokya.edu.tr/oibs/bologna/index.aspx"
   }
 ]

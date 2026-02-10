@@ -129,6 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveModelBtn = document.getElementById('saveModelBtn');
   const resetModelBtn = document.getElementById('resetModelBtn');
   const modelStatusEl = document.getElementById('modelStatus');
+  const modelInfoCardEl = document.getElementById('modelInfoCard');
+  const modelInfoTitleEl = document.getElementById('modelInfoTitle');
+  const modelInfoSummaryEl = document.getElementById('modelInfoSummary');
+  const modelInfoFactsEl = document.getElementById('modelInfoFacts');
   const samplingControlsWrapper = document.getElementById('samplingControls');
   const temperatureInput = document.getElementById('temperatureInput');
   const topPInput = document.getElementById('topPInput');
@@ -142,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let persistedTopP = FALLBACK_TOP_P;
   let defaultTopP = FALLBACK_TOP_P;
   let modelSuggestions = [];
+  let modelSuggestionsWarning = '';
 
   function hasQaAccess() {
     return adminRole === ROLE_ADMIN || adminRole === ROLE_EDITOR;
@@ -294,6 +299,102 @@ document.addEventListener('DOMContentLoaded', () => {
     modelStatusEl.className = `small d-block mt-2 text-${tone}`;
   }
 
+  function parsePricePerMillion(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const normalized = value.trim().replace(',', '.');
+    if (!normalized || normalized === '-') {
+      return null;
+    }
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function formatUsd(value) {
+    if (!Number.isFinite(value)) return '-';
+    const precision = value >= 1 ? 2 : 4;
+    const formatted = value.toFixed(precision).replace(/\.?0+$/, '');
+    return `$${formatted}`;
+  }
+
+  function buildPriceSummary(entry) {
+    const input = parsePricePerMillion(entry?.pricing_input_per_1m);
+    const cachedInput = parsePricePerMillion(entry?.pricing_cached_input_per_1m);
+    const output = parsePricePerMillion(entry?.pricing_output_per_1m);
+
+    const inputLabel = input == null ? (entry?.pricing_input_per_1m || '-') : formatUsd(input);
+    const cachedLabel = cachedInput == null ? (entry?.pricing_cached_input_per_1m || '-') : formatUsd(cachedInput);
+    const outputLabel = output == null ? (entry?.pricing_output_per_1m || '-') : formatUsd(output);
+
+    const facts = [`1M token fiyatı (input/cached/output): ${inputLabel} / ${cachedLabel} / ${outputLabel}`];
+    if (input != null && output != null) {
+      const estimated = (input + output) / 1000;
+      facts.push(`Yaklaşık maliyet (1K input + 1K output): ${formatUsd(estimated)}`);
+    }
+    return facts;
+  }
+
+  function renderModelInfo(modelId) {
+    if (!modelInfoCardEl || !modelInfoTitleEl || !modelInfoSummaryEl || !modelInfoFactsEl) return;
+
+    const normalized = typeof modelId === 'string' ? modelId.trim() : '';
+    if (!normalized) {
+      modelInfoCardEl.classList.add('d-none');
+      modelInfoTitleEl.textContent = 'Model Bilgisi';
+      modelInfoSummaryEl.textContent = '';
+      modelInfoFactsEl.innerHTML = '';
+      return;
+    }
+
+    const entry = Array.isArray(modelSuggestions)
+      ? modelSuggestions.find((item) => item && item.id === normalized)
+      : null;
+
+    const facts = [];
+    if (entry) {
+      const title = entry.label && entry.label !== entry.id
+        ? `${entry.label} (${entry.id})`
+        : entry.id;
+      modelInfoTitleEl.textContent = title;
+      modelInfoSummaryEl.textContent = entry.summary || '';
+
+      if (entry.best_for) {
+        facts.push(`En uygun kullanım: ${entry.best_for}`);
+      }
+      if (entry.context_window) {
+        facts.push(`Bağlam penceresi: ${entry.context_window} token`);
+      }
+      if (entry.max_output_tokens) {
+        facts.push(`Maksimum çıktı: ${entry.max_output_tokens} token`);
+      }
+      facts.push(...buildPriceSummary(entry));
+      if (entry.notes) {
+        facts.push(`Not: ${entry.notes}`);
+      }
+    } else {
+      modelInfoTitleEl.textContent = normalized;
+      modelInfoSummaryEl.textContent = 'Özel model kimliği seçildi. Bu model için hazır açıklama/fiyat kartı bulunmuyor.';
+      facts.push('Model kimliğinin OpenAI hesabınızda aktif olduğundan emin olun.');
+      facts.push('Token maliyeti ve limitler model sürümüne göre değişebilir.');
+    }
+
+    if (modelSuggestionsWarning) {
+      facts.unshift(`Bilgi: ${modelSuggestionsWarning}`);
+    }
+
+    modelInfoFactsEl.innerHTML = '';
+    facts.forEach((text) => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      modelInfoFactsEl.appendChild(li);
+    });
+    modelInfoCardEl.classList.remove('d-none');
+  }
+
   function setModelControlsEnabled(enabled) {
     if (modelSelectInput) modelSelectInput.disabled = !enabled;
     if (modelCustomInput) {
@@ -421,6 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function applyModelConfigData(data) {
     modelSuggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+    modelSuggestionsWarning = typeof data?.suggestions_warning === 'string' ? data.suggestions_warning.trim() : '';
     persistedModelValue = typeof data?.completion_model === 'string' ? data.completion_model.trim() : '';
     const previousDefaultModel = defaultModelValue;
     defaultModelValue = typeof data?.default_model === 'string'
@@ -446,6 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     populateModelOptions(persistedModelValue);
     setSamplingInputs(persistedTemperature, persistedTopP);
+    renderModelInfo(getSelectedModelValue());
   }
 
   function populateModelOptions(selectedValue) {
@@ -532,6 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       toggleCustomModelInput(false);
     }
+    renderModelInfo(getSelectedModelValue());
     updateSamplingControlsState(getSelectedModelValue());
     handleModelInputChange();
   }
@@ -545,11 +649,13 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleCustomModelInput(false);
       setModelControlsEnabled(false);
       showModelStatus(message, 'muted');
+      renderModelInfo(getSelectedModelValue());
       updateSamplingControlsState(getSelectedModelValue());
       return Promise.resolve();
     }
     setModelControlsEnabled(false);
     showModelStatus('Yükleniyor...', 'muted');
+    renderModelInfo(getSelectedModelValue());
     updateSamplingControlsState(getSelectedModelValue());
     return fetch('/admin/api/openai/model')
       .then((resp) => {
@@ -571,6 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then((data) => {
         applyModelConfigData(data);
         setModelControlsEnabled(true);
+        renderModelInfo(getSelectedModelValue());
         updateSamplingControlsState(getSelectedModelValue());
         handleModelInputChange();
         return data;
@@ -578,6 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch((err) => {
         setModelControlsEnabled(true);
         showModelStatus(err.message || 'Model bilgisi alınamadı.', 'danger');
+        renderModelInfo(getSelectedModelValue());
         updateSamplingControlsState(getSelectedModelValue());
         handleModelInputChange();
         throw err;
@@ -3351,6 +3459,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (modelCustomInput) {
     modelCustomInput.addEventListener('input', () => {
+      renderModelInfo(getSelectedModelValue());
       updateSamplingControlsState(getSelectedModelValue());
       handleModelInputChange();
     });

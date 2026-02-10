@@ -100,7 +100,7 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 - **Framework:** Flask 2.3.0+
 - **Session:** Flask-Session (Redis backend)
 - **CORS:** flask-cors
-- **LLM:** OpenAI API (Chat Completions, streaming)
+- **LLM:** OpenAI API (Responses API, streaming)
 - **Embedding:** sentence-transformers (intfloat/multilingual-e5-base)
 - **Arama:** scikit-learn (cosine similarity) + rank_bm25 (BM25)
 - **Cache:** bz2 sıkıştırmalı pickle dosyası
@@ -177,7 +177,7 @@ pip install -r requirements.txt
 - flask-cors>=4.0.0
 - Flask-Session>=0.5.0
 - python-dotenv>=1.0.0
-- openai==1.12.0
+- openai>=2.18.0,<3.0.0
 - numpy>=1.21.0
 - sentence-transformers>=2.2.0
 - scikit-learn>=1.0.0
@@ -725,16 +725,21 @@ Bir oturuma tıklayarak detayları görebilirsiniz:
 #### Model Seçimi
 
 1. "Model" dropdown'ından model seçin:
+   - GPT-5.2
+   - GPT-5.2 Pro
+   - GPT-5.1
+   - GPT-5 Pro
+   - GPT-5
+   - GPT-5 Mini
+   - GPT-5 Nano
    - GPT-4.1
    - GPT-4.1 Mini (varsayılan)
    - GPT-4.1 Nano
-   - GPT-5 Nano
-   - GPT-5 Mini
-   - GPT-5
 
 2. "Kaydet" butonuna tıklayın
 
 **Not:** Model değişikliği hemen etkili olur.
+**Not 2:** Admin panelde model seçim alanının altında modelin güçlü olduğu alanlar, bağlam limiti, maksimum çıktı tokenı ve 1M token fiyat özetini görebilirsiniz.
 
 #### Parametre Ayarları
 
@@ -1370,7 +1375,7 @@ RAG Context Ekleme (eşik aşıldıysa)
     ↓
 Sistem Mesajları + Geçmiş + RAG + Kullanıcı Mesajı
     ↓
-OpenAI Chat Completions (Stream)
+OpenAI Responses API (Stream)
     ↓
 SSE ile Token Token Gönderme
     ↓
@@ -1800,7 +1805,7 @@ gunicorn -w 9 -k gthread --threads 4 app:app
 - ✅ Gelişmiş admin paneli
 - ✅ Sezon bazlı analitik
 - ✅ Global arama
-- ✅ Model yönetimi (temperature, top_p)
+- ✅ Model yönetimi (temperature, top_p, GPT-5 uyumu)
 
 **İyileştirmeler:**
 - ⚡ Embedding önbellek performansı

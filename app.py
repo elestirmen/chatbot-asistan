@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import shutil
 import sys
+import openai as openai_sdk
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -55,6 +56,28 @@ from rank_bm25 import BM25Okapi
 # Ortam Değişkenleri ve OpenAI Client
 # -----------------------------------------------------------------------------
 load_dotenv()
+
+
+def _parse_version_tuple(version: str) -> Tuple[int, int, int]:
+    parts: List[int] = []
+    for token in re.split(r"[^0-9]+", version or ""):
+        if not token:
+            continue
+        parts.append(int(token))
+        if len(parts) >= 3:
+            break
+    while len(parts) < 3:
+        parts.append(0)
+    return tuple(parts[:3])
+
+
+OPENAI_SDK_VERSION = getattr(openai_sdk, "__version__", "0.0.0")
+MIN_OPENAI_SDK_VERSION = (2, 18, 0)
+if _parse_version_tuple(OPENAI_SDK_VERSION) < MIN_OPENAI_SDK_VERSION:
+    raise RuntimeError(
+        "OpenAI SDK sürümü yetersiz. "
+        f"En az {'.'.join(map(str, MIN_OPENAI_SDK_VERSION))} gerekli, yüklü: {OPENAI_SDK_VERSION}"
+    )
 
 
 def _getenv_strip(key: str, default: Optional[str] = None) -> Optional[str]:
@@ -115,6 +138,11 @@ client = OpenAI(
     timeout=OPENAI_TIMEOUT,
     max_retries=OPENAI_MAX_RETRIES,
 )
+
+try:
+    OPENAI_MODEL_DISCOVERY_TTL_SECONDS = max(30, int(os.getenv("OPENAI_MODEL_DISCOVERY_TTL_SECONDS", "300")))
+except ValueError:
+    OPENAI_MODEL_DISCOVERY_TTL_SECONDS = 300
 
 # -----------------------------------------------------------------------------
 # Flask Uygulaması
@@ -244,13 +272,134 @@ SYSTEM_PROMPT_FILE = CONFIG_DIR / "system_prompt.json"
 MODEL_CONFIG_FILE = CONFIG_DIR / "openai_model.json"
 
 OPENAI_MODEL_SUGGESTIONS: List[Dict[str, str]] = [
-    {"id": "gpt-4.1", "label": "GPT-4.1"},
-    {"id": "gpt-4.1-mini", "label": "GPT-4.1 Mini"},
-    {"id": "gpt-4.1-nano", "label": "GPT-4.1 Nano"},
-    {"id": "gpt-5-nano", "label": "GPT-5 Nano"},
-    {"id": "gpt-5-mini", "label": "GPT-5 Mini"},
-    {"id": "gpt-5", "label": "GPT-5"},
+    {
+        "id": "gpt-5.2",
+        "label": "GPT-5.2",
+        "summary": "Kodlama ve agentic görevlerde en güçlü genel model.",
+        "best_for": "Karmaşık görevler, yüksek doğruluk, güçlü tool kullanımı",
+        "context_window": "400000",
+        "max_output_tokens": "128000",
+        "pricing_input_per_1m": "1.75",
+        "pricing_cached_input_per_1m": "0.175",
+        "pricing_output_per_1m": "14.00",
+        "notes": "reasoning.effort: none, low, medium, high, xhigh",
+    },
+    {
+        "id": "gpt-5.2-pro",
+        "label": "GPT-5.2 Pro",
+        "summary": "En hassas sonuçlar için en güçlü GPT-5.2 varyantı.",
+        "best_for": "Zor problem çözme, kritik karar destek, maksimum kalite",
+        "context_window": "400000",
+        "max_output_tokens": "128000",
+        "pricing_input_per_1m": "21.00",
+        "pricing_cached_input_per_1m": "-",
+        "pricing_output_per_1m": "168.00",
+        "notes": "Responses API odaklıdır; reasoning.effort: medium/high/xhigh",
+    },
+    {
+        "id": "gpt-5.1",
+        "label": "GPT-5.1",
+        "summary": "GPT-5.2 öncesi güçlü amiral model; fiyat/performans dengeli.",
+        "best_for": "Genel agentic görevler ve kod üretimi",
+        "context_window": "400000",
+        "max_output_tokens": "128000",
+        "pricing_input_per_1m": "1.25",
+        "pricing_cached_input_per_1m": "0.125",
+        "pricing_output_per_1m": "10.00",
+        "notes": "reasoning.effort: none, low, medium, high",
+    },
+    {
+        "id": "gpt-5-pro",
+        "label": "GPT-5 Pro",
+        "summary": "GPT-5 ailesinde daha zor görevler için yüksek hesaplama kullanan sürüm.",
+        "best_for": "Maksimum doğruluk gerektiren zorlu mantık görevleri",
+        "context_window": "400000",
+        "max_output_tokens": "272000",
+        "pricing_input_per_1m": "15.00",
+        "pricing_cached_input_per_1m": "-",
+        "pricing_output_per_1m": "120.00",
+        "notes": "Responses API odaklıdır; reasoning.effort yalnızca high",
+    },
+    {
+        "id": "gpt-5",
+        "label": "GPT-5",
+        "summary": "GPT-5 serisinin önceki genel modeli.",
+        "best_for": "Genel amaçlı agentic işler ve kod görevleri",
+        "context_window": "400000",
+        "max_output_tokens": "128000",
+        "pricing_input_per_1m": "1.25",
+        "pricing_cached_input_per_1m": "0.125",
+        "pricing_output_per_1m": "10.00",
+        "notes": "reasoning.effort: minimal, low, medium, high",
+    },
+    {
+        "id": "gpt-5-mini",
+        "label": "GPT-5 Mini",
+        "summary": "Hızlı ve maliyet etkin GPT-5 varyantı.",
+        "best_for": "İyi tanımlı görevler, düşük gecikme, üretim trafiği",
+        "context_window": "400000",
+        "max_output_tokens": "128000",
+        "pricing_input_per_1m": "0.25",
+        "pricing_cached_input_per_1m": "0.025",
+        "pricing_output_per_1m": "2.00",
+        "notes": "Düşük maliyetle güçlü genel kalite",
+    },
+    {
+        "id": "gpt-5-nano",
+        "label": "GPT-5 Nano",
+        "summary": "En hızlı ve en ucuz GPT-5 varyantı.",
+        "best_for": "Sınıflandırma, özetleme, yüksek hacimli basit işler",
+        "context_window": "400000",
+        "max_output_tokens": "128000",
+        "pricing_input_per_1m": "0.05",
+        "pricing_cached_input_per_1m": "0.005",
+        "pricing_output_per_1m": "0.40",
+        "notes": "Maliyet odaklı, kısa/orta karmaşıklık görevleri",
+    },
+    {
+        "id": "gpt-4.1",
+        "label": "GPT-4.1",
+        "summary": "Uzun bağlam gerektiren görevler için güçlü klasik model.",
+        "best_for": "Çok uzun doküman analizi, legacy uyumluluk",
+        "context_window": "1047576",
+        "max_output_tokens": "32768",
+        "pricing_input_per_1m": "2.00",
+        "pricing_cached_input_per_1m": "0.50",
+        "pricing_output_per_1m": "8.00",
+        "notes": "Temperature ve top-p ayarı desteklenir",
+    },
+    {
+        "id": "gpt-4.1-mini",
+        "label": "GPT-4.1 Mini",
+        "summary": "GPT-4.1 ailesinin dengeli ve daha ekonomik sürümü.",
+        "best_for": "Günlük genel kullanım, maliyet/kalite dengesi",
+        "context_window": "1047576",
+        "max_output_tokens": "32768",
+        "pricing_input_per_1m": "0.40",
+        "pricing_cached_input_per_1m": "0.10",
+        "pricing_output_per_1m": "1.60",
+        "notes": "Temperature ve top-p ayarı desteklenir",
+    },
+    {
+        "id": "gpt-4.1-nano",
+        "label": "GPT-4.1 Nano",
+        "summary": "GPT-4.1 ailesinin en ekonomik modeli.",
+        "best_for": "Basit görevler, çok yüksek hacimli istekler",
+        "context_window": "1047576",
+        "max_output_tokens": "32768",
+        "pricing_input_per_1m": "0.10",
+        "pricing_cached_input_per_1m": "0.025",
+        "pricing_output_per_1m": "0.40",
+        "notes": "Temperature ve top-p ayarı desteklenir",
+    },
 ]
+
+_model_discovery_lock = threading.Lock()
+_model_discovery_cache: Dict[str, Any] = {
+    "gpt5_model_ids": None,          # type: Optional[Set[str]]
+    "fetched_at": 0.0,
+    "error": None,                   # type: Optional[str]
+}
 
 def _migrate_config_file(old_path: Path, new_path: Path) -> None:
     try:
@@ -776,6 +925,146 @@ class ModelConfigManager:
         }
 
 
+def _discover_gpt5_model_ids(*, force_refresh: bool = False) -> Tuple[Optional[Set[str]], Optional[str]]:
+    now = time.time()
+    stale_ids: Optional[Set[str]] = None
+    with _model_discovery_lock:
+        cached_ids = _model_discovery_cache.get("gpt5_model_ids")
+        cached_error = _model_discovery_cache.get("error")
+        fetched_at = float(_model_discovery_cache.get("fetched_at") or 0.0)
+
+        if isinstance(cached_ids, set):
+            stale_ids = set(cached_ids)
+            if not force_refresh and (now - fetched_at) < OPENAI_MODEL_DISCOVERY_TTL_SECONDS:
+                return set(cached_ids), None
+
+        # Hata durumunda kısa süreli geri çekilme: paneli sürekli API'ye vurmayalım.
+        if (
+            not force_refresh
+            and cached_ids is None
+            and isinstance(cached_error, str)
+            and cached_error
+            and (now - fetched_at) < min(60, OPENAI_MODEL_DISCOVERY_TTL_SECONDS)
+        ):
+            return None, cached_error
+
+    try:
+        model_list = client.models.list()
+        discovered: Set[str] = set()
+
+        iterator = None
+        auto_paging_iter = getattr(model_list, "auto_paging_iter", None)
+        if callable(auto_paging_iter):
+            try:
+                iterator = auto_paging_iter()
+            except Exception:
+                iterator = None
+
+        if iterator is None:
+            iterator = getattr(model_list, "data", []) or []
+
+        for item in iterator:
+            model_id = str(getattr(item, "id", "") or "").strip()
+            if model_id.startswith("gpt-5"):
+                discovered.add(model_id)
+        with _model_discovery_lock:
+            _model_discovery_cache["gpt5_model_ids"] = set(discovered)
+            _model_discovery_cache["fetched_at"] = now
+            _model_discovery_cache["error"] = None
+        return discovered, None
+    except Exception as exc:
+        raw_error = str(exc).strip()
+        error_message = "GPT-5 model listesi alınamadı."
+        with _model_discovery_lock:
+            _model_discovery_cache["fetched_at"] = now
+            _model_discovery_cache["error"] = error_message
+        try:
+            app.logger.warning("GPT-5 model keşfi başarısız: %s", raw_error or error_message)
+        except Exception:
+            pass
+        if stale_ids is not None:
+            return set(stale_ids), error_message
+        return None, error_message
+
+
+def _build_dynamic_model_suggestions(
+    *,
+    current_model: Optional[str],
+    force_refresh: bool = False,
+) -> Tuple[List[Dict[str, str]], Optional[str], bool]:
+    base_suggestions: List[Dict[str, str]] = [dict(item) for item in OPENAI_MODEL_SUGGESTIONS]
+    gpt5_accessible_ids, warning = _discover_gpt5_model_ids(force_refresh=force_refresh)
+    if gpt5_accessible_ids is None:
+        return base_suggestions, warning, False
+
+    def _is_accessible(model_id: str) -> bool:
+        normalized = str(model_id or "").strip()
+        if not normalized:
+            return False
+        if normalized in gpt5_accessible_ids:
+            return True
+        family_prefix = f"{normalized}-"
+        return any(access_id.startswith(family_prefix) for access_id in gpt5_accessible_ids)
+
+    filtered: List[Dict[str, str]] = []
+    for item in base_suggestions:
+        model_id = str(item.get("id") or "").strip()
+        if model_id.startswith("gpt-5") and not _is_accessible(model_id):
+            continue
+        filtered.append(item)
+
+    # Aktif model öneri listesinde yoksa custom input üzerinden yine görünür.
+    normalized_current = str(current_model or "").strip()
+    if (
+        normalized_current
+        and normalized_current.startswith("gpt-5")
+        and _is_accessible(normalized_current)
+        and not any(str(entry.get("id") or "").strip() == normalized_current for entry in filtered)
+    ):
+        filtered.append({"id": normalized_current, "label": normalized_current})
+
+    # OpenAI erişim listesinde olup sabit öneri listesinde olmayan yeni GPT-5 varyantlarını da ekle.
+    known_gpt5_ids = {
+        str(item.get("id") or "").strip()
+        for item in base_suggestions
+        if str(item.get("id") or "").strip().startswith("gpt-5")
+    }
+    existing_filtered_ids = {str(item.get("id") or "").strip() for item in filtered}
+    for discovered_id in sorted(gpt5_accessible_ids):
+        if discovered_id in existing_filtered_ids:
+            continue
+        if discovered_id in known_gpt5_ids:
+            continue
+        if any(discovered_id.startswith(f"{known_id}-") for known_id in known_gpt5_ids):
+            continue
+        filtered.append(
+            {
+                "id": discovered_id,
+                "label": discovered_id,
+                "summary": "OpenAI hesabında erişime açık GPT-5 modeli.",
+            }
+        )
+
+    if not filtered:
+        return base_suggestions, warning, False
+    return filtered, warning, True
+
+
+def _build_model_config_payload(*, force_refresh: bool = False) -> Dict[str, Any]:
+    payload = model_config_manager.to_payload()
+    suggestions, warning, filtered = _build_dynamic_model_suggestions(
+        current_model=str(payload.get("completion_model") or "").strip(),
+        force_refresh=force_refresh,
+    )
+    payload["suggestions"] = suggestions
+    payload["suggestions_filtered_by_access"] = filtered
+    if warning:
+        payload["suggestions_warning"] = warning
+    else:
+        payload.pop("suggestions_warning", None)
+    return payload
+
+
 DEFAULT_SYSTEM_PROMPT = (
     "Sen Kapadokya Üniversitesi öğrenci işleri için görev yapan bir asistanısın. "
     "Elindeki güvenilir kaynaklar dışında bilgi uydurma. İletişim bilgisi (telefon, e-posta, adres, web bağlantısı) "
@@ -1072,13 +1361,16 @@ def _build_contextual_query(
     ]
 
     try:
-        completion = client.chat.completions.create(
-            model=model_name,
+        response = _responses_create(
+            model_name=model_name,
             messages=prompt,
+            stream=False,
+            max_output_tokens=120,
             temperature=0.2,
-            max_tokens=120,
+            reasoning_effort="minimal",
+            verbosity="low",
         )
-        rewritten = completion.choices[0].message.content if completion.choices else ""
+        rewritten = _extract_text_from_response(response)
         rewritten = (rewritten or "").strip()
         return rewritten or latest_user_message
     except Exception:
@@ -1372,22 +1664,32 @@ event_logger = EventLogger(ANALYTICS_DIR)
 # -----------------------------------------------------------------------------
 # Retrieval Fonksiyonu
 # -----------------------------------------------------------------------------
-def _use_non_streaming_mode(model_name: Optional[str]) -> bool:
-    """Tüm modeller artık streaming destekliyor (org verified)"""
-    return False
+def _is_gpt5_model(model_name: Optional[str]) -> bool:
+    return str(model_name or "").strip().lower().startswith("gpt-5")
 
 
 def _messages_to_response_input(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     payload: List[Dict[str, Any]] = []
     for msg in messages:
         role = str(msg.get("role") or "").strip().lower()
-        if role not in {"system", "user", "assistant"}:
+        if role not in {"system", "user", "assistant", "developer"}:
             continue
         content = msg.get("content")
+        text = ""
         if isinstance(content, list):
-            text = "\n".join(str(part) for part in content)
-        else:
-            text = "" if content is None else str(content)
+            parts: List[str] = []
+            for part in content:
+                if isinstance(part, dict):
+                    maybe_text = part.get("text")
+                    if isinstance(maybe_text, str):
+                        parts.append(maybe_text)
+                elif part is not None:
+                    parts.append(str(part))
+            text = "\n".join(parts)
+        elif content is not None:
+            text = str(content)
+        if not text.strip():
+            continue
         payload.append({
             "role": role,
             "content": [
@@ -1398,6 +1700,70 @@ def _messages_to_response_input(messages: List[Dict[str, Any]]) -> List[Dict[str
             ],
         })
     return payload
+
+
+def _build_responses_request_params(
+    *,
+    model_name: str,
+    messages: List[Dict[str, Any]],
+    stream: bool = False,
+    max_output_tokens: Optional[int] = None,
+    temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    reasoning_effort: Optional[str] = None,
+    verbosity: Optional[str] = None,
+) -> Dict[str, Any]:
+    params: Dict[str, Any] = {
+        "model": model_name,
+        "input": _messages_to_response_input(messages),
+        "stream": stream,
+    }
+    if max_output_tokens is not None:
+        try:
+            token_limit = int(max_output_tokens)
+        except (TypeError, ValueError):
+            token_limit = 0
+        if token_limit > 0:
+            params["max_output_tokens"] = token_limit
+
+    if _is_gpt5_model(model_name):
+        effort = str(reasoning_effort or "").strip().lower()
+        if effort in {"minimal", "low", "medium", "high"}:
+            params["reasoning"] = {"effort": effort}
+        normalized_verbosity = str(verbosity or "").strip().lower()
+        if normalized_verbosity in {"low", "medium", "high"}:
+            params["text"] = {"verbosity": normalized_verbosity}
+    else:
+        if temperature is not None:
+            params["temperature"] = float(temperature)
+        if top_p is not None:
+            params["top_p"] = float(top_p)
+
+    return params
+
+
+def _responses_create(
+    *,
+    model_name: str,
+    messages: List[Dict[str, Any]],
+    stream: bool = False,
+    max_output_tokens: Optional[int] = None,
+    temperature: Optional[float] = None,
+    top_p: Optional[float] = None,
+    reasoning_effort: Optional[str] = None,
+    verbosity: Optional[str] = None,
+) -> Any:
+    params = _build_responses_request_params(
+        model_name=model_name,
+        messages=messages,
+        stream=stream,
+        max_output_tokens=max_output_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        reasoning_effort=reasoning_effort,
+        verbosity=verbosity,
+    )
+    return client.responses.create(**params)
 
 
 def _response_to_dict(resp: Any) -> Dict[str, Any]:
@@ -1681,12 +2047,16 @@ def chat():
             ]
             summary_resp: Optional[str] = None
             try:
-                summary_completion = client.chat.completions.create(
-                    model=summary_model_name,
+                summary_response = _responses_create(
+                    model_name=summary_model_name,
                     messages=summary_prompt,
+                    stream=False,
+                    max_output_tokens=220,
                     temperature=0.5,
+                    reasoning_effort="low",
+                    verbosity="low",
                 )
-                summary_resp = summary_completion.choices[0].message.content if summary_completion.choices else None
+                summary_resp = _extract_text_from_response(summary_response) or None
             except (APITimeoutError, RateLimitError) as err:
                 app.logger.warning("Sohbet özeti alınamadı: %s", err)
             except APIError as err:
@@ -1831,41 +2201,52 @@ def chat():
             collected: list[str] = []
             full_resp: str = ""
             try:
-                # GPT-5 için temperature/top_p parametrelerini kontrol et
-                is_gpt5 = completion_model_name.lower().startswith("gpt-5")
+                # GPT-5 modelleri için reasoning/text ayarları; diğer modeller için sampling
+                is_gpt5 = _is_gpt5_model(completion_model_name)
                 should_stream = not is_contact_query
 
-                params = {
-                    "model": completion_model_name,
+                params: Dict[str, Any] = {
+                    "model_name": completion_model_name,
                     "messages": session["messages"],
                     "stream": should_stream,
                 }
 
-                # GPT-4 için temperature ve top_p ekle
                 if not is_gpt5:
                     base_temp = model_config_manager.temperature
                     base_top_p = model_config_manager.top_p
                     if rag_applied:
-                        params["temperature"] = base_temp
-                        params["top_p"] = base_top_p
+                        params["temperature"] = float(base_temp)
+                        params["top_p"] = float(base_top_p)
                     else:
                         # RAG uygulanmadığında daha temkinli bir dağılım kullan
-                        params["temperature"] = min(base_temp, 0.4)
-                        params["top_p"] = min(base_top_p, 0.5)
+                        params["temperature"] = float(min(base_temp, 0.4))
+                        params["top_p"] = float(min(base_top_p, 0.5))
+                else:
+                    # GPT-5 için açıkça reasoning/verbosity belirlemek daha tutarlı sonuç verir.
+                    params["reasoning_effort"] = "low" if is_contact_query else "medium"
+                    params["verbosity"] = "low" if is_contact_query else "medium"
 
                 if should_stream:
-                    completion = client.chat.completions.create(**params)
-                    for chunk in completion:
-                        delta = chunk.choices[0].delta.content
-                        if delta:
+                    stream_resp = _responses_create(**params)
+                    completed_resp: Optional[Any] = None
+                    for event in stream_resp:
+                        event_type = getattr(event, "type", "")
+                        if event_type == "response.output_text.delta":
+                            delta = getattr(event, "delta", "")
+                        else:
+                            delta = ""
+                        if isinstance(delta, str) and delta:
                             collected.append(delta)
                             yield f"data: {json.dumps({'content': delta})}\n\n"
+                        if event_type == "response.completed":
+                            completed_resp = getattr(event, "response", None)
                     full_resp = "".join(collected)
+                    if not full_resp and completed_resp is not None:
+                        full_resp = _extract_text_from_response(completed_resp)
                 else:
-                    params["stream"] = False
-                    completion = client.chat.completions.create(**params)
-                    full_resp = completion.choices[0].message.content if completion.choices else ""
-                    guarded_resp, replaced = _enforce_contact_policy(full_resp or "", rag_hits)
+                    response = _responses_create(**params)
+                    full_resp = _extract_text_from_response(response)
+                    guarded_resp, _ = _enforce_contact_policy(full_resp or "", rag_hits)
                     full_resp = guarded_resp
                     yield f"data: {json.dumps({'content': full_resp})}\n\n"
             except APITimeoutError:
@@ -1887,6 +2268,7 @@ def chat():
                 except Exception:
                     app.logger.exception("analytics assistant_error timeout could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json.dumps({'event': 'end'})}\n\n"
                 return
             except RateLimitError:
                 app.logger.warning(
@@ -1907,12 +2289,28 @@ def chat():
                 except Exception:
                     app.logger.exception("analytics assistant_error rate_limit could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json.dumps({'event': 'end'})}\n\n"
                 return
             except APIError as err:
                 app.logger.warning("OpenAI API hatası: %s", err)
+                err_text = str(err or "").strip()
+                inaccessible_model = None
+                try:
+                    match = re.search(r"does not have access to model [`']?([^`'\\s]+)", err_text, re.IGNORECASE)
+                    if match:
+                        inaccessible_model = match.group(1).strip()
+                except Exception:
+                    inaccessible_model = None
+                if inaccessible_model:
+                    user_message = (
+                        f"Seçtiğiniz model ({inaccessible_model}) bu OpenAI projesinde yetkili değil. "
+                        "Lütfen model listesinden erişimi açık bir model seçin."
+                    )
+                else:
+                    user_message = "Yanıt oluştururken bir sorun çıktı. Lütfen tekrar dener misin?"
                 payload = {
                     "event": "error",
-                    "message": "Yanıt oluştururken bir sorun çıktı. Lütfen tekrar dener misin?",
+                    "message": user_message,
                 }
                 try:
                     event_logger.append(_make_event(
@@ -1925,6 +2323,7 @@ def chat():
                 except Exception:
                     app.logger.exception("analytics assistant_error api_error could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json.dumps({'event': 'end'})}\n\n"
                 return
             except Exception as err:
                 app.logger.exception("OpenAI hatası: %s", err)
@@ -1943,6 +2342,7 @@ def chat():
                 except Exception:
                     app.logger.exception("analytics assistant_error unknown could not be logged")
                 yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json.dumps({'event': 'end'})}\n\n"
                 return
 
             if not full_resp:
@@ -2524,7 +2924,7 @@ def admin_openai_model():
         return _unauthorized()
 
     if request.method == 'GET':
-        return jsonify(model_config_manager.to_payload())
+        return jsonify(_build_model_config_payload())
 
     if request.method == 'DELETE':
         try:
@@ -2532,7 +2932,7 @@ def admin_openai_model():
         except Exception:
             app.logger.exception('OpenAI modeli varsayılana alınırken hata oluştu')
             return jsonify({'error': 'Internal Server Error'}), 500
-        return jsonify(model_config_manager.to_payload())
+        return jsonify(_build_model_config_payload())
 
     payload = request.get_json(force=True) or {}
     if 'completion_model' in payload:
@@ -2548,7 +2948,7 @@ def admin_openai_model():
     except Exception:
         app.logger.exception('OpenAI modeli güncellenirken hata oluştu')
         return jsonify({'error': 'Internal Server Error'}), 500
-    return jsonify(model_config_manager.to_payload())
+    return jsonify(_build_model_config_payload())
 
 
 @admin_bp.route('/api/system/restart', methods=['POST'])
