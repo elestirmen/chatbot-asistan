@@ -423,14 +423,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function modelSupportsSampling(modelId) {
+    const normalized = typeof modelId === 'string' ? modelId.trim().toLowerCase() : '';
+    if (!normalized) return false;
+    if (!normalized.startsWith('gpt-5')) return true;
+    if (normalized.startsWith('gpt-5.2-pro')) return false;
+    if (normalized.startsWith('gpt-5.2-codex')) return false;
+    return normalized.startsWith('gpt-5.2') || normalized.startsWith('gpt-5.1');
+  }
+
   function updateSamplingControlsState(modelId) {
     const normalized = typeof modelId === 'string' ? modelId.trim().toLowerCase() : '';
-    const isGpt5 = normalized.startsWith('gpt-5');
+    const supportsSampling = modelSupportsSampling(normalized);
     if (samplingControlsWrapper) {
-      samplingControlsWrapper.classList.toggle('d-none', isGpt5);
-      samplingControlsWrapper.setAttribute('aria-hidden', isGpt5 ? 'true' : 'false');
+      samplingControlsWrapper.classList.toggle('d-none', !supportsSampling);
+      samplingControlsWrapper.setAttribute('aria-hidden', supportsSampling ? 'false' : 'true');
     }
-    const shouldDisable = !hasAdminAccess() || !normalized || isGpt5 || (modelSelectInput?.disabled ?? true);
+    const shouldDisable = !hasAdminAccess() || !normalized || !supportsSampling || (modelSelectInput?.disabled ?? true);
     if (temperatureInput) temperatureInput.disabled = shouldDisable;
     if (topPInput) topPInput.disabled = shouldDisable;
   }

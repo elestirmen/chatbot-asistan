@@ -1359,6 +1359,11 @@ def _build_contextual_query(
         },
         {"role": "user", "content": convo_text},
     ]
+    rewrite_effort = _resolve_reasoning_effort(
+        model_name,
+        requested_effort="none",
+        fallback_effort="low",
+    )
 
     try:
         response = _responses_create(
@@ -1367,7 +1372,7 @@ def _build_contextual_query(
             stream=False,
             max_output_tokens=120,
             temperature=0.2,
-            reasoning_effort="minimal",
+            reasoning_effort=rewrite_effort,
             verbosity="low",
         )
         rewritten = _extract_text_from_response(response)
@@ -1668,6 +1673,51 @@ def _is_gpt5_model(model_name: Optional[str]) -> bool:
     return str(model_name or "").strip().lower().startswith("gpt-5")
 
 
+def _gpt5_allowed_reasoning_efforts(model_name: Optional[str]) -> Set[str]:
+    normalized = str(model_name or "").strip().lower()
+    if normalized.startswith("gpt-5.2-pro"):
+        return {"medium", "high", "xhigh"}
+    if normalized.startswith("gpt-5.2-codex"):
+        return {"low", "medium", "high", "xhigh"}
+    if normalized.startswith("gpt-5.2"):
+        return {"none", "low", "medium", "high", "xhigh"}
+    if normalized.startswith("gpt-5.1"):
+        return {"none", "low", "medium", "high"}
+    if normalized.startswith("gpt-5-pro"):
+        return {"high"}
+    if normalized.startswith("gpt-5"):
+        return {"minimal", "low", "medium", "high"}
+    return set()
+
+
+def _resolve_reasoning_effort(
+    model_name: Optional[str],
+    requested_effort: Optional[str],
+    *,
+    fallback_effort: str = "medium",
+) -> Optional[str]:
+    allowed = _gpt5_allowed_reasoning_efforts(model_name)
+    if not allowed:
+        return None
+
+    candidate = str(requested_effort or "").strip().lower()
+    if candidate in allowed:
+        return candidate
+
+    fallback = str(fallback_effort or "").strip().lower()
+    if fallback in allowed:
+        return fallback
+
+    for preferred in ("medium", "low", "minimal", "none", "high", "xhigh"):
+        if preferred in allowed:
+            return preferred
+    return sorted(allowed)[0]
+
+
+def _gpt5_supports_sampling_controls(model_name: Optional[str]) -> bool:
+    return "none" in _gpt5_allowed_reasoning_efforts(model_name)
+
+
 def _messages_to_response_input(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     payload: List[Dict[str, Any]] = []
     for msg in messages:
@@ -1727,12 +1777,21 @@ def _build_responses_request_params(
             params["max_output_tokens"] = token_limit
 
     if _is_gpt5_model(model_name):
-        effort = str(reasoning_effort or "").strip().lower()
-        if effort in {"minimal", "low", "medium", "high"}:
+        effort = _resolve_reasoning_effort(
+            model_name,
+            reasoning_effort,
+            fallback_effort="medium",
+        )
+        if effort:
             params["reasoning"] = {"effort": effort}
         normalized_verbosity = str(verbosity or "").strip().lower()
         if normalized_verbosity in {"low", "medium", "high"}:
             params["text"] = {"verbosity": normalized_verbosity}
+        if effort == "none" and _gpt5_supports_sampling_controls(model_name):
+            if temperature is not None:
+                params["temperature"] = float(temperature)
+            if top_p is not None:
+                params["top_p"] = float(top_p)
     else:
         if temperature is not None:
             params["temperature"] = float(temperature)
@@ -2222,8 +2281,20 @@ def chat():
                         params["temperature"] = float(min(base_temp, 0.4))
                         params["top_p"] = float(min(base_top_p, 0.5))
                 else:
-                    # GPT-5 için açıkça reasoning/verbosity belirlemek daha tutarlı sonuç verir.
-                    params["reasoning_effort"] = "low" if is_contact_query else "medium"
+                    # GPT-5.2 / GPT-5.1 için reasoning=none ile sampling (temperature/top-p) aktif olur.
+                    if _gpt5_supports_sampling_controls(completion_model_name):
+                        params["reasoning_effort"] = "none"
+                        base_temp = model_config_manager.temperature
+                        base_top_p = model_config_manager.top_p
+                        if rag_applied:
+                            params["temperature"] = float(base_temp)
+                            params["top_p"] = float(base_top_p)
+                        else:
+                            params["temperature"] = float(min(base_temp, 0.4))
+                            params["top_p"] = float(min(base_top_p, 0.5))
+                    else:
+                        # none desteklemeyen GPT-5 varyantlarında mevcut dengeli tercih korunur.
+                        params["reasoning_effort"] = "low" if is_contact_query else "medium"
                     params["verbosity"] = "low" if is_contact_query else "medium"
 
                 if should_stream:
