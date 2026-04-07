@@ -107,9 +107,32 @@ def _getenv_float(
     return value
 
 
+def _getenv_bool(key: str, default: bool) -> bool:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    normalized = str(raw).strip().lower()
+    if normalized in {"1", "true", "yes", "on", "aktif"}:
+        return True
+    if normalized in {"0", "false", "no", "off", "pasif"}:
+        return False
+    return default
+
+
+def _normalize_openai_base_url(raw_value: Optional[str]) -> Optional[str]:
+    normalized = (raw_value or "").strip().rstrip("/")
+    if not normalized:
+        return None
+    if re.search(r"/v[0-9]+$", normalized, re.IGNORECASE):
+        return normalized
+    return normalized + "/v1"
+
+
 OPENAI_API_KEY = _getenv_strip("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY env değişkeni tanımlı değil!")
+OPENAI_BASE_URL = _normalize_openai_base_url(_getenv_strip("OPENAI_BASE_URL"))
+LLM_PROVIDER_NAME = _getenv_strip("LLM_PROVIDER_NAME") or ("LM Studio" if OPENAI_BASE_URL else "OpenAI")
+if not OPENAI_API_KEY and not OPENAI_BASE_URL:
+    raise RuntimeError("OPENAI_API_KEY env değişkeni tanımlı değil! Yerel OpenAI-compatible sunucu için OPENAI_BASE_URL kullanabilirsiniz.")
 try:
     OPENAI_TIMEOUT = float(os.getenv("OPENAI_REQUEST_TIMEOUT", "30"))
 except ValueError:
@@ -124,6 +147,7 @@ DEFAULT_OPENAI_COMPLETION_MODEL = _getenv_strip("OPENAI_MODEL") or "gpt-4.1-mini
 OPENAI_SUMMARY_OVERRIDE = _getenv_strip("OPENAI_SUMMARY_MODEL")
 DEFAULT_OPENAI_TEMPERATURE = _getenv_float("OPENAI_TEMPERATURE", 0.75, 0.0, 2.0)
 DEFAULT_OPENAI_TOP_P = _getenv_float("OPENAI_TOP_P", 0.9, 0.0, 1.0)
+DEFAULT_OPENAI_THINKING_ENABLED = _getenv_bool("OPENAI_THINKING_ENABLED", True)
 
 ADMIN_PASSWORD = _getenv_strip("ADMIN_PASSWORD")
 APP_PASSWORD = _getenv_strip("APP_PASSWORD")
@@ -133,11 +157,14 @@ if not ADMIN_AUTH_PASSWORD:
     raise RuntimeError("ADMIN_PASSWORD veya APP_PASSWORD env değişkenlerinden biri tanımlı olmalıdır")
 ROLE_ADMIN = "admin"
 ROLE_EDITOR = "editor"
-client = OpenAI(
-    api_key=OPENAI_API_KEY,
-    timeout=OPENAI_TIMEOUT,
-    max_retries=OPENAI_MAX_RETRIES,
-)
+client_kwargs: Dict[str, Any] = {
+    "api_key": OPENAI_API_KEY or "lm-studio",
+    "timeout": OPENAI_TIMEOUT,
+    "max_retries": OPENAI_MAX_RETRIES,
+}
+if OPENAI_BASE_URL:
+    client_kwargs["base_url"] = OPENAI_BASE_URL
+client = OpenAI(**client_kwargs)
 
 try:
     OPENAI_MODEL_DISCOVERY_TTL_SECONDS = max(30, int(os.getenv("OPENAI_MODEL_DISCOVERY_TTL_SECONDS", "300")))
@@ -152,7 +179,6 @@ CORS(app)
 
 # --- DEĞİŞEN KISIM BAŞLANGICI ---
 # Session (Redis) Yapılandırması
-app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_USE_SIGNER"] = True
 FLASK_SECRET_KEY = _getenv_strip("FLASK_SECRET_KEY")
@@ -160,10 +186,20 @@ if not FLASK_SECRET_KEY:
     raise RuntimeError("FLASK_SECRET_KEY env değişkeni tanımlı değil!")
 app.config["SECRET_KEY"] = FLASK_SECRET_KEY
 
-REDIS_URL = os.getenv("REDIS_URL")
-if not REDIS_URL:
-    raise RuntimeError("REDIS_URL env değişkeni tanımlı değil!")
-app.config["SESSION_REDIS"] = redis.from_url(REDIS_URL)
+REDIS_URL = _getenv_strip("REDIS_URL")
+SESSION_TYPE = (_getenv_strip("SESSION_TYPE") or ("redis" if REDIS_URL else "filesystem")).lower()
+app.config["SESSION_TYPE"] = SESSION_TYPE
+
+if SESSION_TYPE == "redis":
+    if not REDIS_URL:
+        raise RuntimeError("REDIS_URL env değişkeni tanımlı değil! SESSION_TYPE=redis için gereklidir.")
+    app.config["SESSION_REDIS"] = redis.from_url(REDIS_URL)
+elif SESSION_TYPE == "filesystem":
+    session_file_dir = Path(_getenv_strip("SESSION_FILE_DIR") or ".flask_session")
+    session_file_dir.mkdir(parents=True, exist_ok=True)
+    app.config["SESSION_FILE_DIR"] = str(session_file_dir)
+else:
+    raise RuntimeError("SESSION_TYPE yalnızca 'redis' veya 'filesystem' olabilir.")
 
 # Sunucu tarafı session'ı başlat
 server_session = Session(app)
@@ -221,7 +257,7 @@ MODEL = SentenceTransformer(MODEL_PATH) if MODEL_PATH else SentenceTransformer(M
 EMBEDDING_SCHEMA_VERSION = 3  # embedding yapısı değiştiğinde cache'i yenilemek için
 DEFAULT_QA_FILE = "expanded_data.json"
 APP_VERSION = "stabil-rag-3.3"
-CROSS_ENCODER_MODEL_NAME = _getenv_strip("CROSS_ENCODER_MODEL") or "cross-encoder/ms-marco-mMiniLM-L-6-v2"
+CROSS_ENCODER_MODEL_NAME = _getenv_strip("CROSS_ENCODER_MODEL") or "cross-encoder/ms-marco-MiniLM-L-6-v2"
 try:
     CROSS_ENCODER_POOL_SIZE = max(3, int(os.getenv("RERANK_POOL_SIZE", "10")))
 except ValueError:
@@ -396,7 +432,7 @@ OPENAI_MODEL_SUGGESTIONS: List[Dict[str, str]] = [
 
 _model_discovery_lock = threading.Lock()
 _model_discovery_cache: Dict[str, Any] = {
-    "gpt5_model_ids": None,          # type: Optional[Set[str]]
+    "model_ids": None,               # type: Optional[Set[str]]
     "fetched_at": 0.0,
     "error": None,                   # type: Optional[str]
 }
@@ -746,6 +782,7 @@ class ModelConfigManager:
         suggestions: List[Dict[str, str]],
         default_temperature: float,
         default_top_p: float,
+        default_thinking_enabled: bool,
     ):
         self.path = path
         self.default_completion_model = (default_completion_model or "gpt-4.1-mini").strip() or "gpt-4.1-mini"
@@ -755,8 +792,10 @@ class ModelConfigManager:
         self._completion_model = self.default_completion_model
         self.default_temperature = float(f"{max(0.0, min(2.0, default_temperature)):.4f}")
         self.default_top_p = float(f"{max(0.0, min(1.0, default_top_p)):.4f}")
+        self.default_thinking_enabled = bool(default_thinking_enabled)
         self._temperature: float = self.default_temperature
         self._top_p: float = self.default_top_p
+        self._thinking_enabled: bool = self.default_thinking_enabled
         self._updated_at: Optional[str] = None
         self.reload()
 
@@ -788,6 +827,19 @@ class ModelConfigManager:
             return None
         return ModelConfigManager._round4(value)
 
+    @staticmethod
+    def _parse_thinking_enabled(candidate: Any) -> Optional[bool]:
+        if candidate is None:
+            return None
+        if isinstance(candidate, bool):
+            return candidate
+        text = str(candidate).strip().lower()
+        if text in {"1", "true", "yes", "on", "aktif"}:
+            return True
+        if text in {"0", "false", "no", "off", "pasif"}:
+            return False
+        return None
+
     def reload(self) -> None:
         with self._lock:
             if not self.path.exists():
@@ -803,8 +855,10 @@ class ModelConfigManager:
             updated_at = raw.get("updated_at")
             raw_temperature = raw.get("temperature")
             raw_top_p = raw.get("top_p")
+            raw_thinking_enabled = raw.get("thinking_enabled")
             temperature = self._parse_temperature(raw_temperature)
             top_p = self._parse_top_p(raw_top_p)
+            thinking_enabled = self._parse_thinking_enabled(raw_thinking_enabled)
             needs_rewrite = False
             if temperature is None:
                 temperature = self.default_temperature
@@ -814,24 +868,45 @@ class ModelConfigManager:
                 top_p = self.default_top_p
                 if raw_top_p is not None:
                     needs_rewrite = True
+            if thinking_enabled is None:
+                thinking_enabled = self.default_thinking_enabled
+                if raw_thinking_enabled is not None:
+                    needs_rewrite = True
 
             if not completion:
-                self._write_unlocked(self.default_completion_model, temperature, top_p)
+                self._write_unlocked(
+                    self.default_completion_model,
+                    temperature,
+                    top_p,
+                    thinking_enabled,
+                )
                 return
 
-            if needs_rewrite or "temperature" not in raw or "top_p" not in raw:
-                self._write_unlocked(completion, temperature, top_p)
+            if (
+                needs_rewrite
+                or "temperature" not in raw
+                or "top_p" not in raw
+                or "thinking_enabled" not in raw
+            ):
+                self._write_unlocked(completion, temperature, top_p, thinking_enabled)
                 return
 
             self._completion_model = completion
             self._temperature = temperature
             self._top_p = top_p
+            self._thinking_enabled = thinking_enabled
             if isinstance(updated_at, str) and updated_at.strip():
                 self._updated_at = updated_at.strip()
             else:
                 self._updated_at = self._iso_now()
 
-    def _write_unlocked(self, model: str, temperature: Optional[float], top_p: Optional[float]) -> None:
+    def _write_unlocked(
+        self,
+        model: str,
+        temperature: Optional[float],
+        top_p: Optional[float],
+        thinking_enabled: Optional[bool],
+    ) -> None:
         normalized = (model or "").strip()
         if not normalized:
             normalized = self.default_completion_model
@@ -841,10 +916,12 @@ class ModelConfigManager:
         top_p_value = (
             self.default_top_p if top_p is None else self._round4(max(0.0, min(1.0, float(top_p))))
         )
+        thinking_value = self.default_thinking_enabled if thinking_enabled is None else bool(thinking_enabled)
         payload = {
             "completion_model": normalized,
             "temperature": temperature_value,
             "top_p": top_p_value,
+            "thinking_enabled": thinking_value,
             "updated_at": self._iso_now(),
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -852,6 +929,7 @@ class ModelConfigManager:
         self._completion_model = normalized
         self._temperature = temperature_value
         self._top_p = top_p_value
+        self._thinking_enabled = thinking_value
         self._updated_at = payload["updated_at"]
 
     def _require_temperature(self, value: Any) -> float:
@@ -866,30 +944,48 @@ class ModelConfigManager:
             raise ValueError("Top-p değeri 0 ile 1 arasında olmalıdır.")
         return parsed
 
+    def _require_thinking_enabled(self, value: Any) -> bool:
+        parsed = self._parse_thinking_enabled(value)
+        if parsed is None:
+            raise ValueError("Thinking ayarı açık veya kapalı olarak belirtilmelidir.")
+        return parsed
+
     def set(
         self,
         model: Optional[str],
         *,
         temperature: Optional[Any] = None,
         top_p: Optional[Any] = None,
+        thinking_enabled: Optional[Any] = None,
     ) -> None:
         normalized = (model or "").strip()
         if not normalized:
             raise ValueError("Model adı boş olamaz.")
         next_temperature = self._temperature if temperature is None else self._require_temperature(temperature)
         next_top_p = self._top_p if top_p is None else self._require_top_p(top_p)
+        next_thinking_enabled = (
+            self._thinking_enabled
+            if thinking_enabled is None
+            else self._require_thinking_enabled(thinking_enabled)
+        )
         if (
             normalized == self._completion_model
             and self._round4(next_temperature) == self._round4(self._temperature)
             and self._round4(next_top_p) == self._round4(self._top_p)
+            and bool(next_thinking_enabled) == bool(self._thinking_enabled)
         ):
             return
         with self._lock:
-            self._write_unlocked(normalized, next_temperature, next_top_p)
+            self._write_unlocked(normalized, next_temperature, next_top_p, next_thinking_enabled)
 
     def reset(self) -> None:
         with self._lock:
-            self._write_unlocked(self.default_completion_model, self.default_temperature, self.default_top_p)
+            self._write_unlocked(
+                self.default_completion_model,
+                self.default_temperature,
+                self.default_top_p,
+                self.default_thinking_enabled,
+            )
 
     @property
     def completion_model(self) -> str:
@@ -902,6 +998,10 @@ class ModelConfigManager:
     @property
     def top_p(self) -> float:
         return self._top_p if self._top_p is not None else self.default_top_p
+
+    @property
+    def thinking_enabled(self) -> bool:
+        return bool(self._thinking_enabled)
 
     @property
     def summary_model(self) -> str:
@@ -920,16 +1020,25 @@ class ModelConfigManager:
             "default_temperature": self.default_temperature,
             "top_p": self.top_p,
             "default_top_p": self.default_top_p,
+            "thinking_enabled": self.thinking_enabled,
+            "default_thinking_enabled": self.default_thinking_enabled,
             "updated_at": self.updated_at,
             "suggestions": self.suggestions,
         }
 
 
-def _discover_gpt5_model_ids(*, force_refresh: bool = False) -> Tuple[Optional[Set[str]], Optional[str]]:
+def _looks_like_embedding_model(model_id: Optional[str]) -> bool:
+    normalized = str(model_id or "").strip().lower()
+    if not normalized:
+        return False
+    return any(token in normalized for token in ("embedding", "embed", "nomic-embed"))
+
+
+def _discover_available_model_ids(*, force_refresh: bool = False) -> Tuple[Optional[Set[str]], Optional[str]]:
     now = time.time()
     stale_ids: Optional[Set[str]] = None
     with _model_discovery_lock:
-        cached_ids = _model_discovery_cache.get("gpt5_model_ids")
+        cached_ids = _model_discovery_cache.get("model_ids")
         cached_error = _model_discovery_cache.get("error")
         fetched_at = float(_model_discovery_cache.get("fetched_at") or 0.0)
 
@@ -965,21 +1074,21 @@ def _discover_gpt5_model_ids(*, force_refresh: bool = False) -> Tuple[Optional[S
 
         for item in iterator:
             model_id = str(getattr(item, "id", "") or "").strip()
-            if model_id.startswith("gpt-5"):
+            if model_id:
                 discovered.add(model_id)
         with _model_discovery_lock:
-            _model_discovery_cache["gpt5_model_ids"] = set(discovered)
+            _model_discovery_cache["model_ids"] = set(discovered)
             _model_discovery_cache["fetched_at"] = now
             _model_discovery_cache["error"] = None
         return discovered, None
     except Exception as exc:
         raw_error = str(exc).strip()
-        error_message = "GPT-5 model listesi alınamadı."
+        error_message = f"{LLM_PROVIDER_NAME} model listesi alınamadı."
         with _model_discovery_lock:
             _model_discovery_cache["fetched_at"] = now
             _model_discovery_cache["error"] = error_message
         try:
-            app.logger.warning("GPT-5 model keşfi başarısız: %s", raw_error or error_message)
+            app.logger.warning("%s model keşfi başarısız: %s", LLM_PROVIDER_NAME, raw_error or error_message)
         except Exception:
             pass
         if stale_ids is not None:
@@ -993,9 +1102,49 @@ def _build_dynamic_model_suggestions(
     force_refresh: bool = False,
 ) -> Tuple[List[Dict[str, str]], Optional[str], bool]:
     base_suggestions: List[Dict[str, str]] = [dict(item) for item in OPENAI_MODEL_SUGGESTIONS]
-    gpt5_accessible_ids, warning = _discover_gpt5_model_ids(force_refresh=force_refresh)
-    if gpt5_accessible_ids is None:
+    available_model_ids, warning = _discover_available_model_ids(force_refresh=force_refresh)
+    if available_model_ids is None:
         return base_suggestions, warning, False
+
+    normalized_current = str(current_model or "").strip()
+    completion_model_ids = {
+        model_id
+        for model_id in available_model_ids
+        if model_id and not _looks_like_embedding_model(model_id)
+    }
+
+    if OPENAI_BASE_URL:
+        discovered_suggestions: List[Dict[str, str]] = [
+            {
+                "id": discovered_id,
+                "label": discovered_id,
+                "summary": f"{LLM_PROVIDER_NAME} sunucusunda erişilebilir model.",
+                "notes": f"Sunucu: {OPENAI_BASE_URL}",
+            }
+            for discovered_id in sorted(completion_model_ids)
+        ]
+        if (
+            normalized_current
+            and normalized_current not in completion_model_ids
+            and not any(str(entry.get("id") or "").strip() == normalized_current for entry in discovered_suggestions)
+        ):
+            discovered_suggestions.append(
+                {
+                    "id": normalized_current,
+                    "label": normalized_current,
+                    "summary": "Kaydedilmiş özel model kimliği.",
+                    "notes": f"{LLM_PROVIDER_NAME} sunucusunda şu anda listelenmiyor olabilir.",
+                }
+            )
+        if discovered_suggestions:
+            return discovered_suggestions, warning, True
+        return base_suggestions, warning, False
+
+    gpt5_accessible_ids = {
+        model_id
+        for model_id in completion_model_ids
+        if model_id.startswith("gpt-5")
+    }
 
     def _is_accessible(model_id: str) -> bool:
         normalized = str(model_id or "").strip()
@@ -1014,7 +1163,6 @@ def _build_dynamic_model_suggestions(
         filtered.append(item)
 
     # Aktif model öneri listesinde yoksa custom input üzerinden yine görünür.
-    normalized_current = str(current_model or "").strip()
     if (
         normalized_current
         and normalized_current.startswith("gpt-5")
@@ -1041,7 +1189,7 @@ def _build_dynamic_model_suggestions(
             {
                 "id": discovered_id,
                 "label": discovered_id,
-                "summary": "OpenAI hesabında erişime açık GPT-5 modeli.",
+                "summary": f"{LLM_PROVIDER_NAME} hesabında erişime açık GPT-5 modeli.",
             }
         )
 
@@ -1058,6 +1206,8 @@ def _build_model_config_payload(*, force_refresh: bool = False) -> Dict[str, Any
     )
     payload["suggestions"] = suggestions
     payload["suggestions_filtered_by_access"] = filtered
+    payload["provider_name"] = LLM_PROVIDER_NAME
+    payload["api_base_url"] = OPENAI_BASE_URL
     if warning:
         payload["suggestions_warning"] = warning
     else:
@@ -1156,6 +1306,7 @@ model_config_manager = ModelConfigManager(
     OPENAI_MODEL_SUGGESTIONS,
     DEFAULT_OPENAI_TEMPERATURE,
     DEFAULT_OPENAI_TOP_P,
+    DEFAULT_OPENAI_THINKING_ENABLED,
 )
 system_prompt_manager = SystemPromptManager(SYSTEM_PROMPT_FILE, DEFAULT_SYSTEM_PROMPT)
 PERSONALITY_ENV_DEFAULT = os.getenv("DEFAULT_PERSONALITY", PERSONALITIES_DEFAULT_FALLBACK).strip().lower() or PERSONALITIES_DEFAULT_FALLBACK
@@ -1718,6 +1869,17 @@ def _gpt5_supports_sampling_controls(model_name: Optional[str]) -> bool:
     return "none" in _gpt5_allowed_reasoning_efforts(model_name)
 
 
+def _should_force_disable_thinking(
+    model_name: Optional[str],
+    thinking_enabled: Optional[bool],
+) -> bool:
+    if thinking_enabled is None or bool(thinking_enabled):
+        return False
+    if _is_gpt5_model(model_name):
+        return True
+    return bool(OPENAI_BASE_URL)
+
+
 def _messages_to_response_input(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     payload: List[Dict[str, Any]] = []
     for msg in messages:
@@ -1762,6 +1924,7 @@ def _build_responses_request_params(
     top_p: Optional[float] = None,
     reasoning_effort: Optional[str] = None,
     verbosity: Optional[str] = None,
+    thinking_enabled: Optional[bool] = None,
 ) -> Dict[str, Any]:
     params: Dict[str, Any] = {
         "model": model_name,
@@ -1776,10 +1939,11 @@ def _build_responses_request_params(
         if token_limit > 0:
             params["max_output_tokens"] = token_limit
 
+    force_disable_thinking = _should_force_disable_thinking(model_name, thinking_enabled)
     if _is_gpt5_model(model_name):
         effort = _resolve_reasoning_effort(
             model_name,
-            reasoning_effort,
+            "none" if force_disable_thinking else reasoning_effort,
             fallback_effort="medium",
         )
         if effort:
@@ -1793,6 +1957,8 @@ def _build_responses_request_params(
             if top_p is not None:
                 params["top_p"] = float(top_p)
     else:
+        if force_disable_thinking:
+            params["reasoning"] = {"effort": "none"}
         if temperature is not None:
             params["temperature"] = float(temperature)
         if top_p is not None:
@@ -1811,6 +1977,7 @@ def _responses_create(
     top_p: Optional[float] = None,
     reasoning_effort: Optional[str] = None,
     verbosity: Optional[str] = None,
+    thinking_enabled: Optional[bool] = None,
 ) -> Any:
     params = _build_responses_request_params(
         model_name=model_name,
@@ -1821,6 +1988,7 @@ def _responses_create(
         top_p=top_p,
         reasoning_effort=reasoning_effort,
         verbosity=verbosity,
+        thinking_enabled=model_config_manager.thinking_enabled if thinking_enabled is None else thinking_enabled,
     )
     return client.responses.create(**params)
 
@@ -2363,7 +2531,7 @@ def chat():
                 yield f"data: {json.dumps({'event': 'end'})}\n\n"
                 return
             except APIError as err:
-                app.logger.warning("OpenAI API hatası: %s", err)
+                app.logger.warning("%s API hatası: %s", LLM_PROVIDER_NAME, err)
                 err_text = str(err or "").strip()
                 inaccessible_model = None
                 try:
@@ -2374,7 +2542,7 @@ def chat():
                     inaccessible_model = None
                 if inaccessible_model:
                     user_message = (
-                        f"Seçtiğiniz model ({inaccessible_model}) bu OpenAI projesinde yetkili değil. "
+                        f"Seçtiğiniz model ({inaccessible_model}) {LLM_PROVIDER_NAME} sunucusunda erişilebilir değil. "
                         "Lütfen model listesinden erişimi açık bir model seçin."
                     )
                 else:
@@ -3012,8 +3180,14 @@ def admin_openai_model():
         new_model = model_config_manager.completion_model
     temperature = payload.get('temperature') if 'temperature' in payload else None
     top_p = payload.get('top_p') if 'top_p' in payload else None
+    thinking_enabled = payload.get('thinking_enabled') if 'thinking_enabled' in payload else None
     try:
-        model_config_manager.set(new_model, temperature=temperature, top_p=top_p)
+        model_config_manager.set(
+            new_model,
+            temperature=temperature,
+            top_p=top_p,
+            thinking_enabled=thinking_enabled,
+        )
     except ValueError as exc:
         return jsonify({'error': 'Bad Request', 'message': str(exc)}), 400
     except Exception:

@@ -3,7 +3,7 @@
 **Versiyon:** Stabil RAG v3.3  
 **Son Güncelleme:** 2025
 
-Flask tabanlı, RAG (Retrieval-Augmented Generation) destekli ve SSE (Server-Sent Events) ile akışlı cevaplar veren gelişmiş bir sohbet uygulaması. Sunucu tarafı oturum yönetimi Redis ile yapılır; vektör arama için SentenceTransformers ve hibrit BM25 arama, yanıt üretimi için OpenAI kullanılır.
+Flask tabanlı, RAG (Retrieval-Augmented Generation) destekli ve SSE (Server-Sent Events) ile akışlı cevaplar veren gelişmiş bir sohbet uygulaması. Sunucu tarafı oturum yönetimi Redis veya dosya tabanlı session ile yapılır; vektör arama için SentenceTransformers ve hibrit BM25 arama, yanıt üretimi için OpenAI-compatible bir LLM sunucusu kullanılır.
 
 ---
 
@@ -48,7 +48,7 @@ Flask tabanlı, RAG (Retrieval-Augmented Generation) destekli ve SSE (Server-Sen
 <a id="genel-bakış"></a>
 ## 🎯 Genel Bakış
 
-Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap desteği sağlamak için geliştirilmiştir. Sistem, önceden tanımlanmış soru-cevap veritabanından en uygun cevapları bulmak için hibrit arama (vektör + keyword) kullanır ve OpenAI GPT modelleri ile doğal dil işleme yapar.
+Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap desteği sağlamak için geliştirilmiştir. Sistem, önceden tanımlanmış soru-cevap veritabanından en uygun cevapları bulmak için hibrit arama (vektör + keyword) kullanır ve OpenAI-compatible modeller ile doğal dil işleme yapar.
 
 ### Temel Yetenekler
 
@@ -77,7 +77,7 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 - **Soru-Cevap Yönetimi:** JSON dosyalarından soru-cevap çiftlerini ekleme, düzenleme, silme
 - **Kişilik Yönetimi:** Kişilikleri oluşturma, düzenleme, avatar yükleme
 - **Sistem Promptu:** Temel sistem promptunu özelleştirme
-- **Model Yönetimi:** OpenAI model seçimi ve parametre ayarları (temperature, top_p)
+- **Model Yönetimi:** LLM model seçimi ve parametre ayarları (temperature, top_p)
 - **Log Analizi:** Detaylı sohbet logları, filtreleme, arama
 - **İstatistikler:** Mesaj sayıları, geri bildirimler, sezon bazlı analizler
 - **Dosya Yönetimi:** Birden fazla JSON dosyası ile çalışma ve birleştirme
@@ -98,9 +98,9 @@ Bu chatbot uygulaması, Kapadokya Üniversitesi öğrencilerine soru-cevap deste
 ### Backend Stack
 
 - **Framework:** Flask 2.3.0+
-- **Session:** Flask-Session (Redis backend)
+- **Session:** Flask-Session (Redis veya filesystem backend)
 - **CORS:** flask-cors
-- **LLM:** OpenAI API (Responses API, streaming)
+- **LLM:** OpenAI-compatible API (Responses API, streaming)
 - **Embedding:** sentence-transformers (intfloat/multilingual-e5-base)
 - **Arama:** scikit-learn (cosine similarity) + rank_bm25 (BM25)
 - **Cache:** bz2 sıkıştırmalı pickle dosyası
@@ -200,13 +200,9 @@ nano .env
 **Zorunlu Değişkenler:**
 
 ```env
-# OpenAI API anahtarı (mutlaka gerekli)
-OPENAI_API_KEY=sk-...
-
-# Redis bağlantı URL'i (mutlaka gerekli)
-REDIS_URL=redis://localhost:6379/0
-# veya şifreli Redis için:
-REDIS_URL=redis://:parolanız@127.0.0.1:6379/0
+# OpenAI-compatible LLM sunucusu
+OPENAI_BASE_URL=http://127.0.0.1:8081
+OPENAI_API_KEY=lm-studio  # Yerel LM Studio için sembolik değer yeterlidir
 
 # Admin panel şifresi (mutlaka gerekli - ADMIN_PASSWORD veya APP_PASSWORD)
 ADMIN_PASSWORD=güvenli-şifre-buraya
@@ -215,16 +211,21 @@ APP_PASSWORD=güvenli-şifre-buraya
 
 # Flask secret key (mutlaka gerekli)
 FLASK_SECRET_KEY=rastgele-uzun-string-buraya
+
+# Yerel geliştirmede Redis yerine dosya tabanlı session kullanabilirsiniz
+SESSION_TYPE=filesystem
+SESSION_FILE_DIR=.flask_session
 ```
 
 **İsteğe Bağlı Değişkenler:**
 
 ```env
-# OpenAI model ayarları
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_SUMMARY_MODEL=gpt-4.1-mini  # Özetleme için farklı model
-OPENAI_REQUEST_TIMEOUT=30
-OPENAI_MAX_RETRIES=2
+# LLM model ayarları
+LLM_PROVIDER_NAME=LM Studio
+OPENAI_MODEL=google/gemma-4-26b-a4b
+OPENAI_SUMMARY_MODEL=google/gemma-4-26b-a4b
+OPENAI_REQUEST_TIMEOUT=60
+OPENAI_MAX_RETRIES=1
 OPENAI_TEMPERATURE=0.75
 OPENAI_TOP_P=0.9
 
@@ -428,16 +429,22 @@ sudo systemctl start kun-chatbot.service
 
 | Değişken | Zorunlu | Varsayılan | Açıklama |
 |----------|---------|------------|----------|
-| `OPENAI_API_KEY` | ✅ | - | OpenAI API anahtarı |
-| `REDIS_URL` | ✅ | - | Redis bağlantı URL'i |
+| `OPENAI_BASE_URL` | ❌ | - | OpenAI-compatible API adresi. `http://127.0.0.1:8081` verilirse uygulama otomatik `/v1` ekler |
+| `OPENAI_API_KEY` | ✅* | - | OpenAI API anahtarı. Yerel sunucu kullanıyorsanız sembolik bir değer yeterlidir |
+| `REDIS_URL` | ✅** | - | Redis bağlantı URL'i |
 | `ADMIN_PASSWORD` veya `APP_PASSWORD` | ✅ | - | Admin panel şifresi |
 | `FLASK_SECRET_KEY` | ✅ | - | Flask session imzası (tanımlı olmazsa uygulama başlatılmaz) |
-| `OPENAI_MODEL` | ❌ | `gpt-4.1-mini` | OpenAI chat modeli |
+| `SESSION_TYPE` | ❌ | `redis` veya `filesystem` | `REDIS_URL` varsa varsayılan `redis`, yoksa `filesystem` |
+| `SESSION_FILE_DIR` | ❌ | `.flask_session` | Filesystem session klasörü |
+| `OPENAI_MODEL` | ❌ | `gpt-4.1-mini` | Sohbet modeli |
 | `OPENAI_SUMMARY_MODEL` | ❌ | `OPENAI_MODEL` | Özetleme için model |
 | `OPENAI_REQUEST_TIMEOUT` | ❌ | `30` | İstek zaman aşımı (saniye) |
 | `OPENAI_MAX_RETRIES` | ❌ | `2` | Tekrar deneme sayısı |
 | `OPENAI_TEMPERATURE` | ❌ | `0.75` | Model yaratıcılığı (0-2) |
 | `OPENAI_TOP_P` | ❌ | `0.9` | Nucleus sampling (0-1) |
+
+\* `OPENAI_BASE_URL` tanımlıysa zorunlu değildir.
+\** Yalnızca `SESSION_TYPE=redis` için zorunludur.
 | `MODEL_NAME` | ❌ | `intfloat/multilingual-e5-base` | Embedding model adı |
 | `MODEL_PATH` | ❌ | - | Yerel model dizini |
 | `DEFAULT_PERSONALITY` | ❌ | `huysuz` | Varsayılan kişilik |

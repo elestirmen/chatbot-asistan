@@ -136,8 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const samplingControlsWrapper = document.getElementById('samplingControls');
   const temperatureInput = document.getElementById('temperatureInput');
   const topPInput = document.getElementById('topPInput');
+  const thinkingEnabledInput = document.getElementById('thinkingEnabledInput');
   const FALLBACK_TEMPERATURE = 0.75;
   const FALLBACK_TOP_P = 0.9;
+  const FALLBACK_THINKING_ENABLED = true;
   const NUMBER_EPSILON = 0.00005;
   let persistedModelValue = '';
   let defaultModelValue = '';
@@ -145,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let defaultTemperature = FALLBACK_TEMPERATURE;
   let persistedTopP = FALLBACK_TOP_P;
   let defaultTopP = FALLBACK_TOP_P;
+  let persistedThinkingEnabled = FALLBACK_THINKING_ENABLED;
+  let defaultThinkingEnabled = FALLBACK_THINKING_ENABLED;
   let modelSuggestions = [];
   let modelSuggestionsWarning = '';
 
@@ -378,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       modelInfoTitleEl.textContent = normalized;
       modelInfoSummaryEl.textContent = 'Özel model kimliği seçildi. Bu model için hazır açıklama/fiyat kartı bulunmuyor.';
-      facts.push('Model kimliğinin OpenAI hesabınızda aktif olduğundan emin olun.');
+      facts.push('Model kimliğinin bağlı olduğunuz LLM sunucusunda aktif olduğundan emin olun.');
       facts.push('Token maliyeti ve limitler model sürümüne göre değişebilir.');
     }
 
@@ -403,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (saveModelBtn) saveModelBtn.disabled = !enabled;
     if (resetModelBtn) resetModelBtn.disabled = !enabled;
+    if (thinkingEnabledInput) thinkingEnabledInput.disabled = !enabled;
     if (!enabled) {
       if (temperatureInput) temperatureInput.disabled = true;
       if (topPInput) topPInput.disabled = true;
@@ -463,6 +468,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return rounded.toFixed(digits).replace(/\.?0+$/, '');
   }
 
+  function coerceBoolean(value, fallback = false) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['1', 'true', 'yes', 'on', 'aktif'].includes(normalized)) return true;
+      if (['0', 'false', 'no', 'off', 'pasif'].includes(normalized)) return false;
+    }
+    return fallback;
+  }
+
   function setSamplingInputs(temperature, topP) {
     if (temperatureInput) {
       temperatureInput.value = formatNumber(temperature ?? persistedTemperature);
@@ -470,6 +486,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (topPInput) {
       topPInput.value = formatNumber(topP ?? persistedTopP);
     }
+  }
+
+  function setThinkingInput(thinkingEnabled) {
+    if (thinkingEnabledInput) {
+      thinkingEnabledInput.checked = coerceBoolean(thinkingEnabled, persistedThinkingEnabled);
+    }
+  }
+
+  function getThinkingEnabledValue() {
+    if (!thinkingEnabledInput) return persistedThinkingEnabled;
+    return Boolean(thinkingEnabledInput.checked);
   }
 
   function parseSamplingInput(inputEl, min, max, label, fallbackValue) {
@@ -554,9 +581,12 @@ document.addEventListener('DOMContentLoaded', () => {
     persistedTemperature = clampAndRound(persistedTempCandidate, 0, 2);
     defaultTopP = clampAndRound(defaultTopCandidate, 0, 1);
     persistedTopP = clampAndRound(persistedTopCandidate, 0, 1);
+    defaultThinkingEnabled = coerceBoolean(data?.default_thinking_enabled, FALLBACK_THINKING_ENABLED);
+    persistedThinkingEnabled = coerceBoolean(data?.thinking_enabled, defaultThinkingEnabled);
 
     populateModelOptions(persistedModelValue);
     setSamplingInputs(persistedTemperature, persistedTopP);
+    setThinkingInput(persistedThinkingEnabled);
     renderModelInfo(getSelectedModelValue());
   }
 
@@ -619,12 +649,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const dirtyModel = candidate !== persistedModelValue;
-    const hasChanges = dirtyModel || samplingState.dirtyTemperature || samplingState.dirtyTopP;
+    const dirtyThinking = getThinkingEnabledValue() !== persistedThinkingEnabled;
+    const hasChanges = dirtyModel || samplingState.dirtyTemperature || samplingState.dirtyTopP || dirtyThinking;
     if (!hasChanges) {
       const parts = [];
       if (candidate) parts.push(candidate);
       if (Number.isFinite(persistedTemperature)) parts.push(`T=${formatNumber(persistedTemperature, 3)}`);
       if (Number.isFinite(persistedTopP)) parts.push(`top-p=${formatNumber(persistedTopP, 3)}`);
+      parts.push(`thinking=${persistedThinkingEnabled ? 'acik' : 'kapali'}`);
       const suffix = parts.length ? ` (${parts.join(', ')})` : '';
       showModelStatus(`Kaydedildi.${suffix}`, 'success');
       saveModelBtn.disabled = true;
@@ -737,6 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
         completion_model: nextValue,
         temperature: samplingState.temperature,
         top_p: samplingState.top_p,
+        thinking_enabled: getThinkingEnabledValue(),
       }),
     })
       .then((resp) => {
@@ -3493,6 +3526,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!state.error) {
         topPInput.value = formatNumber(state.value);
       }
+    });
+  }
+  if (thinkingEnabledInput) {
+    thinkingEnabledInput.addEventListener('change', () => {
+      handleModelInputChange();
     });
   }
   if (saveModelBtn) {

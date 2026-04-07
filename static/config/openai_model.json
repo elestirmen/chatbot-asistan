@@ -1,6 +1,7 @@
 {
-  "completion_model": "gpt-5.2",
-  "temperature": 0.7,
+  "completion_model": "gemma-4-31b-it-heretic@q4_k_m",
+  "temperature": 0.75,
   "top_p": 0.9,
-  "updated_at": "2026-02-13T08:10:37Z"
+  "thinking_enabled": false,
+  "updated_at": "2026-04-07T07:17:19Z"
 }

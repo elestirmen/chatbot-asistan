@@ -1045,7 +1045,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <div>
           <h4 class="mb-1">Dil Modeli Yönetimi</h4>
-          <p class="text-muted small mb-0">Chatbot’un kullandığı OpenAI modelini ve örnekleme parametrelerini yönetin.</p>
+          <p class="text-muted small mb-0">Chatbot’un kullandığı dil modelini ve örnekleme parametrelerini yönetin.</p>
         </div>
       </div>
       <div class="alert alert-warning d-flex align-items-start gap-2">
@@ -1056,7 +1056,7 @@
       </div>
       <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-cpu me-2 text-primary"></i>OpenAI Dil Modeli</span>
+          <span><i class="bi bi-cpu me-2 text-primary"></i>Dil Modeli</span>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary" id="resetModelBtn" type="button" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
             <button class="btn btn-primary" id="saveModelBtn" type="button" disabled><i class="bi bi-save"></i> Kaydet</button>
@@ -1066,7 +1066,7 @@
           <label for="modelSelect" class="form-label">Chatbot yanıtları için kullanılacak model</label>
           <select id="modelSelect" class="form-select" disabled></select>
           <input type="text" id="modelCustomInput" class="form-control mt-2 d-none" placeholder="Özel model kimliğini girin" disabled>
-          <div class="form-text">Model kimliği OpenAI API hesabınızda etkin olmalıdır.</div>
+          <div class="form-text">Model kimliği bağlı olduğunuz LLM sunucusunda etkin olmalıdır.</div>
           <div id="modelInfoCard" class="alert alert-info mt-3 mb-0 py-2 px-3 d-none" aria-live="polite">
             <div id="modelInfoTitle" class="fw-semibold small">Model Bilgisi</div>
             <div id="modelInfoSummary" class="small text-muted mt-1"></div>
@@ -1091,6 +1091,11 @@
                 <li><strong>Test ve geri alma:</strong> Ayarları değiştirdikten sonra mutlaka sohbeti test edin. Farklı soru tipleriyle deneyin (açık uçlu sorular, teknik sorular, yaratıcı görevler). Beklenmedik davranışlar görürseniz (yanıtların çok tutarsız olması, konudan sapması, tekrarlayan ifadeler) <em>Kaydet</em> butonuna basmadan önce <em>Resetle</em> butonuyla varsayılan ayarlara (Temperature: 0.75, Top-p: 0.90) dönün ve küçük adımlarla tekrar deneyin.</li>
               </ul>
             </div>
+          </div>
+          <div class="form-check form-switch mt-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="thinkingEnabledInput" checked>
+            <label class="form-check-label" for="thinkingEnabledInput">Thinking açık</label>
+            <div class="form-text">Kapatıldığında reasoning destekleyen modeller için isteklerde thinking devre dışı bırakılmaya çalışılır. Özellikle LM Studio üzerindeki reasoning modellerde gecikmeyi ve token tüketimini düşürebilir.</div>
           </div>
           <small id="modelStatus" class="small d-block mt-2 text-muted">-</small>
         </div>
